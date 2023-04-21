@@ -36,7 +36,8 @@ private:
     void CreateDevice();
     void CreateSurface();
     void createSwapChain();
-
+    void createImageViews();
+    void createGraphicsPipeline();
 
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -73,11 +74,11 @@ private:
     VkSurfaceKHR surface;
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
+    std::vector<VkImageView> swapChainImageViews;
 
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
 
-    VkDebugReportCallbackEXT callback;
 
     const int width = 1280;
     const int height = 720;
@@ -88,7 +89,6 @@ private:
 
     const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
-        //VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
 #ifdef NDEBUG
