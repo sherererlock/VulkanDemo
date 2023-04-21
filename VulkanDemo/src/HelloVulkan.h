@@ -15,7 +15,7 @@ struct QueueFamilyIndices
 };
 
 struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
+    VkSurfaceCapabilitiesKHR capabilities ={};
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
 };
@@ -48,10 +48,14 @@ private:
 
     void setupDebugCallback();
     VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
-    void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);    
+    void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
+
+    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+
+    void setupDebugMessenger();
 
     void pickPhysicalDevice();
-    bool isDeviceSuitable();
+    bool isDeviceSuitable(VkPhysicalDevice phyDevice);
 
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
@@ -61,6 +65,7 @@ private:
     VkInstance instance;
     VkDevice device;
     VkPhysicalDevice physicalDevice;
+    VkDebugUtilsMessengerEXT debugMessenger;
 
     VkQueue graphicsQueue;
     VkQueue presentQueue;
@@ -83,6 +88,7 @@ private:
 
     const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        //VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
 #ifdef NDEBUG

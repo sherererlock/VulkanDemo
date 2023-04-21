@@ -3,18 +3,33 @@
 #include <iostream>
 #include <set>
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-    VkDebugReportFlagsEXT flags, //消息类型：information, warnning, performancewarning, error, debug.
-    VkDebugReportObjectTypeEXT objType, //
-    uint64_t obj,
-    size_t location,
-    int32_t code,
-    const char* layerPrefix,
-    const char* msg, //消息指针
-    void* userData) // 自定义数据
-{ 
-    std::cerr << "validation layer: " << msg << std::endl;
-    return VK_FALSE;
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) 
+{
+        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+
+        return VK_FALSE;
+}
+
+VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
+{
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    if (func != nullptr) 
+    {
+        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+    } 
+    else
+    {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
+void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
+{
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    if (func != nullptr)
+    {
+        func(instance, debugMessenger, pAllocator);
+    }
 }
 
 void HelloVulkan::Init()
@@ -44,6 +59,7 @@ void HelloVulkan::InitVulkan()
     setupDebugCallback();
     CreateSurface();
     pickPhysicalDevice();
+    CreateDevice();
 }
 
 void HelloVulkan::MainLoop()
@@ -58,7 +74,10 @@ void HelloVulkan::Cleanup()
 {
     vkDestroySwapchainKHR(device, swapChain, nullptr);
     vkDestroyDevice(device, nullptr);
-    DestroyDebugReportCallbackEXT(instance, callback, nullptr);
+    if (enableValidationLayers) {
+        DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+    }
+    //DestroyDebugReportCallbackEXT(instance, callback, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
 
@@ -90,7 +109,19 @@ void HelloVulkan::CreateInstance()
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
 
-    createInfo.enabledLayerCount = 0;
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
+    if (enableValidationLayers) 
+    {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInfo.ppEnabledLayerNames = validationLayers.data();
+
+        populateDebugMessengerCreateInfo(debugCreateInfo);
+        createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
+    } else {
+        createInfo.enabledLayerCount = 0;
+
+        createInfo.pNext = nullptr;
+    }
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)
     {
@@ -232,7 +263,7 @@ bool HelloVulkan::checkDeviceExtensionSupport()
         requiredExtensions.erase(extension.extensionName);
     }
 
-    return requiredExtensions.empty();
+    return true;
 }
 
 SwapChainSupportDetails HelloVulkan::querySwapChainSupport(VkPhysicalDevice device)
@@ -338,15 +369,15 @@ bool HelloVulkan::checkValidationLayerSupport()
 
 void HelloVulkan::setupDebugCallback()
 {
-    if (!enableValidationLayers) return;
+    //if (!enableValidationLayers) return;
 
-    VkDebugReportCallbackCreateInfoEXT createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-    createInfo.flags = - VK_DEBUG_REPORT_ERROR_BIT_EXT | - VK_DEBUG_REPORT_WARNING_BIT_EXT;
-    createInfo.pfnCallback = debugCallback;
-    if (CreateDebugReportCallbackEXT(instance, &createInfo, nullptr, &callback) != VK_SUCCESS) {
-        throw std::runtime_error("failed to set up debug callback!");
-    }
+    //VkDebugReportCallbackCreateInfoEXT createInfo = {};
+    //createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+    //createInfo.flags = - VK_DEBUG_REPORT_ERROR_BIT_EXT | - VK_DEBUG_REPORT_WARNING_BIT_EXT;
+    //createInfo.pfnCallback = debugCallback;
+    //if (CreateDebugReportCallbackEXT(instance, &createInfo, nullptr, &callback) != VK_SUCCESS) {
+    //    throw std::runtime_error("failed to set up debug callback!");
+    //}
 }
 
 VkResult HelloVulkan::CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
@@ -355,7 +386,8 @@ VkResult HelloVulkan::CreateDebugReportCallbackEXT(VkInstance instance, const Vk
     if (func != nullptr)
     {
         return func(instance, pCreateInfo, pAllocator, pCallback);
-    } else
+    } 
+    else
     {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
@@ -366,6 +398,27 @@ void HelloVulkan::DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugRepo
     auto func = (PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
     if (func != nullptr) {
         func(instance, callback, pAllocator);
+    }
+}
+
+void HelloVulkan::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+{
+    createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.pfnUserCallback = debugCallback;
+}
+
+void HelloVulkan::setupDebugMessenger() {
+    if (!enableValidationLayers) return;
+
+    VkDebugUtilsMessengerCreateInfoEXT createInfo;
+    populateDebugMessengerCreateInfo(createInfo);
+
+    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to set up debug messenger!");
     }
 }
 
@@ -383,11 +436,11 @@ void HelloVulkan::pickPhysicalDevice()
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
-    for (const auto& device : devices)
+    for (const auto& phydevice : devices)
     {
-        if (isDeviceSuitable())
+        if (isDeviceSuitable(phydevice))
         {
-            physicalDevice = device;
+            physicalDevice = phydevice;
             break;
         }
     }
@@ -398,28 +451,29 @@ void HelloVulkan::pickPhysicalDevice()
     }
 }
 
-bool HelloVulkan::isDeviceSuitable()
+bool HelloVulkan::isDeviceSuitable(VkPhysicalDevice phyDevice)
 {
     // name、type、vulkan版本
     VkPhysicalDeviceProperties deviceProperties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+    vkGetPhysicalDeviceProperties(phyDevice, &deviceProperties);
 
     VkPhysicalDeviceFeatures deviceFeatures;
-    vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+    vkGetPhysicalDeviceFeatures(phyDevice, &deviceFeatures);
 
     std::cout << deviceProperties.deviceName << std::endl;
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+
+    QueueFamilyIndices indices = findQueueFamilies(phyDevice);
 
     bool extensionsSupported = checkDeviceExtensionSupport();
 
     bool swapChainAdequate = false;
     if (extensionsSupported)
     {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(phyDevice);
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
-    return indices.isComplete();
+    return indices.isComplete() && extensionsSupported && swapChainAdequate;
 }
 
 QueueFamilyIndices HelloVulkan::findQueueFamilies(VkPhysicalDevice device)
@@ -454,7 +508,7 @@ QueueFamilyIndices HelloVulkan::findQueueFamilies(VkPhysicalDevice device)
         i++;
     }
 
-    return QueueFamilyIndices();
+    return indices;
 }
 
 std::vector<const char*> HelloVulkan::getRequiredExtensions()
