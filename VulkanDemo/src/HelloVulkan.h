@@ -37,7 +37,18 @@ private:
     void CreateSurface();
     void createSwapChain();
     void createImageViews();
+
+    void createRenderPass();
     void createGraphicsPipeline();
+    VkShaderModule createShaderModule(const std::vector<char>& code);
+
+    void createFrameBuffer();
+
+    void createCommandPool();
+    void createCommandBuffers();
+    void createSemaphores();
+
+    void drawFrame();
 
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -75,10 +86,21 @@ private:
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
-
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
 
+    VkRenderPass renderPass;
+    VkPipelineLayout pipelineLayout;
+
+    VkPipeline graphicsPipeline;
+
+    std::vector<VkFramebuffer> swapChainFramebuffers;
+
+    VkCommandPool commandPool;
+    std::vector<VkCommandBuffer> commandBuffers;
+
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
 
     const int width = 1280;
     const int height = 720;
