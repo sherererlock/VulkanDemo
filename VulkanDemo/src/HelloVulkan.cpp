@@ -52,6 +52,14 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
+void HelloVulkan::onWindowResized(GLFWwindow* window, int width, int height)
+{
+    if (width == 0 || height == 0) return;
+
+    HelloVulkan* app = reinterpret_cast<HelloVulkan*>(glfwGetWindowUserPointer(window));
+    app->recreateSwapChain();
+}
+
 void HelloVulkan::Init()
 {
 	InitWindow();
@@ -71,6 +79,9 @@ void HelloVulkan::InitWindow()
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
+
+    glfwSetWindowUserPointer(window, this);
+    glfwSetWindowSizeCallback(window, HelloVulkan::onWindowResized);
 }
 
 void HelloVulkan::InitVulkan()
@@ -86,6 +97,8 @@ void HelloVulkan::InitVulkan()
     createGraphicsPipeline();
     createFrameBuffer();
     createCommandPool();
+    createCommandBuffers();
+    createSemaphores();
 }
 
 void HelloVulkan::MainLoop()
@@ -101,23 +114,13 @@ void HelloVulkan::MainLoop()
 
 void HelloVulkan::Cleanup()
 {
+    cleanupSwapChain();
+
     vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
 
     vkDestroyCommandPool(device, commandPool, nullptr);
-    for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
-    {
-        vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
-    }
-    vkDestroyPipeline(device, graphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-    vkDestroyRenderPass(device, renderPass, nullptr);
-    for (size_t i = 0; i < swapChainImageViews.size(); i++)
-    {
-        vkDestroyImageView(device, swapChainImageViews[i], nullptr);
-    }
 
-    vkDestroySwapchainKHR(device, swapChain, nullptr);
     vkDestroyDevice(device, nullptr);
     if (enableValidationLayers) 
     {
@@ -646,7 +649,17 @@ void HelloVulkan::createSemaphores()
 void HelloVulkan::drawFrame()
 {
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) 
+    {
+        recreateSwapChain();
+        return;
+    }
+    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+    {
+        throw std::runtime_error("failed to acquire swap chain image!");
+    }
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -681,7 +694,53 @@ void HelloVulkan::drawFrame()
 
     presentInfo.pResults = nullptr; // Optional
 
-    vkQueuePresentKHR(presentQueue, &presentInfo);
+    result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+    {
+        recreateSwapChain();
+    }
+    else if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to present swap chain image!");
+    }
+
+    vkQueueWaitIdle(presentQueue);
+}
+
+void HelloVulkan::recreateSwapChain()
+{
+    vkDeviceWaitIdle(device);
+
+    cleanupSwapChain();
+
+    createSwapChain();
+    createImageViews();
+    createRenderPass();
+    createGraphicsPipeline();
+    createFrameBuffer();
+    createCommandBuffers();
+}
+
+void HelloVulkan::cleanupSwapChain()
+{
+    for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
+    {
+        vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
+    }
+
+    vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+
+    vkDestroyPipeline(device, graphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    vkDestroyRenderPass(device, renderPass, nullptr);
+
+    for (size_t i = 0; i < swapChainImageViews.size(); i++)
+    {
+        vkDestroyImageView(device, swapChainImageViews[i], nullptr);
+    }
+
+    vkDestroySwapchainKHR(device, swapChain, nullptr);
 }
 
 bool HelloVulkan::checkDeviceExtensionSupport()
@@ -771,7 +830,9 @@ VkExtent2D HelloVulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabil
     }
     else
     {
-        VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+        glfwGetWindowSize(window, &width, &height);
+
+        VkExtent2D actualExtent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
         actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
         actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));

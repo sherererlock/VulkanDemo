@@ -50,6 +50,9 @@ private:
 
     void drawFrame();
 
+    void recreateSwapChain();
+    void cleanupSwapChain();
+
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes);
@@ -72,6 +75,9 @@ private:
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
     std::vector<const char*> getRequiredExtensions();
+
+    static void onWindowResized(GLFWwindow* window, int width, int height);
+
 private:
     GLFWwindow* window;
     VkInstance instance;
@@ -102,8 +108,8 @@ private:
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
 
-    const int width = 1280;
-    const int height = 720;
+    int width = 1280;
+    int height = 720;
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
