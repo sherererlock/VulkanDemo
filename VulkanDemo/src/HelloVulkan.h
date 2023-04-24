@@ -16,7 +16,8 @@ struct QueueFamilyIndices
     }
 };
 
-struct SwapChainSupportDetails {
+struct SwapChainSupportDetails 
+{
     VkSurfaceCapabilitiesKHR capabilities ={};
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
@@ -104,9 +105,8 @@ private:
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
     bool checkValidationLayerSupport();
-    bool checkDeviceExtensionSupport();
+    bool checkDeviceExtensionSupport(VkPhysicalDevice phydevice);
 
-    void setupDebugCallback();
     VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
     void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
 

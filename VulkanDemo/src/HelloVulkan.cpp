@@ -23,7 +23,7 @@ static std::vector<char> readFile(const std::string& filename)
     return buffer;
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) 
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT  messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) 
 {
         std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
@@ -87,12 +87,14 @@ void HelloVulkan::InitWindow()
 void HelloVulkan::InitVulkan()
 {
     CreateInstance();
-    setupDebugCallback();
+    setupDebugMessenger();
+
     CreateSurface();
     pickPhysicalDevice();
     CreateDevice();
     createSwapChain();
     createImageViews();
+
     createRenderPass();
     createGraphicsPipeline();
     createFrameBuffer();
@@ -136,6 +138,7 @@ void HelloVulkan::Cleanup()
     }
     //DestroyDebugReportCallbackEXT(instance, callback, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
+
     vkDestroyInstance(instance, nullptr);
 
     glfwDestroyWindow(window);
@@ -162,6 +165,10 @@ void HelloVulkan::CreateInstance()
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
 
+    // 对整个程序都有效的扩展和layer
+    // VK_KHR_Surface
+    // VK_KHR_win32_surface
+    // VK_EXT_debug_utils
     auto extensions = getRequiredExtensions();
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
@@ -174,7 +181,9 @@ void HelloVulkan::CreateInstance()
 
         populateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
-    } else {
+    }
+    else 
+    {
         createInfo.enabledLayerCount = 0;
 
         createInfo.pNext = nullptr;
@@ -213,6 +222,8 @@ void HelloVulkan::CreateDevice()
 
     createInfo.pEnabledFeatures = &deviceFeatures;
 
+    // 适配于device的extension
+    // VK_KHR_swapchain
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
@@ -243,16 +254,25 @@ void HelloVulkan::CreateSurface()
     }
 }
 
+// 若干等待呈现的图像队列
+// 应用程序从交换链获取一张图片完成渲染操作，然后交还给交换链
 void HelloVulkan::createSwapChain()
 {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+
+    // surface的format,包括图像的colorspace和format
+    // presentmode 三缓冲
+    // extent 图像分辨率
+    // 图像的数量
+    // 队列对于图像的使用：呈现队列和渲染队列
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
     VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
+    {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
 
@@ -290,9 +310,12 @@ void HelloVulkan::createSwapChain()
 
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
+    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS)
+    {
         throw std::runtime_error("failed to create swap chain!");
     }
+
+    // 获取交换链中的vkImage
 
     vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
     swapChainImages.resize(imageCount);
@@ -302,6 +325,7 @@ void HelloVulkan::createSwapChain()
     swapChainExtent = extent;
 }
 
+// 创建ImageView来访问vkimage
 void HelloVulkan::createImageViews()
 {
     swapChainImageViews.resize(swapChainImages.size());
@@ -886,12 +910,12 @@ void HelloVulkan::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSiz
     vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
 
-bool HelloVulkan::checkDeviceExtensionSupport()
+bool HelloVulkan::checkDeviceExtensionSupport(VkPhysicalDevice phydevice)
 {
     uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+    vkEnumerateDeviceExtensionProperties(phydevice, nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> extensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+    vkEnumerateDeviceExtensionProperties(phydevice, nullptr, &extensionCount, extensions.data());
 
     std::cout << "available extensions:" << std::endl;
     for (const auto& extension : extensions) {
@@ -904,7 +928,7 @@ bool HelloVulkan::checkDeviceExtensionSupport()
         requiredExtensions.erase(extension.extensionName);
     }
 
-    return true;
+    return requiredExtensions.empty();
 }
 
 SwapChainSupportDetails HelloVulkan::querySwapChainSupport(VkPhysicalDevice device)
@@ -940,8 +964,10 @@ VkSurfaceFormatKHR HelloVulkan::chooseSwapSurfaceFormat(const std::vector<VkSurf
         return { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
     }
 
-    for (const auto& availableFormat : availableFormats) {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+    for (const auto& availableFormat : availableFormats)
+    {
+        if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        {
             return availableFormat;
         }
     }
@@ -953,11 +979,14 @@ VkPresentModeKHR HelloVulkan::chooseSwapPresentMode(const std::vector<VkPresentM
 {
     VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
 
-    for (const auto& availablePresentMode : availablePresentModes) {
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+    for (const auto& availablePresentMode : availablePresentModes)
+    {
+        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+        {
             return availablePresentMode;
         }
-        else if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+        else if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+        {
             bestMode = availablePresentMode;
         }
     }
@@ -992,12 +1021,10 @@ bool HelloVulkan::checkValidationLayerSupport()
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-    std::cout << "available Layers:" << std::endl;
+    //std::cout << "available Layers:" << std::endl;
     for (const char* layerName : validationLayers) {
         bool layerFound = false;
-        std::cout << "\t" << layerName << std::endl;
         for (const auto& layerProperties : availableLayers) {
-            std::cout<<"\t" << layerProperties.layerName << std::endl;
             if (strcmp(layerName, layerProperties.layerName) == 0) {
                 layerFound = true;
                 break;
@@ -1010,19 +1037,6 @@ bool HelloVulkan::checkValidationLayerSupport()
     }
 
     return true;
-}
-
-void HelloVulkan::setupDebugCallback()
-{
-    //if (!enableValidationLayers) return;
-
-    //VkDebugReportCallbackCreateInfoEXT createInfo = {};
-    //createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-    //createInfo.flags = - VK_DEBUG_REPORT_ERROR_BIT_EXT | - VK_DEBUG_REPORT_WARNING_BIT_EXT;
-    //createInfo.pfnCallback = debugCallback;
-    //if (CreateDebugReportCallbackEXT(instance, &createInfo, nullptr, &callback) != VK_SUCCESS) {
-    //    throw std::runtime_error("failed to set up debug callback!");
-    //}
 }
 
 VkResult HelloVulkan::CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
@@ -1109,7 +1123,7 @@ bool HelloVulkan::isDeviceSuitable(VkPhysicalDevice phyDevice)
 
     QueueFamilyIndices indices = findQueueFamilies(phyDevice);
 
-    bool extensionsSupported = checkDeviceExtensionSupport();
+    bool extensionsSupported = checkDeviceExtensionSupport(phyDevice);
 
     bool swapChainAdequate = false;
     if (extensionsSupported)
@@ -1130,8 +1144,9 @@ QueueFamilyIndices HelloVulkan::findQueueFamilies(VkPhysicalDevice device)
 
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
     int i = 0;
-    for (const auto& queueFamily : queueFamilies) 
+    for (const auto& queueFamily : queueFamilies)
     {
         if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
@@ -1164,12 +1179,16 @@ std::vector<const char*> HelloVulkan::getRequiredExtensions()
     const char** glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-    for (unsigned int i = 0; i < glfwExtensionCount; i++) {
+    // surface、 win32_surface
+    for (unsigned int i = 0; i < glfwExtensionCount; i++) 
+    {
         extensions.push_back(glfwExtensions[i]);
     }
 
-    if (enableValidationLayers) {
-        extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+    if (enableValidationLayers)
+    {
+        //extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
     return extensions;
