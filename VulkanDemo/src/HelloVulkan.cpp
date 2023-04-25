@@ -97,11 +97,14 @@ void HelloVulkan::InitVulkan()
 
     createRenderPass();
     createGraphicsPipeline();
+
     createFrameBuffer();
     createCommandPool();
+    createCommandBuffers();
+
     createVertexBuffer();
     createIndexBuffer();
-    createCommandBuffers();
+
     createSemaphores();
 }
 
@@ -203,7 +206,8 @@ void HelloVulkan::CreateDevice()
     std::set<int> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
 
     float queuePriority = 1.0f;
-    for (int queueFamily : uniqueQueueFamilies) {
+    for (int queueFamily : uniqueQueueFamilies)
+    {
         VkDeviceQueueCreateInfo queueCreateInfo = {};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = queueFamily;
@@ -356,13 +360,22 @@ void HelloVulkan::createImageViews()
     }
 }
 
+// 用于渲染的帧缓冲附件
+// 子Renderpass
+// 附件引用
+//
+// RenderPass--> Attachments
+// RenderPass--> subpasses
+// AttachmentReferences --> Attachments
+// subpasses--> AttachmentReferences
+
 void HelloVulkan::createRenderPass()
 {
     VkAttachmentDescription colorAttachment = {};
     colorAttachment.format = swapChainImageFormat;
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // 采样数
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // clear
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // 存储下来
 
     colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -371,14 +384,14 @@ void HelloVulkan::createRenderPass()
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentReference colorAttachmentRef = {};
-    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.attachment = 0; // 引用的附件在数组中的索引
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // 图像渲染的子流程
 
     subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
+    subpass.pColorAttachments = &colorAttachmentRef; // fragment shader使用 location = 0 outcolor,输出
 
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -404,9 +417,37 @@ void HelloVulkan::createRenderPass()
     {
         throw std::runtime_error("failed to create render pass!");
     }
-
-
 }
+
+// shader: shadercode->shaderModule->ShaderStage
+// vertexInputState: binding,attribute
+
+// InputAssemblyState:topology,顶点是否可复用 IA
+ 
+// viewportstate
+// viewport 视口：宽高深度
+// scissor 裁剪
+
+// RasterizationState
+// depthClamp:shadow
+// polygonMode:wireframe
+// cullMode: 背面剔除、正面剔除、双面剔除
+// frontFace:顺时针/逆时针
+
+// MultisampleState
+//
+//
+// 
+
+// ColorBlendAttachmentState
+//
+
+// dynamicStates
+// 可以不重建管线的情况下进行动态修改
+
+
+// PipelineLayout：uniform值
+// 
 
 void HelloVulkan::createGraphicsPipeline()
 {
@@ -467,7 +508,7 @@ void HelloVulkan::createGraphicsPipeline()
     VkPipelineRasterizationStateCreateInfo rasterizer = {};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // VK_POLYGON_MODE_LINE
 
     rasterizer.lineWidth = 1.0f;
 
@@ -535,21 +576,21 @@ void HelloVulkan::createGraphicsPipeline()
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
     pipelineInfo.stageCount = 2;
-    pipelineInfo.pStages = shaderStages;
+    pipelineInfo.pStages = shaderStages; 
 
-    pipelineInfo.pVertexInputState = &vertexInputInfo;
-    pipelineInfo.pInputAssemblyState = &inputAssembly;
-    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pVertexInputState = &vertexInputInfo; // bindings and attribute
+    pipelineInfo.pInputAssemblyState = &inputAssembly; // topology
+    pipelineInfo.pViewportState = &viewportState; 
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pDepthStencilState = nullptr; // Optional
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = nullptr; // Optional
 
-    pipelineInfo.layout = pipelineLayout;
+    pipelineInfo.layout = pipelineLayout; // uniform变量
 
     pipelineInfo.renderPass = renderPass;
-    pipelineInfo.subpass = 0;
+    pipelineInfo.subpass = 0; // 索引
 
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
     pipelineInfo.basePipelineIndex = -1; // Optional
@@ -558,6 +599,9 @@ void HelloVulkan::createGraphicsPipeline()
     {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
+
+    vkDestroyShaderModule(device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
 VkShaderModule HelloVulkan::createShaderModule(const std::vector<char>& code)
@@ -577,14 +621,14 @@ VkShaderModule HelloVulkan::createShaderModule(const std::vector<char>& code)
     return shaderModule;
 }
 
+// Attachment-->FrameBuffer-->vkImageView-->vkImage
+
 void HelloVulkan::createFrameBuffer()
 {
     swapChainFramebuffers.resize(swapChainImageViews.size());
     for (size_t i = 0; i < swapChainImageViews.size(); i++)
     {
-        VkImageView attachments[] = {
-            swapChainImageViews[i]
-        };
+        VkImageView attachments[] = {swapChainImageViews[i]};
 
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -659,6 +703,7 @@ void HelloVulkan::createIndexBuffer()
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
+// 从池分配buffer对象，队列依赖
 void HelloVulkan::createCommandPool()
 {
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
@@ -673,6 +718,16 @@ void HelloVulkan::createCommandPool()
         throw std::runtime_error("failed to create command pool!");
     }
 }
+
+// 创建commandbuffer
+// 
+// 记录指令
+//      BeginRenderPass
+//      BindPipeline
+//      BindVertexBuffers
+//      BindIndexBuffer
+//      DrawIndexed
+//      EndRenderPass
 
 void HelloVulkan::createCommandBuffers()
 {
@@ -918,13 +973,15 @@ bool HelloVulkan::checkDeviceExtensionSupport(VkPhysicalDevice phydevice)
     vkEnumerateDeviceExtensionProperties(phydevice, nullptr, &extensionCount, extensions.data());
 
     std::cout << "available extensions:" << std::endl;
-    for (const auto& extension : extensions) {
+    for (const auto& extension : extensions) 
+    {
         std::cout << "\t" << extension.extensionName << std::endl;
     }
 
     std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
-    for (const auto& extension : extensions) {
+    for (const auto& extension : extensions)
+    {
         requiredExtensions.erase(extension.extensionName);
     }
 
