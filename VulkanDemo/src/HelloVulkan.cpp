@@ -100,10 +100,11 @@ void HelloVulkan::InitVulkan()
 
     createFrameBuffer();
     createCommandPool();
-    createCommandBuffers();
 
     createVertexBuffer();
     createIndexBuffer();
+
+    createCommandBuffers();
 
     createSemaphores();
 }
@@ -198,6 +199,8 @@ void HelloVulkan::CreateInstance()
     }
 }
 
+// 队列：支持graphics与present
+// 支持swapChain扩展
 void HelloVulkan::CreateDevice()
 {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
@@ -789,6 +792,8 @@ void HelloVulkan::createCommandBuffers()
 
 }
 
+// 等待获取渲染的信号量
+// 等待呈现的信号量
 void HelloVulkan::createSemaphores()
 {
     VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -801,6 +806,15 @@ void HelloVulkan::createSemaphores()
     }
 
 }
+
+// 每个操作都是异步执行的
+//     从交换链获取一张图像 
+//     对帧缓冲附件执行指令缓冲的渲染指令（提交指令）
+//     返回渲染然后的图像到交换链中进行呈现操作
+
+/// <summary>
+/// 提交渲染指令buffer
+/// </summary>
 
 void HelloVulkan::drawFrame()
 {
@@ -864,9 +878,27 @@ void HelloVulkan::drawFrame()
     vkQueueWaitIdle(presentQueue);
 }
 
+// 需要重新创建的对象
+//      swapchain
+//      imageviews 
+//      renderpass 依赖于图像的格式
+//      graphicspipeline viewport改变
+//      framebuffers 交换链图像
+//      commandbuffers  交换链图像
+
+// 什么时候重建
+//      窗口大小改变时
+//      
 void HelloVulkan::recreateSwapChain()
 {
-    vkDeviceWaitIdle(device);
+    int width = 0, height = 0;
+    while (width == 0 || height == 0)
+    {
+        glfwGetFramebufferSize(window, &width, &height);
+        glfwWaitEvents();
+    }
+
+    vkDeviceWaitIdle(device); // 等待对象都使用完毕
 
     cleanupSwapChain();
 
@@ -972,11 +1004,11 @@ bool HelloVulkan::checkDeviceExtensionSupport(VkPhysicalDevice phydevice)
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateDeviceExtensionProperties(phydevice, nullptr, &extensionCount, extensions.data());
 
-    std::cout << "available extensions:" << std::endl;
-    for (const auto& extension : extensions) 
-    {
-        std::cout << "\t" << extension.extensionName << std::endl;
-    }
+    //std::cout << "available extensions:" << std::endl;
+    //for (const auto& extension : extensions) 
+    //{
+    //    std::cout << "\t" << extension.extensionName << std::endl;
+    //}
 
     std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
@@ -1166,6 +1198,11 @@ void HelloVulkan::pickPhysicalDevice()
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 }
+
+// 支持graphics和present的队列族
+// 支持swapchain扩展
+// 支持surface format colorspace
+// 支持present mode
 
 bool HelloVulkan::isDeviceSuitable(VkPhysicalDevice phyDevice)
 {

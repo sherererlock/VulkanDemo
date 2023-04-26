@@ -191,5 +191,10 @@ private:
 #else
     const bool enableValidationLayers = true;
 #endif
+
+    size_t currentFrame = 0;
+    const int Max_Frames_In_Fight = 2;
+    std::vector<VkSemaphore> imageAvailableSemaphores;
+    std::vector<VkSemaphore> renderFinishedSemaphores;
 };
 
