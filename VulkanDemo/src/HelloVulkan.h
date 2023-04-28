@@ -57,6 +57,12 @@ struct Vertex
 
 };
 
+struct UniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+
 class HelloVulkan
 {
 public:
@@ -85,17 +91,23 @@ private:
 
     void createVertexBuffer();
     void createIndexBuffer();
+    void createUniformBuffer();
+    void createDescriptorPool();
+    void createDescriptorSetLayout();
+    void createDescriptorSet();
 
     void createCommandPool();
     void createCommandBuffers();
     void createSemaphores();
 
+    void updateUniformBuffer();
     void drawFrame();
 
     void recreateSwapChain();
     void cleanupSwapChain();
 
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
@@ -141,6 +153,9 @@ private:
     VkExtent2D swapChainExtent;
 
     VkRenderPass renderPass;
+    VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorPool descriptorPool;
+    VkDescriptorSet descriptorSet;
     VkPipelineLayout pipelineLayout;
 
     VkPipeline graphicsPipeline;
@@ -157,6 +172,9 @@ private:
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
+
+    VkBuffer uniformBuffer;
+    VkDeviceMemory uniformBufferMemory;
 
     int width = 1280;
     int height = 720;
