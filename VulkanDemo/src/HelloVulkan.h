@@ -27,6 +27,7 @@ struct Vertex
 {
     glm::vec2 pos;
     glm::vec3 color;
+    glm::vec2 texCoord;
 
     static VkVertexInputBindingDescription getBindingDescription()
     {
@@ -38,9 +39,9 @@ struct Vertex
         return bindingDescription;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions()
+    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
     {
-        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions = {};
+        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
 
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
@@ -51,6 +52,11 @@ struct Vertex
         attributeDescriptions[1].location = 1;
         attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+        attributeDescriptions[2].binding = 0;
+        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
         return attributeDescriptions;
     }
@@ -100,14 +106,23 @@ private:
     void createCommandBuffers();
     void createSemaphores();
 
+    void createTextureImage();
+    void createTextureImageView();
+    void createTextureSampler();
+    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+
     void updateUniformBuffer();
     void drawFrame();
 
     void recreateSwapChain();
     void cleanupSwapChain();
 
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+    VkImageView createImageView(VkImage image, VkFormat format);
 
+    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
@@ -134,6 +149,9 @@ private:
     std::vector<const char*> getRequiredExtensions();
 
     static void onWindowResized(GLFWwindow* window, int width, int height);
+
+    VkCommandBuffer beginSingleTimeCommands();
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
 private:
     GLFWwindow* window;
@@ -176,6 +194,11 @@ private:
     VkBuffer uniformBuffer;
     VkDeviceMemory uniformBufferMemory;
 
+    VkSampler textureSampler;
+    VkImage textureImage;
+    VkImageView textureImageView;
+    VkDeviceMemory textureImageMemory;
+
     int width = 1280;
     int height = 720;
 
@@ -188,20 +211,14 @@ private:
     };
 
     const std::vector<Vertex> vertices_s = {
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
     };
 
     const std::vector<uint16_t> indices = {
         0, 1, 2, 2, 3, 0
-    };
-
-    const std::vector<Vertex> vertices = {
-        {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
     };
 
 #ifdef NDEBUG
