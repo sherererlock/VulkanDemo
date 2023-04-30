@@ -2,6 +2,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <glm/glm/glm.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm/gtx/hash.hpp>
 
 #include<vector>
 #include <array>
@@ -28,6 +30,11 @@ struct Vertex
     glm::vec3 pos;
     glm::vec3 color;
     glm::vec2 texCoord;
+
+    bool operator==(const Vertex& other) const 
+    {
+        return pos == other.pos && color == other.color && texCoord == other.texCoord;
+    }
 
     static VkVertexInputBindingDescription getBindingDescription()
     {
@@ -62,6 +69,16 @@ struct Vertex
     }
 
 };
+
+namespace std {
+    template<> struct hash<Vertex> {
+        size_t operator()(Vertex const& vertex) const {
+            return ((hash<glm::vec3>()(vertex.pos) ^
+                   (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ 
+                   (hash<glm::vec2>()(vertex.texCoord) << 1);
+        }
+    };
+}
 
 struct UniformBufferObject {
     glm::mat4 model;
@@ -161,6 +178,8 @@ private:
 
     bool hasStencilComponent(VkFormat format);
 
+    void loadModel();
+
 private:
     GLFWwindow* window;
     VkInstance instance;
@@ -194,6 +213,9 @@ private:
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
 
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
+
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
@@ -214,8 +236,8 @@ private:
     int width = 1280;
     int height = 720;
 
-    const std::string MODEL_PATH = "models/chalet.obj";
-    const std::string TEXTURE_PATH = "textures/chalet.jpg";
+    const std::string MODEL_PATH = "models/bunny.obj";
+    const std::string TEXTURE_PATH = "textures/image_512.jpg";
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
@@ -225,22 +247,22 @@ private:
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
-    const std::vector<Vertex> vertices_s = {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+    //const std::vector<Vertex> vertices_s = {
+    //    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    //    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    //    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    //    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 
-        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-    };
+    //    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    //    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    //    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    //    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+    //};
 
-    const std::vector<uint16_t> indices = {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4
-    };
+    //const std::vector<uint16_t> indices = {
+    //    0, 1, 2, 2, 3, 0,
+    //    4, 5, 6, 6, 7, 4
+    //};
 
 #ifdef NDEBUG
     const bool enableValidationLayers = false;

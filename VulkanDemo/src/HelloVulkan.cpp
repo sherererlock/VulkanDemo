@@ -9,8 +9,11 @@
 #include <glm/glm/gtc/matrix_transform.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+#define TINYOBJLOADER_IMPLEMENTATION
 #include <tinyobjloader/tiny_obj_loader.h>
 #include <chrono>
+
+#include <unordered_map>
 
 static std::vector<char> readFile(const std::string& filename)
 {
@@ -139,6 +142,60 @@ bool HelloVulkan::hasStencilComponent(VkFormat format)
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
+void HelloVulkan::loadModel()
+{
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn;
+    std::string err;
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str()))
+    {
+        throw std::runtime_error(err);
+    }
+
+    if(!warn.empty())
+        std::cout<< "warning:" << warn << std::endl;
+
+    std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
+    for (const auto& shape : shapes) 
+    {
+        for (const auto& index : shape.mesh.indices)
+        {
+            Vertex vertex = {};
+            vertex.pos = {
+                attrib.vertices[3 * index.vertex_index + 0],
+                attrib.vertices[3 * index.vertex_index + 1],
+                attrib.vertices[3 * index.vertex_index + 2]
+            };
+
+            //int idx = std::max(index.texcoord_index, 0);
+            //vertex.texCoord = {
+            //    attrib.texcoords[2 * idx + 0],
+            //    1.0f - attrib.texcoords[2 * idx + 1]
+            //};
+
+            //vertex.texCoord = {
+            //    attrib.texcoords[2 * index.texcoord_index + 0],
+            //    attrib.texcoords[2 * index.texcoord_index + 1]
+            //};
+
+            vertex.color = {1.0f, 1.0f, 1.0f};
+
+            if (uniqueVertices.count(vertex) == 0)
+            {
+                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                vertices.push_back(vertex);
+            }
+
+            //vertices.push_back(vertex);
+            indices.push_back(uniqueVertices[vertex]);
+        }
+    }
+
+}
+
 void HelloVulkan::Init()
 {
 	InitWindow();
@@ -187,6 +244,7 @@ void HelloVulkan::InitVulkan()
     createTextureSampler();
     createFrameBuffer();
 
+    loadModel();
     createVertexBuffer();
     createIndexBuffer();
     createUniformBuffer();
@@ -777,7 +835,7 @@ uint32_t HelloVulkan::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags 
 
 void HelloVulkan::createVertexBuffer()
 {
-    VkDeviceSize bufferSize = sizeof(vertices_s[0]) * vertices_s.size();
+    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -785,7 +843,7 @@ void HelloVulkan::createVertexBuffer()
 
     void* data;
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertices_s.data(), bufferSize);
+    memcpy(data, vertices.data(), bufferSize);
     vkUnmapMemory(device, stagingBufferMemory);
 
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT  |VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_HEAP_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
@@ -899,7 +957,7 @@ void HelloVulkan::createCommandBuffers()
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
-        vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
         //vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
@@ -937,7 +995,7 @@ void HelloVulkan::createSemaphores()
 void HelloVulkan::createTextureImage()
 {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("textures/image_512.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
     if (!pixels)
@@ -1366,6 +1424,7 @@ void HelloVulkan::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMe
     {
         throw std::runtime_error("failed to allocate vertex buffer memory!");
     }
+
 
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
