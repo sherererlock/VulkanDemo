@@ -127,7 +127,7 @@ private:
     void generateMipmaps(VkImage image, int32_t texWidth, VkFormat imageFormat,int32_t texHeight, uint32_t mipLevels);
     void createTextureImageView();
     void createTextureSampler();
-    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, uint32_t miplevels);
+    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, uint32_t miplevels, VkSampleCountFlagBits  numSamples);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t miplevels);
 
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
@@ -140,6 +140,8 @@ private:
     void cleanupSwapChain();
 
     void createDepthResources();
+
+    void createColorResources();
 
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 
@@ -166,6 +168,8 @@ private:
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
     std::vector<const char*> getRequiredExtensions();
+
+    VkSampleCountFlagBits getMaxUsableSampleCount();
 
     static void onWindowResized(GLFWwindow* window, int width, int height);
 
@@ -234,8 +238,14 @@ private:
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
 
-    int width = 1280;
-    int height = 720;
+    VkImage colorImage;
+    VkDeviceMemory colorImageMemory;
+    VkImageView colorImageView;
+
+    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    int width = 1920;
+    int height = 1080;
 
     const std::string MODEL_PATH = "models/Full_body_mesh/Car_1967.obj";
     const std::string TEXTURE_PATH = "textures/image_512.jpg";
