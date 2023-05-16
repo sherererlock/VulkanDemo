@@ -163,11 +163,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\gltfModel.cpp" />
     <ClCompile Include="src\HelloVulkan.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\gltfModel.h" />
     <ClInclude Include="src\HelloVulkan.h" />
+    <ClInclude Include="src\Texture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

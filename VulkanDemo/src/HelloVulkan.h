@@ -8,6 +8,8 @@
 #include<vector>
 #include <array>
 
+#include "gltfModel.h"
+
 struct QueueFamilyIndices
 {
     int graphicsFamily = -1;
@@ -89,11 +91,20 @@ struct UniformBufferObject {
 class HelloVulkan
 {
 public:
+    HelloVulkan()
+    {
+        helloVulkan = this;
+    }
+
+    static HelloVulkan* GetHelloVulkan()
+    {
+        return helloVulkan;
+    }
+
     void Init();
 	void Run();
     void Cleanup();
 
-private:
     void InitWindow();
     void InitVulkan();
     void MainLoop();
@@ -126,6 +137,7 @@ private:
     void createTextureImage();
     void generateMipmaps(VkImage image, int32_t texWidth, VkFormat imageFormat,int32_t texHeight, uint32_t mipLevels);
     void createTextureImageView();
+    void createTextureSampler(VkSampler& sampler, VkFilter magFilter, VkFilter minFilter, uint32_t mipLevels);
     void createTextureSampler();
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, uint32_t miplevels, VkSampleCountFlagBits  numSamples);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t miplevels);
@@ -183,6 +195,13 @@ private:
     bool hasStencilComponent(VkFormat format);
 
     void loadModel();
+
+    void loadgltfModel(std::string filename);
+
+    VkDevice GetDevice()
+    {
+        return device;
+    }
 
 private:
     GLFWwindow* window;
@@ -247,7 +266,7 @@ private:
     int width = 1920;
     int height = 1080;
 
-    const std::string MODEL_PATH = "models/Full_body_mesh/Car_1967.obj";
+    const std::string MODEL_PATH = "models/buster_drone/busterDrone.gltf";
     const std::string TEXTURE_PATH = "textures/image_512.jpg";
 
     const std::vector<const char*> validationLayers = {
@@ -285,5 +304,11 @@ private:
     const int Max_Frames_In_Fight = 2;
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
+
+    static HelloVulkan* helloVulkan;
+
+    // Model
+
+    gltfModel gltfModel;
 };
 

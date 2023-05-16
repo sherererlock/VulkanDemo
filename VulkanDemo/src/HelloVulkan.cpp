@@ -197,6 +197,69 @@ void HelloVulkan::loadModel()
 
 }
 
+void HelloVulkan::loadgltfModel(std::string filename)
+{
+    tinygltf::Model glTFInput;
+	tinygltf::TinyGLTF gltfContext;
+	std::string error, warning;
+
+	bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, filename);
+
+	std::vector<uint32_t> indexBuffer;
+	std::vector<Vertex1> vertexBuffer;
+
+	if (fileLoaded) {
+		gltfModel.loadImages(glTFInput);
+		gltfModel.loadMaterials(glTFInput);
+		gltfModel.loadTextures(glTFInput);
+		const tinygltf::Scene& scene = glTFInput.scenes[0];
+		for (size_t i = 0; i < scene.nodes.size(); i++) {
+			const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
+			gltfModel.loadNode(node, glTFInput, nullptr, indexBuffer, vertexBuffer);
+		}
+	}
+	else {
+		throw std::runtime_error("validation layers requested, but not available!");("Could not open the glTF file.\n\nThe file is part of the additional asset pack.\n\nRun \"download_assets.py\" in the repository root to download the latest version.", -1);
+	}
+
+	size_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex1);
+	size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
+	gltfModel.indices.count = static_cast<uint32_t>(indexBuffer.size());
+
+	struct StagingBuffer {
+		VkBuffer buffer;
+		VkDeviceMemory memory;
+	} vertexStaging, indexStaging;
+
+	// Create host visible staging buffers (source)
+    createBuffer(vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vertexStaging.buffer, vertexStaging.memory);
+
+    createBuffer(indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, indexStaging.buffer, indexStaging.memory);
+
+    void* data;
+    vkMapMemory(device, vertexStaging.memory, 0, vertexBufferSize, 0, &data);
+    memcpy(data, vertexBuffer.data(), vertexBufferSize);
+    vkUnmapMemory(device, vertexStaging.memory);
+
+    void* data1;
+    vkMapMemory(device, indexStaging.memory, 0, indexBufferSize, 0, &data1);
+    memcpy(data1, indexBuffer.data(), indexBufferSize);
+    vkUnmapMemory(device, indexStaging.memory);
+
+    createBuffer(vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, gltfModel.vertices.buffer, gltfModel.vertices.memory);
+
+    createBuffer(indexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, gltfModel.indices.buffer, gltfModel.indices.memory);
+
+    copyBuffer(vertexStaging.buffer, gltfModel.vertices.buffer, vertexBufferSize);
+
+    copyBuffer(indexStaging.buffer, gltfModel.indices.buffer, indexBufferSize);
+
+	vkDestroyBuffer(device, vertexStaging.buffer, nullptr);
+	vkFreeMemory(device, vertexStaging.memory, nullptr);
+	vkDestroyBuffer(device, indexStaging.buffer, nullptr);
+	vkFreeMemory(device, indexStaging.memory, nullptr);
+}
+
 void HelloVulkan::Init()
 {
 	InitWindow();
@@ -246,7 +309,8 @@ void HelloVulkan::InitVulkan()
     createTextureSampler();
     createFrameBuffer();
 
-    loadModel();
+    //loadModel();
+    loadgltfModel(MODEL_PATH);
     createVertexBuffer();
     createIndexBuffer();
     createUniformBuffer();
@@ -596,6 +660,7 @@ void HelloVulkan::createRenderPass()
 }
 
 // shader: shadercode->shaderModule->ShaderStage
+
 // vertexInputState: binding,attribute
 
 // InputAssemblyState:topology,顶点是否可复用 IA
@@ -731,7 +796,8 @@ void HelloVulkan::createGraphicsPipeline()
 
     VkDynamicState dynamicStates[] = {
         VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_LINE_WIDTH
+        VK_DYNAMIC_STATE_LINE_WIDTH,
+        VK_DYNAMIC_STATE_SCISSOR
     };
 
     VkPipelineDynamicStateCreateInfo dynamicState = {};
@@ -923,6 +989,7 @@ void HelloVulkan::createCommandPool()
 // 记录指令
 //      BeginRenderPass
 //      BindPipeline
+//      BindDescriptorSets
 //      BindVertexBuffers
 //      BindIndexBuffer
 //      DrawIndexed
@@ -1165,6 +1232,38 @@ if (mipmapMode == VK_SAMPLER_MIPMAP_MODE_NEAREST) {
     color = blend(sample(level), sample(level + 1));
 }
 */
+
+void HelloVulkan::createTextureSampler(VkSampler& sampler, VkFilter magFilter, VkFilter minFilter, uint32_t mipLevels)
+{
+    VkSamplerCreateInfo samplerInfo = {};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = magFilter;
+    samplerInfo.minFilter = minFilter;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+    samplerInfo.anisotropyEnable = VK_TRUE;
+    samplerInfo.maxAnisotropy = 16;
+
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias = 0.0f;
+    //samplerInfo.minLod = static_cast<float>(mipLevels / 2);
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = static_cast<float>(mipLevels);
+
+    if (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
+}
+
 void HelloVulkan::createTextureSampler()
 {
     VkSamplerCreateInfo samplerInfo = {};
@@ -1582,7 +1681,7 @@ void HelloVulkan::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMe
 
     if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to create vertex buffer!");
+        throw std::runtime_error("failed to create buffer!");
     }
 
     VkMemoryRequirements memRequirements;
@@ -1597,7 +1696,6 @@ void HelloVulkan::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMe
     {
         throw std::runtime_error("failed to allocate vertex buffer memory!");
     }
-
 
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }

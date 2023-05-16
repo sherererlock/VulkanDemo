@@ -225,12 +225,17 @@ int main
 
 初始化Vulkan library， 为驱动程序提供应用层信息
 
+区别于VkDevice,有Instance独有的Extension和layer
+
 #### 创建
 
 ```cpp
 VkApplicationInfo; // 提供应用信息
 VkInstanceCreateInfo; // 提供扩展和校验层信息
 vkCreateInstance(&createInfo, nullptr, &instance);
+
+vkEnumerateInstanceExtensionProperties();
+vkEnumerateInstanceLayerProperties();
 ```
 
 #### 销毁
@@ -251,6 +256,13 @@ what:`Validation layers`是可选组件，可以挂载到`Vulkan`函数中调用
 - 将每次函数调用所使用的参数记录到标准的输出中，进行初步的Vulkan概要分析
 
 how:
+
+```c++
+VkInstanceCreateInfo createInfo = {};
+//...
+createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+createInfo.ppEnabledLayerNames = validationLayers.data();
+```
 
 ### VkPhysicalDevice
 
@@ -274,6 +286,9 @@ vkGetPhysicalDeviceProperties(device, &deviceProperties);
 //支持的特性，如纹理压缩，64位浮点数和多视图渲染， geometryshader
 VkPhysicalDeviceFeatures deviceFeatures;
 vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+// 设备支持的扩展。如swapchain
+vkEnumerateDeviceExtensionProperties(VkPhysicalDevice, &extensions);
 ```
 
 #### 选择设备
@@ -285,6 +300,8 @@ vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 支持不同的command的队列, VkQueueFamilyProperties结构体包含具体信息
 
 #### 获取显卡支持的队列族
+
+Graphics、Present、Geometry、Compute、Transfer
 
 ```c++
 VkQueueFamilyProperties;//支持的command类型，以及支持的队列数
@@ -304,6 +321,7 @@ vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilie
 ```c++
 VkDeviceQueueCreateInfo; //包括队列类型，队列数量，以及队列的优先级
 VkDeviceCreateInfo; // 需要指定创建的队列info以及使用的物理设备的特性，扩展和校验层
+
 //需要physicalDevice
 vkCreateDevice(physicalDevice, &createInfo, nullptr, &device)
 ```
@@ -401,17 +419,99 @@ vkCreateImageView(device, &createInfo, nullptr, &swapChainImageViews[i]);
  vkDestroyImageView(device, swapChainImageViews[i], nullptr);
 ```
 
+### Pipeline Layout
+
+管线利用此结构来访问descriptor sets，这个结构定义了shader中的uniform变量与c++中的shader resource的接口，更像是一个用来描述结构的蓝图，不直接引用资源
+
+如果接口匹配，那么pipeline layout可以被用在多个pipeline 中
+
+#### VkDescriptorSetLayout
+
+描述了shader中uniform的布局，不直接引用资源，也是个蓝图，可以用在多个descriptor中，只要布局一样即可
+
+```c++
+// binding 0、1
+// type  UNIFORM_BUFFER COMBINED_IMAGE_SAMPLER
+// stageFlags vertex/fragment
+VkDescriptorSetLayoutBinding; 
+VkDescriptorSetLayoutCreateInfo;
+
+vkCreateDescriptorSetLayout(device);
+```
+
+#### VkDescriptorPool 
+
+描述符池，从这里创建描述符
+
+```c++
+// type : UNIFORM_BUFFER COMBINED_IMAGE_SAMPLER
+// descriptorCount
+VkDescriptorPoolSize;
+//
+vkCreateDescriptorPool();
+```
+
+#### VkDescriptorSet
+
+真正绑定buffer或者image的资源
+
+```c++
+
+// 以VkDescriptorSetLayout为模板创建DescriptorSet
+// descriptorPool
+VkDescriptorSetAllocateInfo;
+vkAllocateDescriptorSets();
+
+// 引用buffer资源
+VkDescriptorBufferInfo;
+
+// 引用Image资源
+VkDescriptorImageInfo;
+
+// DescriptorSet
+// type UNIFORM_BUFFER / COMBINED_IMAGE_SAMPLER
+// pBufferInfo / pImageInfo
+// dstBinding
+VkWriteDescriptorSet;
+// 更新写入到gpu中
+vkUpdateDescriptorSets();
+```
+
+VkPipelineLayout
+
+```c++
+// layoutCount
+// layout
+VkPipelineLayoutCreateInfo;
+vkCreatePipelineLayout();
+```
+
 ### RenderPass
 
 指定frame buffer帧缓冲附件相关信息，需要指定多少个颜色和深度缓冲会被使用，指定有多少个采样器会被使用，整个渲染操作过程中的相关内容应该如何处理 
 
 附件、子通道
 
+
+
 #### 创建
 
 ```c++
-VkRenderPass renderPass;
+// format、采样数、loadOP、storeOp,initialLayout、finalLayout
+// 颜色缓冲，深度缓冲，解析附件
 
+// RenderPass--> Attachments
+// RenderPass--> subpasses
+// AttachmentReferences --> Attachments
+// subpasses--> AttachmentReferences
+
+VkAttachmentDescription;
+
+VkSubpassDescription;
+
+VkSubpassDependency;
+    
+VkRenderPass renderPass;
 vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass)
 ```
 
@@ -440,8 +540,6 @@ vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]
 vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
 ```
 
-
-
 ### Vulkan 命令缓冲区
 
 在命令缓冲区对象中记录我们期望的任何操作，例如绘制和内存相关命令。利于多线程优化
@@ -463,44 +561,71 @@ vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool)
 vkDestroyCommandPool(device, commandPool, nullptr);
 ```
 
-#### 命令缓冲区
+#### 创建和记录command的一般步骤
 
-```cpp
+```c++
+// commandpool
+// level、commandBufferCount
+VkCommandBufferAllocateInfo();
+vkAllocateCommandBuffers();
+
+// 指定如何使用命令缓冲区
+VkCommandBufferBeginInfo;
+// 开始记录command
+vkBeginCommandBuffer();
+
+// 记录指令
+
+// 结束记录command
+vkEndCommandBuffer();
+```
+
+#### 例子：渲染
+
+```c++
+// 创建commandbuffer
+// 
+// 记录指令
+//      BeginRenderPass
+//      BindPipeline
+//      BindDescriptorSets
+//      BindVertexBuffers
+//      BindIndexBuffer
+//      DrawIndexed
+//      EndRenderPass
+
 //为交换链中的每一个image创建一个command buffer
 std::vector<VkCommandBuffer> commandBuffers;
 VkCommandBufferAllocateInfo;//commandbuffer数量和cmdpool
 vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) ;
-```
 
-#### 开始记录
-
-```cpp
 VkCommandBufferBeginInfo;
 vkBeginCommandBuffer(commandBuffers[i], &beginInfo);
-```
 
-启动Renderpass
-
-```cpp
+// renderpass
+// framebuffer、extent、clearValues
 VkRenderPassBeginInfo;
 vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+vkCmdBindPipeline();
+vkCmdBindDescriptorSets();
+vkCmdBindVertexBuffers();
+vkCmdBindIndexBuffer();
+
+vkCmdDrawIndexed();
+
+vkCmdEndRenderPass();
+
+vkEndCommandBuffer();
 ```
 
-基本绘图命令
+例子：
 
-```cpp
-// 绑定图形管线
-vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+```c++
 
-vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
 ```
 
-结束渲染
 
-```cpp
-vkCmdEndRenderPass(commandBuffers[i]);
-vkEndCommandBuffer(commandBuffers[i]);
-```
 
 ### vulkan渲染和显示
 
@@ -704,3 +829,45 @@ vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 ```
 
 ### Vulkan 临时缓冲区
+
+1. 创建缓冲区
+2. 获取内存需求
+3. 分配内存
+4. 绑定内存和缓冲区对象
+
+```c++
+// size
+// usage
+VkBufferCreateInfo;
+vkCreateBuffer();
+
+VkMemoryRequirements;
+vkGetBufferMemoryRequirements();
+
+VkMemoryAllocateInfo;
+vkAllocateMemory();
+
+vkBindBufferMemory();
+```
+
+### Vulkan图像
+
+1. 加载图像
+2. 创建临时buffer
+3. 拷贝图像数据到buffer
+4. 创建Image
+5. 获取Image内存需求
+6. 分配内存
+7. 绑定内存和Image对象
+8. 布局转换
+9. 拷贝buffer的数据到Image
+
+### Vulkan 图像视图和采样器
+
+1. 创建ImageView
+2. 创建采样器
+3. 采样器描述符
+4. 顶点纹理坐标
+5. shader中使用采样器
+
+### Vulkan 深度缓冲区
