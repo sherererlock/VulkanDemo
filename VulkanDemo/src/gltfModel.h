@@ -1,4 +1,5 @@
 #pragma once
+
 #include "tinygltf/tiny_gltf.h"
 #include "glm/glm/glm.hpp"
 #include <glm/glm/gtc/type_ptr.hpp>
@@ -11,6 +12,44 @@ struct Vertex1 {
 	glm::vec3 normal;
 	glm::vec2 uv;
 	glm::vec3 color;
+
+	static VkVertexInputBindingDescription getBindingDescription()
+    {
+        VkVertexInputBindingDescription bindingDescription = {};
+        bindingDescription.binding = 0;
+        bindingDescription.stride = sizeof(Vertex1);
+        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        return bindingDescription;
+    }
+
+
+    static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions()
+    {
+        std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions = {};
+
+        attributeDescriptions[0].binding = 0;
+        attributeDescriptions[0].location = 0;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[0].offset = offsetof(Vertex1, pos);
+
+        attributeDescriptions[1].binding = 0;
+        attributeDescriptions[1].location = 1;
+        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[1].offset = offsetof(Vertex1, normal);
+
+        attributeDescriptions[2].binding = 0;
+        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[2].offset = offsetof(Vertex1, uv);
+
+        attributeDescriptions[3].binding = 0;
+        attributeDescriptions[3].location = 3;
+        attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[3].offset = offsetof(Vertex1, color);
+
+        return attributeDescriptions;
+    }
 };
 
 // A primitive contains the data for a single draw call
@@ -118,5 +157,11 @@ public:
 	}
 
 	void loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, Node* parent, std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
+
+	// Draw a single node including child nodes (if present)
+	void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node);
+
+	void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
+
 };
 

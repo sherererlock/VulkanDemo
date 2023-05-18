@@ -1,3 +1,6 @@
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "gltfModel.h"
 #include "HelloVulkan.h"
 #include <glm/glm/gtc/matrix_transform.hpp>
@@ -47,15 +50,17 @@ void gltfModel::loadImages(tinygltf::Model& input)
 			deleteBuffer = true;
 		}
 		else {
-			buffer = &glTFImage.image[0];
+			buffer = &glTFImage.image[0]; 
 			bufferSize = glTFImage.image.size();
 		}
 		// Load texture from image buffer
 			
-		images[i].texture.fromBuffer(HelloVulkan::GetHelloVulkan(), buffer, bufferSize, VK_FORMAT_R8G8B8A8_UNORM, glTFImage.width, glTFImage.height);
+		images[i].texture.fromBuffer(HelloVulkan::GetHelloVulkan(), buffer, bufferSize, VK_FORMAT_R8G8B8A8_UNORM, glTFImage.width, glTFImage.height, VK_FILTER_LINEAR, VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 		if (deleteBuffer) {
 			delete[] buffer;
 		}
+
+
 	}
 }
 
@@ -186,4 +191,44 @@ void gltfModel::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model&
 		else {
 			nodes.push_back(node);
 		}
+}
+
+void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node)
+{
+	if (node->mesh.primitives.size() > 0) {
+		// Pass the node's matrix via push constants
+		// Traverse the node hierarchy to the top-most parent to get the final matrix of the current node
+		glm::mat4 nodeMatrix = node->matrix;
+		Node* currentParent = node->parent;
+		while (currentParent) {
+			nodeMatrix = currentParent->matrix * nodeMatrix;
+			currentParent = currentParent->parent;
+		}
+		// Pass the final matrix to the vertex shader using push constants
+		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
+		for (Primitive& primitive : node->mesh.primitives) {
+			if (primitive.indexCount > 0) {
+				// Get the texture index for this primitive
+				Texture1 texture = textures[materials[primitive.materialIndex].baseColorTextureIndex];
+				// Bind the descriptor for the current primitive's texture
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &images[texture.imageIndex].descriptorSet, 0, nullptr);
+				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+			}
+		}
+	}
+	for (auto& child : node->children) {
+		drawNode(commandBuffer, pipelineLayout, child);
+	}
+}
+
+void gltfModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
+{
+	// All vertices and indices are stored in single buffers, so we only need to bind once
+	VkDeviceSize offsets[1] = { 0 };
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertices.buffer, offsets);
+	vkCmdBindIndexBuffer(commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+	// Render all nodes at top-level
+	for (auto& node : nodes) {
+		drawNode(commandBuffer, pipelineLayout, node);
+	}
 }

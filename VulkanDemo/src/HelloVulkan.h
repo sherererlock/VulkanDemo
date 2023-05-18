@@ -83,9 +83,10 @@ namespace std {
 }
 
 struct UniformBufferObject {
-    glm::mat4 model;
     glm::mat4 view;
     glm::mat4 proj;
+    glm::vec4 lightPos;
+    glm::vec4 viewPos;
 };
 
 class HelloVulkan
@@ -132,6 +133,7 @@ public:
 
     void createCommandPool();
     void createCommandBuffers();
+    void buildCommandBuffers();
     void createSemaphores();
 
     void createTextureImage();
@@ -224,6 +226,7 @@ private:
     VkDescriptorSetLayout descriptorSetLayout;
     VkDescriptorPool descriptorPool;
     VkDescriptorSet descriptorSet;
+    VkPushConstantRange pushConstantRange;
     VkPipelineLayout pipelineLayout;
 
     VkPipeline graphicsPipeline;

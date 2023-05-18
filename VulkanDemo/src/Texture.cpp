@@ -14,7 +14,7 @@ void Texture2D::fromBuffer(HelloVulkan*	helloVulkan,void* buffer, VkDeviceSize b
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingMemory;
 
-	helloVulkan->createBuffer(bufferSize, imageUsageFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,stagingBuffer, stagingMemory);
+	helloVulkan->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingMemory);
 
     void* data;
     vkMapMemory(device, stagingMemory, 0, bufferSize, 0, &data);
@@ -35,6 +35,8 @@ void Texture2D::fromBuffer(HelloVulkan*	helloVulkan,void* buffer, VkDeviceSize b
 	helloVulkan->createTextureSampler(sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, mipLevels);
 
 	view = helloVulkan->createImageView(image, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+
+	updateDescriptor();
 }
 
 void Texture::updateDescriptor()

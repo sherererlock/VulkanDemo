@@ -1,3 +1,5 @@
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+
 #include "HelloVulkan.h"
 #include <stdexcept>
 #include <iostream>
@@ -7,13 +9,14 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm/glm.hpp>
 #include <glm/glm/gtc/matrix_transform.hpp>
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tinyobjloader/tiny_obj_loader.h>
+//#define TINYOBJLOADER_IMPLEMENTATION
+//#include <tinyobjloader/tiny_obj_loader.h>
 #include <chrono>
 
 #include <unordered_map>
+
+HelloVulkan* HelloVulkan::helloVulkan = nullptr;
 
 static std::vector<char> readFile(const std::string& filename)
 {
@@ -144,56 +147,56 @@ bool HelloVulkan::hasStencilComponent(VkFormat format)
 
 void HelloVulkan::loadModel()
 {
-    return;
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn;
-    std::string err;
+    //return;
+    //tinyobj::attrib_t attrib;
+    //std::vector<tinyobj::shape_t> shapes;
+    //std::vector<tinyobj::material_t> materials;
+    //std::string warn;
+    //std::string err;
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str()))
-    {
-        throw std::runtime_error(err);
-    }
+    //if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str()))
+    //{
+    //    throw std::runtime_error(err);
+    //}
 
-    if(!warn.empty())
-        std::cout<< "warning:" << warn << std::endl;
+    //if(!warn.empty())
+    //    std::cout<< "warning:" << warn << std::endl;
 
-    std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
-    for (const auto& shape : shapes) 
-    {
-        for (const auto& index : shape.mesh.indices)
-        {
-            Vertex vertex = {};
-            vertex.pos = {
-                attrib.vertices[3 * index.vertex_index + 0],
-                attrib.vertices[3 * index.vertex_index + 1],
-                attrib.vertices[3 * index.vertex_index + 2]
-            };
+    //std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
+    //for (const auto& shape : shapes) 
+    //{
+    //    for (const auto& index : shape.mesh.indices)
+    //    {
+    //        Vertex vertex = {};
+    //        vertex.pos = {
+    //            attrib.vertices[3 * index.vertex_index + 0],
+    //            attrib.vertices[3 * index.vertex_index + 1],
+    //            attrib.vertices[3 * index.vertex_index + 2]
+    //        };
 
-            int idx = std::max(index.texcoord_index, 0);
-            vertex.texCoord = {
-                attrib.texcoords[2 * idx + 0],
-                1.0f - attrib.texcoords[2 * idx + 1]
-            };
+    //        int idx = std::max(index.texcoord_index, 0);
+    //        vertex.texCoord = {
+    //            attrib.texcoords[2 * idx + 0],
+    //            1.0f - attrib.texcoords[2 * idx + 1]
+    //        };
 
-            //vertex.texCoord = {
-            //    attrib.texcoords[2 * index.texcoord_index + 0],
-            //    attrib.texcoords[2 * index.texcoord_index + 1]
-            //};
+    //        //vertex.texCoord = {
+    //        //    attrib.texcoords[2 * index.texcoord_index + 0],
+    //        //    attrib.texcoords[2 * index.texcoord_index + 1]
+    //        //};
 
-            vertex.color = {1.0f, 1.0f, 1.0f};
+    //        vertex.color = {1.0f, 1.0f, 1.0f};
 
-            if (uniqueVertices.count(vertex) == 0)
-            {
-                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-                vertices.push_back(vertex);
-            }
+    //        if (uniqueVertices.count(vertex) == 0)
+    //        {
+    //            uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+    //            vertices.push_back(vertex);
+    //        }
 
-            //vertices.push_back(vertex);
-            indices.push_back(uniqueVertices[vertex]);
-        }
-    }
+    //        //vertices.push_back(vertex);
+    //        indices.push_back(uniqueVertices[vertex]);
+    //    }
+    //}
 
 }
 
@@ -246,9 +249,9 @@ void HelloVulkan::loadgltfModel(std::string filename)
     memcpy(data1, indexBuffer.data(), indexBufferSize);
     vkUnmapMemory(device, indexStaging.memory);
 
-    createBuffer(vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, gltfModel.vertices.buffer, gltfModel.vertices.memory);
+    createBuffer(vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, gltfModel.vertices.buffer, gltfModel.vertices.memory);
 
-    createBuffer(indexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, gltfModel.indices.buffer, gltfModel.indices.memory);
+    createBuffer(indexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, gltfModel.indices.buffer, gltfModel.indices.memory);
 
     copyBuffer(vertexStaging.buffer, gltfModel.vertices.buffer, vertexBufferSize);
 
@@ -296,6 +299,7 @@ void HelloVulkan::InitVulkan()
     createImageViews();
 
     createRenderPass();
+
     createDescriptorSetLayout();
     createDescriptorPool();
 
@@ -304,15 +308,15 @@ void HelloVulkan::InitVulkan()
     createCommandPool();
     createColorResources();
     createDepthResources();
-    createTextureImage();
-    createTextureImageView();
-    createTextureSampler();
+    //createTextureImage();
+    //createTextureImageView();
+    //createTextureSampler();
     createFrameBuffer();
 
     //loadModel();
     loadgltfModel(MODEL_PATH);
-    createVertexBuffer();
-    createIndexBuffer();
+    //createVertexBuffer();
+    //createIndexBuffer();
     createUniformBuffer();
     createDescriptorSet();
 
@@ -326,6 +330,7 @@ void HelloVulkan::MainLoop()
     while (!glfwWindowShouldClose(window)) 
     {
         glfwPollEvents();
+        buildCommandBuffers();
         updateUniformBuffer();
         drawFrame();
     }
@@ -692,8 +697,8 @@ void HelloVulkan::createRenderPass()
 
 void HelloVulkan::createGraphicsPipeline()
 {
-    auto vertShaderCode = readFile("shaders/vert.spv");
-    auto fragShaderCode = readFile("shaders/frag.spv");
+    auto vertShaderCode = readFile("shaders/GLSL/vert.spv");
+    auto fragShaderCode = readFile("shaders/GLSL/frag.spv");
 
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -712,8 +717,12 @@ void HelloVulkan::createGraphicsPipeline()
 
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
-    auto attributeDescriptoins = Vertex::getAttributeDescriptions();
-    auto attributeDescriptionBindings = Vertex::getBindingDescription();
+    /*
+validation layer: Validation Error: [ VUID-VkPipelineVertexInputStateCreateInfo-pVertexAttributeDescriptions-00617 ] Object 0: handle = 0x1ad37c15de0, type = VK_OBJECT_TYPE_DEVICE; | MessageID = 0x3b5abdfa | vkCreateGraphicsPipelines: parameter pCreateInfo[0].pVertexInputState->pVertexAttributeDescriptions[3].location (0) is already in pVertexAttributeDescriptions[0]. The Vulkan spec states: All elements of pVertexAttributeDescriptions must describe distinct attribute locations (https://vulkan.lunarg.com/doc/view/1.3.243.0/windows/1.3-extensions/vkspec.html#VUID-VkPipelineVertexInputStateCreateInfo-pVertexAttributeDescriptions-00617)
+*/
+
+    auto attributeDescriptoins = Vertex1::getAttributeDescriptions();
+    auto attributeDescriptionBindings = Vertex1::getBindingDescription();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -805,12 +814,16 @@ void HelloVulkan::createGraphicsPipeline()
     dynamicState.dynamicStateCount = 2;
     dynamicState.pDynamicStates = dynamicStates;
 
+	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	pushConstantRange.offset = 0;
+	pushConstantRange.size = sizeof(glm::mat4);
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1; // Optional
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout; // Optional
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-    pipelineLayoutInfo.pPushConstantRanges = 0; // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = 1; // Optional
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange; // Optional
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
     {
@@ -1010,6 +1023,10 @@ void HelloVulkan::createCommandBuffers()
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
+}
+
+void HelloVulkan::buildCommandBuffers()
+{
     for (size_t i = 0; i < commandBuffers.size(); i++)
     {
         VkCommandBufferBeginInfo beginInfo = {};
@@ -1038,17 +1055,19 @@ void HelloVulkan::createCommandBuffers()
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+        //vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
-        VkBuffer vertexBuffers[] = {vertexBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+        //VkBuffer vertexBuffers[] = {gltfModel.vertices.buffer};
+        //VkDeviceSize offsets[] = {0};
+        //vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
-        vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        //vkCmdBindIndexBuffer(commandBuffers[i], gltfModel.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        //vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+        ////vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
-        vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+        //vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(gltfModel.indices.count), 1, 0, 0, 0);
+
+        gltfModel.draw(commandBuffers[i], pipelineLayout);
 
         vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -1508,13 +1527,14 @@ void HelloVulkan::updateUniformBuffer()
 
     UniformBufferObject ubo = {};
     //ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(135.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
     ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
     ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
 
     ubo.proj[1][1] *= -1;
+
+    ubo.viewPos = glm::vec4(2.0f, 2.0f, 2.0f, 1.0f);
+    ubo.lightPos = glm::vec4(5.0f, 5.0f, -5.0f, 1.0f);
 
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);
@@ -1798,8 +1818,8 @@ void HelloVulkan::createDescriptorSet()
 
     VkDescriptorImageInfo imageInfo = {};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = textureImageView;
-    imageInfo.sampler = textureSampler;
+    imageInfo.imageView = gltfModel.images[0].texture.view;
+    imageInfo.sampler = gltfModel.images[0].texture.sampler;
 
     std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
 
