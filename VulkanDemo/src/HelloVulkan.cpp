@@ -262,6 +262,11 @@ void HelloVulkan::loadgltfModel(std::string filename)
 	vkFreeMemory(device, vertexStaging.memory, nullptr);
 	vkDestroyBuffer(device, indexStaging.buffer, nullptr);
 	vkFreeMemory(device, indexStaging.memory, nullptr);
+
+    for (int i = 0; i < gltfModel.images.size(); i++)
+    {
+        createDescriptorSet(i);
+    }
 }
 
 void HelloVulkan::Init()
@@ -315,11 +320,10 @@ void HelloVulkan::InitVulkan()
     createFrameBuffer();
 
     //loadModel();
+    createUniformBuffer();
     loadgltfModel(MODEL_PATH);
     //createVertexBuffer();
     //createIndexBuffer();
-    createUniformBuffer();
-    createDescriptorSet();
 
     createCommandBuffers();
 
@@ -1053,7 +1057,7 @@ void HelloVulkan::buildCommandBuffers()
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-        vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+        //vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
         //VkBuffer vertexBuffers[] = {gltfModel.vertices.buffer};
         //VkDeviceSize offsets[] = {0};
@@ -1745,16 +1749,16 @@ void HelloVulkan::createDescriptorPool()
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = 1;
+    poolSizes[0].descriptorCount = 12;
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = 1;
+    poolSizes[1].descriptorCount = 12;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
 
-    poolInfo.maxSets = 1;
+    poolInfo.maxSets = 12;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {
@@ -1796,7 +1800,7 @@ void HelloVulkan::createDescriptorSetLayout()
 // 
 // descriptorWrite-->DescriptorBuffer-->uniformBuffer
 // descriptorWrite-->descriptorSet
-void HelloVulkan::createDescriptorSet()
+void HelloVulkan::createDescriptorSet(int i)
 {
     VkDescriptorSetLayout layouts[] = {descriptorSetLayout};
     VkDescriptorSetAllocateInfo allocInfo = {};
@@ -1805,7 +1809,7 @@ void HelloVulkan::createDescriptorSet()
     allocInfo.descriptorSetCount = 1;
     allocInfo.pSetLayouts = layouts;
 
-    if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS) 
+    if (vkAllocateDescriptorSets(device, &allocInfo, &gltfModel.images[i].descriptorSet) != VK_SUCCESS) 
     {
         throw std::runtime_error("failed to allocate descriptor set!");
     }
@@ -1817,13 +1821,13 @@ void HelloVulkan::createDescriptorSet()
 
     VkDescriptorImageInfo imageInfo = {};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = gltfModel.images[0].texture.view;
-    imageInfo.sampler = gltfModel.images[1].texture.sampler;
+    imageInfo.imageView = gltfModel.images[i].texture.view;
+    imageInfo.sampler = gltfModel.images[i].texture.sampler;
 
     std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
 
     descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrites[0].dstSet = descriptorSet;
+    descriptorWrites[0].dstSet = gltfModel.images[i].descriptorSet;
     descriptorWrites[0].dstBinding = 0;
     descriptorWrites[0].dstArrayElement = 0;
                    
@@ -1835,7 +1839,7 @@ void HelloVulkan::createDescriptorSet()
     descriptorWrites[0].pTexelBufferView = nullptr; // Optional
 
     descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrites[1].dstSet = descriptorSet;
+    descriptorWrites[1].dstSet = gltfModel.images[i].descriptorSet;
     descriptorWrites[1].dstBinding = 1;
     descriptorWrites[1].dstArrayElement = 0;
     descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
