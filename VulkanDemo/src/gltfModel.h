@@ -124,9 +124,8 @@ public:
 	std::vector<Node*> nodes;
 
 	VkDevice logicalDevice;
-	VkQueue copyQueue;
 
-	~gltfModel();
+	void Cleanup();
 
 	void loadImages(tinygltf::Model& input);
 

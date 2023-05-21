@@ -7,7 +7,7 @@
 #include <glm/glm/gtc/matrix_inverse.hpp>
 #include <iostream>
 
-gltfModel::~gltfModel()
+void gltfModel::Cleanup()
 {
 	for (auto node : nodes) {
 		delete node;

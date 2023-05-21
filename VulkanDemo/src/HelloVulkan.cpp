@@ -212,6 +212,7 @@ void HelloVulkan::loadgltfModel(std::string filename)
 	std::vector<Vertex1> vertexBuffer;
 
 	if (fileLoaded) {
+        gltfModel.logicalDevice = device;
 		gltfModel.loadImages(glTFInput);
 		gltfModel.loadMaterials(glTFInput);
 		gltfModel.loadTextures(glTFInput);
@@ -364,6 +365,7 @@ void HelloVulkan::Cleanup()
 
     vkDestroyCommandPool(device, commandPool, nullptr);
 
+    gltfModel.Cleanup();
     vkDestroyDevice(device, nullptr);
     if (enableValidationLayers) 
     {
@@ -716,10 +718,6 @@ void HelloVulkan::createGraphicsPipeline()
     fragShaderStageInfo.pName = "main";
 
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
-
-    /*
-validation layer: Validation Error: [ VUID-VkPipelineVertexInputStateCreateInfo-pVertexAttributeDescriptions-00617 ] Object 0: handle = 0x1ad37c15de0, type = VK_OBJECT_TYPE_DEVICE; | MessageID = 0x3b5abdfa | vkCreateGraphicsPipelines: parameter pCreateInfo[0].pVertexInputState->pVertexAttributeDescriptions[3].location (0) is already in pVertexAttributeDescriptions[0]. The Vulkan spec states: All elements of pVertexAttributeDescriptions must describe distinct attribute locations (https://vulkan.lunarg.com/doc/view/1.3.243.0/windows/1.3-extensions/vkspec.html#VUID-VkPipelineVertexInputStateCreateInfo-pVertexAttributeDescriptions-00617)
-*/
 
     auto attributeDescriptoins = Vertex1::getAttributeDescriptions();
     auto attributeDescriptionBindings = Vertex1::getBindingDescription();
@@ -1819,7 +1817,7 @@ void HelloVulkan::createDescriptorSet()
     VkDescriptorImageInfo imageInfo = {};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     imageInfo.imageView = gltfModel.images[0].texture.view;
-    imageInfo.sampler = gltfModel.images[0].texture.sampler;
+    imageInfo.sampler = gltfModel.images[1].texture.sampler;
 
     std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
 
