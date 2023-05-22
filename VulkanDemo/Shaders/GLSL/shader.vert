@@ -35,11 +35,8 @@ void main() {
 
    fragColor = inColor;
    fragTexCoord = inTexCoord;
-   normal = inNormal;
-
-   //vec4 pos = primitive.model * vec4(inPosition, 1.0);
-
-   vec4 pos = ubo.view * vec4(inPosition, 1.0);
+   normal = mat3(primitive.model) * inNormal;
+   vec4 pos = primitive.model * vec4(inPosition, 1.0);
    lightVec = ubo.lightPos.xyz - pos.xyz;
    viewVec = ubo.viewPos.xyz - pos.xyz;
 }

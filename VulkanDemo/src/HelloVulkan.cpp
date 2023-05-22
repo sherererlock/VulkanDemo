@@ -1488,11 +1488,11 @@ void HelloVulkan::updateUniformBuffer()
 
     ubo.proj[1][1] *= -1;
 
-    ubo.viewPos = glm::vec4(0.0f, -1.0f, 4.0f, 1.0f);
+    ubo.viewPos = glm::vec4(0.0f, 2.0f, 3.0f, 1.0f);
 
-	ubo.lightPos.x = cos(glm::radians(timer * 360.0f)) * 40.0f;
+	ubo.lightPos.x = cos(glm::radians(0.1f * 360.0f)) * 40.0f;
 	ubo.lightPos.y = 50.0f + sin(glm::radians(0.1f * 360.0f)) * 20.0f;
-	ubo.lightPos.z = 25.0f + sin(glm::radians(timer * 360.0f)) * 5.0f;
+	ubo.lightPos.z = 25.0f + sin(glm::radians(0.1f * 360.0f)) * 5.0f;
 
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);
