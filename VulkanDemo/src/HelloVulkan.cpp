@@ -319,11 +319,8 @@ void HelloVulkan::InitVulkan()
     //createTextureSampler();
     createFrameBuffer();
 
-    //loadModel();
     createUniformBuffer();
     loadgltfModel(MODEL_PATH);
-    //createVertexBuffer();
-    //createIndexBuffer();
 
     createCommandBuffers();
 
@@ -335,9 +332,24 @@ void HelloVulkan::MainLoop()
     while (!glfwWindowShouldClose(window)) 
     {
         glfwPollEvents();
+
+        auto tStart = std::chrono::high_resolution_clock::now();
+
         buildCommandBuffers();
         updateUniformBuffer();
         drawFrame();
+
+        auto tEnd = std::chrono::high_resolution_clock::now();
+
+        auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+
+        frameTimer = (float)tDiff / 1000.0f;
+
+		timer += timerSpeed * frameTimer;
+		if (timer > 1.0)
+		{
+			timer -= 1.0f;
+		}
     }
 
     vkDeviceWaitIdle(device);
@@ -357,12 +369,6 @@ void HelloVulkan::Cleanup()
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
     vkDestroyBuffer(device, uniformBuffer, nullptr);
     vkFreeMemory(device, uniformBufferMemory, nullptr);
-
-    vkDestroyBuffer(device, indexBuffer, nullptr);
-    vkFreeMemory(device, indexBufferMemory, nullptr);
-
-    vkDestroyBuffer(device, vertexBuffer, nullptr);
-    vkFreeMemory(device, vertexBufferMemory, nullptr);
 
     vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
@@ -934,48 +940,6 @@ uint32_t HelloVulkan::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags 
     return uint32_t();
 }
 
-void HelloVulkan::createVertexBuffer()
-{
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertices.data(), bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT  |VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_HEAP_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-
-    copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
-
-void HelloVulkan::createIndexBuffer()
-{
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, indices.data(), bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT  |VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
-
-    copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
-
 void HelloVulkan::createUniformBuffer()
 {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -1056,18 +1020,6 @@ void HelloVulkan::buildCommandBuffers()
         vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-
-        //vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-
-        //VkBuffer vertexBuffers[] = {gltfModel.vertices.buffer};
-        //VkDeviceSize offsets[] = {0};
-        //vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-
-        //vkCmdBindIndexBuffer(commandBuffers[i], gltfModel.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-        ////vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
-
-        //vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(gltfModel.indices.count), 1, 0, 0, 0);
 
         gltfModel.draw(commandBuffers[i], pipelineLayout);
 
@@ -1530,14 +1482,17 @@ void HelloVulkan::updateUniformBuffer()
     UniformBufferObject ubo = {};
 
     //ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = glm::lookAt(glm::vec3(0.0f, -1.0f, 4.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view = glm::lookAt(glm::vec3(0.0f, 2.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
     ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
 
     ubo.proj[1][1] *= -1;
 
-    ubo.viewPos = glm::vec4(2.0f, 2.0f, 2.0f, 1.0f);
-    ubo.lightPos = glm::vec4(5.0f, 5.0f, -5.0f, 1.0f);
+    ubo.viewPos = glm::vec4(0.0f, -1.0f, 4.0f, 1.0f);
+
+	ubo.lightPos.x = cos(glm::radians(timer * 360.0f)) * 40.0f;
+	ubo.lightPos.y = 50.0f + sin(glm::radians(0.1f * 360.0f)) * 20.0f;
+	ubo.lightPos.z = 25.0f + sin(glm::radians(timer * 360.0f)) * 5.0f;
 
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);
