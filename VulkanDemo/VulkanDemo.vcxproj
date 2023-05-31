@@ -163,12 +163,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Buffer.cpp" />
     <ClCompile Include="src\gltfModel.cpp" />
     <ClCompile Include="src\HelloVulkan.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Buffer.h" />
     <ClInclude Include="src\gltfModel.h" />
     <ClInclude Include="src\HelloVulkan.h" />
     <ClInclude Include="src\Texture.h" />

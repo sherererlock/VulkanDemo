@@ -36,6 +36,8 @@ void Texture2D::fromBuffer(HelloVulkan*	helloVulkan,void* buffer, VkDeviceSize b
 
 	view = helloVulkan->createImageView(image, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 
+	this->imageLayout = imageLayout;
+
 	updateDescriptor();
 }
 

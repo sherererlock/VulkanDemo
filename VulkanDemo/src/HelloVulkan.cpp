@@ -263,10 +263,6 @@ void HelloVulkan::loadgltfModel(std::string filename)
 	vkDestroyBuffer(device, indexStaging.buffer, nullptr);
 	vkFreeMemory(device, indexStaging.memory, nullptr);
 
-    for (int i = 0; i < gltfModel.images.size(); i++)
-    {
-        createDescriptorSet(i);
-    }
 }
 
 void HelloVulkan::Init()
@@ -322,6 +318,8 @@ void HelloVulkan::InitVulkan()
     createUniformBuffer();
     loadgltfModel(MODEL_PATH);
 
+    createDescriptorSet();
+
     createCommandBuffers();
 
     createSemaphores();
@@ -369,6 +367,9 @@ void HelloVulkan::Cleanup()
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
     vkDestroyBuffer(device, uniformBuffer, nullptr);
     vkFreeMemory(device, uniformBufferMemory, nullptr);
+
+    vkDestroyBuffer(device, uniformBufferL, nullptr);
+    vkFreeMemory(device, uniformBufferMemoryL, nullptr);
 
     vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
@@ -797,7 +798,7 @@ void HelloVulkan::createGraphicsPipeline()
     colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
     colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
     colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
-    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
     colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
 
     VkPipelineColorBlendStateCreateInfo colorBlending = {};
@@ -944,6 +945,9 @@ void HelloVulkan::createUniformBuffer()
 {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
     createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffer, uniformBufferMemory);
+
+    bufferSize = sizeof(UBOParams);
+    createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBufferL, uniformBufferMemoryL);
 }
 
 
@@ -1018,6 +1022,8 @@ void HelloVulkan::buildCommandBuffers()
         renderPassInfo.pClearValues = clearValues.data();
 
         vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
@@ -1490,14 +1496,22 @@ void HelloVulkan::updateUniformBuffer()
 
     ubo.viewPos = glm::vec4(0.0f, 2.0f, 3.0f, 1.0f);
 
-	ubo.lightPos.x = cos(glm::radians(0.1f * 360.0f)) * 40.0f;
-	ubo.lightPos.y = 50.0f + sin(glm::radians(0.1f * 360.0f)) * 20.0f;
-	ubo.lightPos.z = 25.0f + sin(glm::radians(0.1f * 360.0f)) * 5.0f;
-
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);
     memcpy(data, &ubo, sizeof(ubo));
     vkUnmapMemory(device, uniformBufferMemory);
+
+
+    UBOParams uboparams = {};
+	uboparams.lights[0].x = cos(glm::radians(0.1f * 360.0f)) * 40.0f;
+	uboparams.lights[0].y = 50.0f + sin(glm::radians(0.1f * 360.0f)) * 20.0f;
+	uboparams.lights[0].z = 25.0f + sin(glm::radians(0.1f * 360.0f)) * 5.0f;
+
+    uboparams.lights[1] = uboparams.lights[2] = uboparams.lights[3] = uboparams.lights[0];
+
+    vkMapMemory(device, uniformBufferMemoryL, 0, sizeof(uboparams), 0, &data);
+    memcpy(data, &uboparams, sizeof(uboparams));
+    vkUnmapMemory(device, uniformBufferMemoryL);
 
 }
 
@@ -1564,7 +1578,7 @@ void HelloVulkan::drawFrame()
 }
 
 // 需要重新创建的对象
-//      swapchain
+// //      swapchain
 //      imageviews 
 //      renderpass 依赖于图像的格式
 //      graphicspipeline viewport改变
@@ -1704,16 +1718,17 @@ void HelloVulkan::createDescriptorPool()
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = 12;
+    poolSizes[0].descriptorCount = 2;
+
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = 12;
+    poolSizes[1].descriptorCount = 3;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
 
-    poolInfo.maxSets = 12;
+    poolInfo.maxSets = 2;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {
@@ -1725,21 +1740,40 @@ void HelloVulkan::createDescriptorPool()
 
 void HelloVulkan::createDescriptorSetLayout()
 {
-    VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-    uboLayoutBinding.binding = 0;
-    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboLayoutBinding.descriptorCount = 1;
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+    std::array<VkDescriptorSetLayoutBinding, 2> uboLayoutBindings = {};
 
     VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
     samplerLayoutBinding.binding = 1;
-    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorCount = 3;
     samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
+    std::array<VkDescriptorSetLayoutBinding, 5> bindings = {};
+
+    bindings[0].binding = 0;
+    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bindings[0].descriptorCount = 1;
+    bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[0].pImmutableSamplers = nullptr; // Optional
+    
+    bindings[1].binding = 1;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bindings[1].descriptorCount = 1;
+    bindings[1].stageFlags =VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[1].pImmutableSamplers = nullptr; // Optional
+
+    bindings[2].binding = 2;
+    bindings[2].descriptorCount = 1;
+    bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[2].pImmutableSamplers = nullptr;
+    bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    bindings[3] = bindings[2];
+    bindings[3].binding = 3;
+
+    bindings[4] = bindings[2];
+    bindings[4].binding = 4;
 
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -1755,7 +1789,7 @@ void HelloVulkan::createDescriptorSetLayout()
 // 
 // descriptorWrite-->DescriptorBuffer-->uniformBuffer
 // descriptorWrite-->descriptorSet
-void HelloVulkan::createDescriptorSet(int i)
+void HelloVulkan::createDescriptorSet()
 {
     VkDescriptorSetLayout layouts[] = {descriptorSetLayout};
     VkDescriptorSetAllocateInfo allocInfo = {};
@@ -1764,7 +1798,7 @@ void HelloVulkan::createDescriptorSet(int i)
     allocInfo.descriptorSetCount = 1;
     allocInfo.pSetLayouts = layouts;
 
-    if (vkAllocateDescriptorSets(device, &allocInfo, &gltfModel.images[i].descriptorSet) != VK_SUCCESS) 
+    if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS) 
     {
         throw std::runtime_error("failed to allocate descriptor set!");
     }
@@ -1774,36 +1808,34 @@ void HelloVulkan::createDescriptorSet(int i)
     bufferInfo.offset = 0;
     bufferInfo.range = sizeof(UniformBufferObject);
 
-    VkDescriptorImageInfo imageInfo = {};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = gltfModel.images[i].texture.view;
-    imageInfo.sampler = gltfModel.images[i].texture.sampler;
+    VkDescriptorBufferInfo bufferInfo1 = {};
+    bufferInfo1.buffer = uniformBufferL;
+    bufferInfo1.offset = 0;
+    bufferInfo1.range = sizeof(UBOParams);
 
-    std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
+    std::array<VkWriteDescriptorSet, 5> descriptorWrites = {};
 
-    descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrites[0].dstSet = gltfModel.images[i].descriptorSet;
-    descriptorWrites[0].dstBinding = 0;
-    descriptorWrites[0].dstArrayElement = 0;
-                   
-    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrites[0].descriptorCount = 1;
-                   
-    descriptorWrites[0].pBufferInfo = &bufferInfo;
-    descriptorWrites[0].pImageInfo = nullptr; // Optional
-    descriptorWrites[0].pTexelBufferView = nullptr; // Optional
+    auto SetUpWrites = [this, &descriptorWrites](int idx, VkDescriptorType type, uint32_t binding, VkDescriptorBufferInfo* bufferInfo, VkDescriptorImageInfo* imageInfo, uint32_t descriptorCount = 1){
 
-    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrites[1].dstSet = gltfModel.images[i].descriptorSet;
-    descriptorWrites[1].dstBinding = 1;
-    descriptorWrites[1].dstArrayElement = 0;
-    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorWrites[1].descriptorCount = 1;
-    descriptorWrites[1].pImageInfo = &imageInfo;
+        descriptorWrites[idx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[idx].dstSet = descriptorSet;
+        descriptorWrites[idx].dstBinding = binding;
+        descriptorWrites[idx].dstArrayElement = 0;
+        descriptorWrites[idx].descriptorType = type;
+        descriptorWrites[idx].descriptorCount = descriptorCount;
+        descriptorWrites[idx].pBufferInfo = bufferInfo;
+        descriptorWrites[idx].pImageInfo = imageInfo; // Optional
+        descriptorWrites[idx].pTexelBufferView = nullptr; // Optional
+    };
+
+    SetUpWrites(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &bufferInfo, nullptr);
+    SetUpWrites(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &bufferInfo1, nullptr);
+
+    SetUpWrites(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, nullptr, &gltfModel.images[0].texture.descriptor);
+    SetUpWrites(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, nullptr, &gltfModel.images[1].texture.descriptor);
+    SetUpWrites(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, nullptr, &gltfModel.images[2].texture.descriptor);
 
     vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-
-
 }
 
 void HelloVulkan::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)

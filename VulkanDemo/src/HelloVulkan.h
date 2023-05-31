@@ -30,8 +30,11 @@ struct SwapChainSupportDetails
 struct UniformBufferObject {
     glm::mat4 view;
     glm::mat4 proj;
-    glm::vec4 lightPos;
     glm::vec4 viewPos;
+};
+
+struct UBOParams {
+	glm::vec4 lights[4];
 };
 
 class HelloVulkan
@@ -72,7 +75,7 @@ public:
     void createUniformBuffer();
     void createDescriptorPool();
     void createDescriptorSetLayout();
-    void createDescriptorSet(int i);
+    void createDescriptorSet();
 
     void createCommandPool();
     void createCommandBuffers();
@@ -184,6 +187,9 @@ private:
 
     VkBuffer uniformBuffer;
     VkDeviceMemory uniformBufferMemory;
+
+    VkBuffer uniformBufferL;
+    VkDeviceMemory uniformBufferMemoryL;
 
     VkSampler textureSampler;
     uint32_t mipLevels;
