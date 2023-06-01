@@ -364,7 +364,9 @@ void HelloVulkan::Cleanup()
 
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
-    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayoutS, nullptr);
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayoutM, nullptr);
+
     vkDestroyBuffer(device, uniformBuffer, nullptr);
     vkFreeMemory(device, uniformBufferMemory, nullptr);
 
@@ -710,8 +712,8 @@ void HelloVulkan::createRenderPass()
 
 void HelloVulkan::createGraphicsPipeline()
 {
-    auto vertShaderCode = readFile("shaders/GLSL/vert.spv");
-    auto fragShaderCode = readFile("shaders/GLSL/frag.spv");
+    auto vertShaderCode = readFile("D:/games/VulkanDemo/VulkanDemo/shaders/GLSL/vert.spv");
+    auto fragShaderCode = readFile("D:/games/VulkanDemo/VulkanDemo/shaders/GLSL/frag.spv");
 
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -827,10 +829,12 @@ void HelloVulkan::createGraphicsPipeline()
 	pushConstantRange.offset = 0;
 	pushConstantRange.size = sizeof(glm::mat4);
 
+    std::array<VkDescriptorSetLayout, 2> setLayouts = { descriptorSetLayoutS, descriptorSetLayoutM };
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1; // Optional
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout; // Optional
+    pipelineLayoutInfo.setLayoutCount = 2; // Optional
+    pipelineLayoutInfo.pSetLayouts = setLayouts.data(); // Optional
     pipelineLayoutInfo.pushConstantRangeCount = 1; // Optional
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange; // Optional
 
@@ -1023,7 +1027,7 @@ void HelloVulkan::buildCommandBuffers()
 
         vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetS, 0, nullptr);
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
@@ -1501,7 +1505,6 @@ void HelloVulkan::updateUniformBuffer()
     memcpy(data, &ubo, sizeof(ubo));
     vkUnmapMemory(device, uniformBufferMemory);
 
-
     UBOParams uboparams = {};
 	uboparams.lights[0].x = cos(glm::radians(0.1f * 360.0f)) * 40.0f;
 	uboparams.lights[0].y = 50.0f + sin(glm::radians(0.1f * 360.0f)) * 20.0f;
@@ -1740,17 +1743,23 @@ void HelloVulkan::createDescriptorPool()
 
 void HelloVulkan::createDescriptorSetLayout()
 {
-    std::array<VkDescriptorSetLayoutBinding, 2> uboLayoutBindings = {};
+    VkDescriptorSetLayoutBinding uniformLayoutBinding = {};
+    uniformLayoutBinding.binding = 0;
+    uniformLayoutBinding.descriptorCount = 1;
+    uniformLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uniformLayoutBinding.pImmutableSamplers = nullptr;
+    uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
-    samplerLayoutBinding.binding = 1;
-    samplerLayoutBinding.descriptorCount = 3;
-    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerLayoutBinding.pImmutableSamplers = nullptr;
-    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uniformLayoutBinding;
 
-    std::array<VkDescriptorSetLayoutBinding, 5> bindings = {};
+    if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayoutS) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
 
+    std::array<VkDescriptorSetLayoutBinding, 4> bindings = {};
     bindings[0].binding = 0;
     bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     bindings[0].descriptorCount = 1;
@@ -1758,9 +1767,9 @@ void HelloVulkan::createDescriptorSetLayout()
     bindings[0].pImmutableSamplers = nullptr; // Optional
     
     bindings[1].binding = 1;
-    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     bindings[1].descriptorCount = 1;
-    bindings[1].stageFlags =VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[1].stageFlags =  VK_SHADER_STAGE_FRAGMENT_BIT;
     bindings[1].pImmutableSamplers = nullptr; // Optional
 
     bindings[2].binding = 2;
@@ -1772,15 +1781,10 @@ void HelloVulkan::createDescriptorSetLayout()
     bindings[3] = bindings[2];
     bindings[3].binding = 3;
 
-    bindings[4] = bindings[2];
-    bindings[4].binding = 4;
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo = {};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
     layoutInfo.pBindings = bindings.data();
 
-    if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+    if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayoutM) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
 }
@@ -1791,17 +1795,27 @@ void HelloVulkan::createDescriptorSetLayout()
 // descriptorWrite-->descriptorSet
 void HelloVulkan::createDescriptorSet()
 {
-    VkDescriptorSetLayout layouts[] = {descriptorSetLayout};
+    VkDescriptorSetLayout layouts[] = {descriptorSetLayoutS};
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = descriptorPool;
     allocInfo.descriptorSetCount = 1;
     allocInfo.pSetLayouts = layouts;
 
-    if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS) 
+    if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSetS) != VK_SUCCESS) 
     {
         throw std::runtime_error("failed to allocate descriptor set!");
     }
+
+    layouts[0] = descriptorSetLayoutM;
+
+    if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSetM) != VK_SUCCESS) 
+    {
+        throw std::runtime_error("failed to allocate descriptor set!");
+    }
+
+    for(int i = 0; i < gltfModel.images.size(); i ++)
+        gltfModel.images[i].descriptorSet = descriptorSetM;
 
     VkDescriptorBufferInfo bufferInfo = {};
     bufferInfo.buffer = uniformBuffer;
@@ -1813,12 +1827,24 @@ void HelloVulkan::createDescriptorSet()
     bufferInfo1.offset = 0;
     bufferInfo1.range = sizeof(UBOParams);
 
-    std::array<VkWriteDescriptorSet, 5> descriptorWrites = {};
+    VkWriteDescriptorSet descriptorWrite = {};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = descriptorSetS;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pBufferInfo = &bufferInfo1;
+    descriptorWrite.pImageInfo = nullptr; // Optional
+    descriptorWrite.pTexelBufferView = nullptr; // Optional
 
+    vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+
+    std::array<VkWriteDescriptorSet, 4> descriptorWrites = {};
     auto SetUpWrites = [this, &descriptorWrites](int idx, VkDescriptorType type, uint32_t binding, VkDescriptorBufferInfo* bufferInfo, VkDescriptorImageInfo* imageInfo, uint32_t descriptorCount = 1){
 
         descriptorWrites[idx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[idx].dstSet = descriptorSet;
+        descriptorWrites[idx].dstSet = descriptorSetM;
         descriptorWrites[idx].dstBinding = binding;
         descriptorWrites[idx].dstArrayElement = 0;
         descriptorWrites[idx].descriptorType = type;
@@ -1829,11 +1855,10 @@ void HelloVulkan::createDescriptorSet()
     };
 
     SetUpWrites(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &bufferInfo, nullptr);
-    SetUpWrites(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &bufferInfo1, nullptr);
 
-    SetUpWrites(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, nullptr, &gltfModel.images[0].texture.descriptor);
-    SetUpWrites(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, nullptr, &gltfModel.images[1].texture.descriptor);
-    SetUpWrites(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, nullptr, &gltfModel.images[2].texture.descriptor);
+    SetUpWrites(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, nullptr, &gltfModel.images[4].texture.descriptor);
+    SetUpWrites(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, nullptr, &gltfModel.images[6].texture.descriptor);
+    SetUpWrites(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, nullptr, &gltfModel.images[5].texture.descriptor);
 
     vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }

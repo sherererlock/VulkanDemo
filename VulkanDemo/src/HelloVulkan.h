@@ -169,9 +169,15 @@ private:
     VkExtent2D swapChainExtent;
 
     VkRenderPass renderPass;
-    VkDescriptorSetLayout descriptorSetLayout;
+
     VkDescriptorPool descriptorPool;
-    VkDescriptorSet descriptorSet;
+
+    VkDescriptorSetLayout descriptorSetLayoutS;
+    VkDescriptorSet descriptorSetS;
+
+    VkDescriptorSetLayout descriptorSetLayoutM;
+    VkDescriptorSet descriptorSetM;
+
     VkPushConstantRange pushConstantRange;
     VkPipelineLayout pipelineLayout;
 

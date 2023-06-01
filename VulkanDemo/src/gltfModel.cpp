@@ -32,6 +32,8 @@ void gltfModel::loadImages(tinygltf::Model& input)
 	images.resize(input.images.size());
 	for (size_t i = 0; i < input.images.size(); i++) {
 		tinygltf::Image& glTFImage = input.images[i];
+
+		std::cout<< i << " name:" << glTFImage.name << "uri:" << glTFImage.uri << std::endl;
 		// Get the image data from the glTF loader
 		unsigned char* buffer = nullptr;
 		VkDeviceSize bufferSize = 0;
@@ -215,6 +217,7 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 				// validation layer: Validation Error: vkCmdBindDescriptorSets(): Attempt to bind pDescriptorSets[0] (VkDescriptorSet 0x0[]) that does not exist, and VK_EXT_graphics_pipeline_library is not enabled. The Vulkan spec states: Each element of pDescriptorSets must be a valid VkDescriptorSet (https://vulkan.lunarg.com/doc/view/1.3.243.0/windows/1.3-extensions/vkspec.html#VUID-vkCmdBindDescriptorSets-pDescriptorSets-06563
 
 				/*		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &images[texture.imageIndex].descriptorSet, 0, nullptr);*/
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &images[texture.imageIndex].descriptorSet, 0, nullptr);
 				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 			}
 		}

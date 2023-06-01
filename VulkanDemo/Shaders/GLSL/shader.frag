@@ -1,18 +1,17 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-
 layout(set = 0, binding = 0) 
+uniform uboShared {
+    vec4 lights[4];
+} uboParam;
+
+layout(set = 1, binding = 0) 
 uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
     vec4 viewPos;
 } ubo;
-
-layout(set = 0, binding = 1) 
-uniform uboShared {
-    vec4 lights[4];
-} uboParam;
 
 #define PI 3.1415192654
 
@@ -21,9 +20,9 @@ layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 fragTexCoord;
 layout(location = 3) in vec3 worldPos;
 
-layout(binding = 2) uniform sampler2D colorSampler;
-layout(binding = 3) uniform sampler2D normalSampler;
-layout(binding = 4) uniform sampler2D roughnessSampler;
+layout(set = 1, binding = 1) uniform sampler2D colorSampler;
+layout(set = 1, binding = 2) uniform sampler2D normalSampler;
+layout(set = 1, binding = 3) uniform sampler2D roughnessSampler;
 
 layout(location = 0) out vec4 outColor;
 
@@ -83,7 +82,8 @@ vec3 pbr()
 {
 	vec3 albedo = texture(colorSampler, fragTexCoord).rgb;
 
-	float roughness = 0.8;
+	float roughness = texture(roughnessSampler, fragTexCoord).r;
+
 	float metallic = 0.2;
 
 	vec3 F0 = vec3(0.04);
