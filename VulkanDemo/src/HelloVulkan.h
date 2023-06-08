@@ -76,6 +76,7 @@ public:
     void createDescriptorPool();
     void createDescriptorSetLayout();
     void createDescriptorSet();
+    void updateDescriptorSet(int colorIdx, int normalIdx, int roughnessIdx);
 
     void createCommandPool();
     void createCommandBuffers();
@@ -172,11 +173,13 @@ private:
 
     VkDescriptorPool descriptorPool;
 
+    VkDescriptorSetLayout descriptorSetLayoutM;
+    VkDescriptorSet descriptorSetM;
+
     VkDescriptorSetLayout descriptorSetLayoutS;
     VkDescriptorSet descriptorSetS;
 
-    VkDescriptorSetLayout descriptorSetLayoutM;
-    VkDescriptorSet descriptorSetM;
+    VkDescriptorSetLayout descriptorSetLayoutMa;
 
     VkPushConstantRange pushConstantRange;
     VkPipelineLayout pipelineLayout;

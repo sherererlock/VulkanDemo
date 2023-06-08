@@ -2,16 +2,17 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 layout(set = 0, binding = 0) 
-uniform uboShared {
-    vec4 lights[4];
-} uboParam;
-
-layout(set = 1, binding = 0) 
 uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
     vec4 viewPos;
 } ubo;
+
+layout(set = 1, binding = 0) 
+uniform uboShared {
+    vec4 lights[4];
+} uboParam;
+
 
 #define PI 3.1415192654
 
@@ -19,10 +20,11 @@ layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 fragTexCoord;
 layout(location = 3) in vec3 worldPos;
+layout(location = 4) in vec3 tangent;
 
-layout(set = 1, binding = 1) uniform sampler2D colorSampler;
-layout(set = 1, binding = 2) uniform sampler2D normalSampler;
-layout(set = 1, binding = 3) uniform sampler2D roughnessSampler;
+layout(set = 2, binding = 0) uniform sampler2D colorSampler;
+layout(set = 2, binding = 1) uniform sampler2D normalSampler;
+layout(set = 2, binding = 2) uniform sampler2D roughnessSampler;
 
 layout(location = 0) out vec4 outColor;
 
@@ -78,19 +80,33 @@ vec3 blin_phong()
 	return diffuse * color.rgb + specular;
 }
 
+vec3 calculateNormal()
+{
+	vec3 tangentNormal = texture(normalSampler, fragTexCoord).xyz * 2.0 - 1.0;
+
+	vec3 N = normalize(normal);
+	vec3 T = normalize(tangent);
+	vec3 B = normalize(cross(N, T));
+	mat3 TBN = mat3(T, B, N);
+	return normalize(TBN * tangentNormal);
+}
+
+
 vec3 pbr()
 {
 	vec3 albedo = texture(colorSampler, fragTexCoord).rgb;
 
-	float roughness = texture(roughnessSampler, fragTexCoord).r;
+	vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
 
-	float metallic = 0.2;
+	float roughness = roughMetalic.x;
+	float metallic = roughMetalic.y;
 
 	vec3 F0 = vec3(0.04);
 	F0 = mix(F0, albedo.xyz, metallic);
 
+	vec3 texnormal = calculateNormal();
 
-	vec3 n = normalize(normal);
+	vec3 n = normalize(texnormal);
 	vec3 v = normalize(ubo.viewPos.xyz - worldPos);
 
 	vec3 Lo = vec3(0.0);

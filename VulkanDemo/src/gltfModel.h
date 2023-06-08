@@ -12,6 +12,7 @@ struct Vertex1 {
 	glm::vec3 normal;
 	glm::vec2 uv;
 	glm::vec3 color;
+	glm::vec3 tangent;
 
 	static VkVertexInputBindingDescription getBindingDescription()
     {
@@ -24,9 +25,9 @@ struct Vertex1 {
     }
 
 
-    static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions()
+    static std::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions()
     {
-        std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions = {};
+        std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions = {};
 
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
@@ -47,6 +48,11 @@ struct Vertex1 {
         attributeDescriptions[3].location = 3;
         attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[3].offset = offsetof(Vertex1, color);
+
+        attributeDescriptions[4].binding = 0;
+        attributeDescriptions[4].location = 4;
+        attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[4].offset = offsetof(Vertex1, tangent);
 
         return attributeDescriptions;
     }
@@ -83,6 +89,9 @@ struct Node {
 struct Material {
 	glm::vec4 baseColorFactor = glm::vec4(1.0f);
 	uint32_t baseColorTextureIndex;
+	uint32_t normalTextureIndex;
+	uint32_t roughnessTextureIndex;
+	VkDescriptorSet descriptorSet;
 };
 
 // Contains the texture for a single glTF image
@@ -91,7 +100,7 @@ struct Image {
 public:
 	Texture2D texture;
 	// We also store (and create) a descriptor set that's used to access this texture from the fragment shader
-	VkDescriptorSet descriptorSet;
+	
 };
 
 // A glTF texture stores a reference to the image and a sampler
@@ -152,6 +161,10 @@ public:
 			if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) {
 				materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
 			}
+
+			materials[i].normalTextureIndex = glTFMaterial.normalTexture.index;
+			materials[i].roughnessTextureIndex = glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index;
+
 		}
 	}
 

@@ -110,6 +110,9 @@ void gltfModel::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model&
 					const float* positionBuffer = nullptr;
 					const float* normalsBuffer = nullptr;
 					const float* texCoordsBuffer = nullptr;
+					const float* colorsBuffer = nullptr;
+					const float* tagentBuffer = nullptr;
+
 					size_t vertexCount = 0;
 
 					// Get buffer data for vertex positions
@@ -119,12 +122,14 @@ void gltfModel::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model&
 						positionBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
 						vertexCount = accessor.count;
 					}
+
 					// Get buffer data for vertex normals
 					if (glTFPrimitive.attributes.find("NORMAL") != glTFPrimitive.attributes.end()) {
 						const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("NORMAL")->second];
 						const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
 						normalsBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
 					}
+
 					// Get buffer data for vertex texture coordinates
 					// glTF supports multiple sets, we only load the first one
 					if (glTFPrimitive.attributes.find("TEXCOORD_0") != glTFPrimitive.attributes.end()) {
@@ -133,13 +138,29 @@ void gltfModel::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model&
 						texCoordsBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
 					}
 
+					if (glTFPrimitive.attributes.find("COLOR_0") != glTFPrimitive.attributes.end()) {
+						const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("COLOR_0")->second];
+						const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+
+						colorsBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+					}
+
+					if (glTFPrimitive.attributes.find("TANGENT") != glTFPrimitive.attributes.end()) {
+						const tinygltf::Accessor& accessor = input.accessors[glTFPrimitive.attributes.find("TANGENT")->second];
+						const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+						tagentBuffer = reinterpret_cast<const float*>(&(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+					}
+
+
 					// Append data to model's vertex buffer
 					for (size_t v = 0; v < vertexCount; v++) {
 						Vertex1 vert{};
 						vert.pos = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
 						vert.normal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
 						vert.uv = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
-						vert.color = glm::vec3(1.0f);
+						vert.color = colorsBuffer ? glm::make_vec3(&colorsBuffer[v*3]) : glm::vec3(1.0);
+						vert.tangent = glm::normalize(tagentBuffer ? glm::make_vec3(&tagentBuffer[v*3]) : glm::vec3(0.0));
+
 						vertexBuffer.push_back(vert);
 					}
 				}
@@ -210,14 +231,8 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
 		for (Primitive& primitive : node->mesh.primitives) {
 			if (primitive.indexCount > 0) {
-				// Get the texture index for this primitive
-				Texture1 texture = textures[materials[primitive.materialIndex].baseColorTextureIndex];
-				// Bind the descriptor for the current primitive's texture
 
-				// validation layer: Validation Error: vkCmdBindDescriptorSets(): Attempt to bind pDescriptorSets[0] (VkDescriptorSet 0x0[]) that does not exist, and VK_EXT_graphics_pipeline_library is not enabled. The Vulkan spec states: Each element of pDescriptorSets must be a valid VkDescriptorSet (https://vulkan.lunarg.com/doc/view/1.3.243.0/windows/1.3-extensions/vkspec.html#VUID-vkCmdBindDescriptorSets-pDescriptorSets-06563
-
-				/*		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &images[texture.imageIndex].descriptorSet, 0, nullptr);*/
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &images[texture.imageIndex].descriptorSet, 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 2, 1, &materials[primitive.materialIndex].descriptorSet, 0, nullptr);
 				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 			}
 		}
