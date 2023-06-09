@@ -171,6 +171,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Buffer.h" />
+    <ClInclude Include="src\camera.hpp" />
     <ClInclude Include="src\gltfModel.h" />
     <ClInclude Include="src\HelloVulkan.h" />
     <ClInclude Include="src\Texture.h" />
