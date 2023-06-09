@@ -9,6 +9,7 @@
 #include <array>
 
 #include "gltfModel.h"
+#include "camera.hpp"
 
 struct QueueFamilyIndices
 {
@@ -40,10 +41,7 @@ struct UBOParams {
 class HelloVulkan
 {
 public:
-    HelloVulkan()
-    {
-        helloVulkan = this;
-    }
+    HelloVulkan();
 
     static HelloVulkan* GetHelloVulkan()
     {
@@ -95,6 +93,7 @@ public:
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t miplevels);
 
     void updateUniformBuffer();
+    void updateSceneUniformBuffer();
     void drawFrame();
 
     void recreateSwapChain();
@@ -133,6 +132,13 @@ public:
     VkSampleCountFlagBits getMaxUsableSampleCount();
 
     static void onWindowResized(GLFWwindow* window, int width, int height);
+    static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+    static void MouseCallback(GLFWwindow* window, double xpos, double ypos);
+    static void MouseButtonCallback(GLFWwindow* window, int key, int action, int mods);
+    static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
+    void MouseCallback(double xpos, double ypos);
+
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -254,5 +260,16 @@ private:
 	float timer = 0.0f;
 	// Multiplier for speeding up (or slowing down) the global timer
 	float timerSpeed = 0.25f;
+
+    Camera camera;
+    glm::vec2 mousePos;
+    bool viewUpdated = false;
+
+    struct {
+		bool left = false;
+		bool right = false;
+		bool middle = false;
+	} mouseButtons;
+
 };
 

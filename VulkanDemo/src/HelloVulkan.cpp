@@ -74,6 +74,129 @@ void HelloVulkan::onWindowResized(GLFWwindow* window, int width, int height)
     app->recreateSwapChain();
 }
 
+void HelloVulkan::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+
+    HelloVulkan* vulkan = HelloVulkan::GetHelloVulkan();
+    Camera& camera = vulkan->camera;
+    if (key == GLFW_KEY_W)
+    {
+        if(action == GLFW_PRESS)
+            camera.keys.up = true;
+        if(action == GLFW_RELEASE)
+            camera.keys.up = false;
+    }
+
+    if (key == GLFW_KEY_S)
+    {
+        if(action == GLFW_PRESS)
+            camera.keys.down = true;
+        if(action == GLFW_RELEASE)
+            camera.keys.down = false;
+    }
+
+    if (key == GLFW_KEY_A )
+    {
+        if(action == GLFW_PRESS)
+            camera.keys.left = true;
+        if(action == GLFW_RELEASE)
+            camera.keys.left = false;
+    }
+
+    if (key == GLFW_KEY_D)
+    {
+        if(action == GLFW_PRESS)
+            camera.keys.right = true;
+        if(action == GLFW_RELEASE)
+            camera.keys.right = false;
+    }
+}
+
+void HelloVulkan::MouseCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    HelloVulkan* vulkan = HelloVulkan::GetHelloVulkan();
+    vulkan->MouseCallback(xpos, ypos);
+}
+
+void HelloVulkan::MouseButtonCallback(GLFWwindow* window, int key, int action, int mods)
+{
+    HelloVulkan* vulkan = HelloVulkan::GetHelloVulkan();
+    if (key == GLFW_MOUSE_BUTTON_LEFT)
+    {
+        if (action == GLFW_PRESS)
+        {
+            double xposition, yposition;
+            glfwGetCursorPos(window, &xposition, &yposition);
+            vulkan->mousePos = glm::vec2((float)xposition, (float)yposition);
+            vulkan->mouseButtons.left = true;
+        }
+        else if (action == GLFW_RELEASE)
+        {
+            vulkan->mouseButtons.left = false;
+        }
+    }
+
+    if (key == GLFW_MOUSE_BUTTON_RIGHT)
+    {
+        if (action == GLFW_PRESS)
+        {
+            double xposition, yposition;
+            glfwGetCursorPos(window, &xposition, &yposition);
+            vulkan->mousePos = glm::vec2((float)xposition, (float)yposition);
+            vulkan->mouseButtons.right = true;
+        }
+        else if (action == GLFW_RELEASE)
+        {
+            vulkan->mouseButtons.right = false;
+        }
+    }
+     
+    if (key == GLFW_MOUSE_BUTTON_MIDDLE)
+    {
+        if (action == GLFW_PRESS)
+        {
+            double xposition, yposition;
+            glfwGetCursorPos(window, &xposition, &yposition);
+            vulkan->mousePos = glm::vec2((float)xposition, (float)yposition);
+
+            vulkan->mouseButtons.middle = true;
+        }
+        else if (action == GLFW_RELEASE)
+        {
+            vulkan->mouseButtons.middle = false;
+        }
+    }
+}
+
+void HelloVulkan::MouseCallback(double x, double y)
+{
+	int32_t dx = (int32_t)mousePos.x - x;
+	int32_t dy = (int32_t)mousePos.y - y;
+
+	if (mouseButtons.left) {
+		camera.rotate(glm::vec3(dy * camera.rotationSpeed, -dx * camera.rotationSpeed, 0.0f));
+		viewUpdated = true;
+	}
+	if (mouseButtons.right) {
+		camera.translate(glm::vec3(-0.0f, 0.0f, dy * .005f));
+		viewUpdated = true;
+	}
+	if (mouseButtons.middle) {
+		camera.translate(glm::vec3(-dx * 0.005f, -dy * 0.005f, 0.0f));
+		viewUpdated = true;
+	}
+	mousePos = glm::vec2((float)x, (float)y);
+}
+
+void HelloVulkan::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    HelloVulkan* vulkan = HelloVulkan::GetHelloVulkan();
+	vulkan->camera.translate(glm::vec3(0.0f, 0.0f, (float)yoffset * 0.005f));
+	vulkan->viewUpdated = true;
+}
+
 VkCommandBuffer HelloVulkan::beginSingleTimeCommands()
 {
     VkCommandBufferAllocateInfo allocInfo = {};
@@ -265,6 +388,21 @@ void HelloVulkan::loadgltfModel(std::string filename)
 
 }
 
+HelloVulkan::HelloVulkan()
+{
+    helloVulkan = this;
+
+	camera.type = Camera::CameraType::firstperson;
+	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
+	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
+	camera.movementSpeed = 4.0f;
+    camera.flipY = true;
+	camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 256.0f);
+	camera.rotationSpeed = 0.25f;
+    //camera.updateViewMatrix();
+    viewUpdated = true;
+}
+
 void HelloVulkan::Init()
 {
 	InitWindow();
@@ -287,6 +425,10 @@ void HelloVulkan::InitWindow()
 
     glfwSetWindowUserPointer(window, this);
     glfwSetWindowSizeCallback(window, HelloVulkan::onWindowResized);
+    glfwSetKeyCallback(window, HelloVulkan::KeyCallback);
+    glfwSetCursorPosCallback(window, HelloVulkan::MouseCallback);
+    glfwSetMouseButtonCallback(window, HelloVulkan::MouseButtonCallback);
+    glfwSetScrollCallback(window, HelloVulkan::ScrollCallback);
 }
 
 void HelloVulkan::InitVulkan()
@@ -323,6 +465,8 @@ void HelloVulkan::InitVulkan()
     createCommandBuffers();
 
     createSemaphores();
+
+    updateSceneUniformBuffer();
 }
 
 void HelloVulkan::MainLoop()
@@ -334,7 +478,7 @@ void HelloVulkan::MainLoop()
         auto tStart = std::chrono::high_resolution_clock::now();
 
         buildCommandBuffers();
-        updateUniformBuffer();
+
         drawFrame();
 
         auto tEnd = std::chrono::high_resolution_clock::now();
@@ -342,6 +486,17 @@ void HelloVulkan::MainLoop()
         auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
 
         frameTimer = (float)tDiff / 1000.0f;
+	    camera.update(frameTimer);
+	    if (camera.moving())
+	    {
+		    viewUpdated = true;
+	    }
+
+        if (viewUpdated)
+        {
+            updateUniformBuffer();
+            viewUpdated = false;
+        }
 
 		timer += timerSpeed * frameTimer;
 		if (timer > 1.0)
@@ -1486,38 +1641,32 @@ void HelloVulkan::transitionImageLayout(VkImage image, VkFormat format, VkImageL
 
 void HelloVulkan::updateUniformBuffer()
 {
-   static auto startTime = std::chrono::high_resolution_clock::now();
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
-
     UniformBufferObject ubo = {};
 
     //ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = glm::lookAt(glm::vec3(0.0f, 2.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-    ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
-
-    ubo.proj[1][1] *= -1;
-
-    ubo.viewPos = glm::vec4(0.0f, 2.0f, 3.0f, 1.0f);
+    ubo.view = camera.matrices.view;
+    ubo.proj = camera.matrices.perspective;
+    ubo.viewPos = glm::vec4(camera.position * -1.0f, 1.0);
 
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);
     memcpy(data, &ubo, sizeof(ubo));
     vkUnmapMemory(device, uniformBufferMemory);
+}
 
+void HelloVulkan::updateSceneUniformBuffer()
+{
     UBOParams uboparams = {};
-	uboparams.lights[0].x = cos(glm::radians(0.1f * 360.0f)) * 40.0f;
-	uboparams.lights[0].y = 50.0f + sin(glm::radians(0.1f * 360.0f)) * 20.0f;
-	uboparams.lights[0].z = 25.0f + sin(glm::radians(0.1f * 360.0f)) * 5.0f;
+	uboparams.lights[0].x = 0.0f;
+	uboparams.lights[0].y = 4.0f;
+	uboparams.lights[0].z = 4.0f;
 
     uboparams.lights[1] = uboparams.lights[2] = uboparams.lights[3] = uboparams.lights[0];
 
+    void* data;
     vkMapMemory(device, uniformBufferMemoryL, 0, sizeof(uboparams), 0, &data);
     memcpy(data, &uboparams, sizeof(uboparams));
     vkUnmapMemory(device, uniformBufferMemoryL);
-
 }
 
 void HelloVulkan::drawFrame()
