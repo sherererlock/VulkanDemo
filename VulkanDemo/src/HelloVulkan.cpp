@@ -16,6 +16,8 @@
 
 #include <unordered_map>
 
+#include "Mesh.h"
+
 HelloVulkan* HelloVulkan::helloVulkan = nullptr;
 
 static std::vector<char> readFile(const std::string& filename)
@@ -349,6 +351,8 @@ void HelloVulkan::loadgltfModel(std::string filename)
 		throw std::runtime_error("validation layers requested, but not available!");("Could not open the glTF file.\n\nThe file is part of the additional asset pack.\n\nRun \"download_assets.py\" in the repository root to download the latest version.", -1);
 	}
 
+    AddLight(indexBuffer, vertexBuffer);
+
 	size_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex1);
 	size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
 	gltfModel.indices.count = static_cast<uint32_t>(indexBuffer.size());
@@ -386,6 +390,45 @@ void HelloVulkan::loadgltfModel(std::string filename)
 	vkDestroyBuffer(device, indexStaging.buffer, nullptr);
 	vkFreeMemory(device, indexStaging.memory, nullptr);
 
+}
+
+void HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer)
+{
+    CubeMesh mesh;
+    const int indexCount = mesh.indices.size();
+
+	uint32_t firstIndex = static_cast<uint32_t>(indexBuffer.size());
+	uint32_t vertexStart = static_cast<uint32_t>(vertexBuffer.size());
+   
+    //std::copy(mesh.vertex.begin(), mesh.vertex.end(), std::back_inserter(vertexBuffer));
+    //std::copy(mesh.indices.begin(), mesh.indices.end(), std::back_inserter(indexBuffer));
+
+    for (int i = 0; i < mesh.indices.size(); i++)
+    {
+        indexBuffer.push_back(mesh.indices[i] + vertexBuffer.size());
+    }
+
+
+    for (int i = 0; i < mesh.vertex.size(); i++)
+    {
+        vertexBuffer.push_back(mesh.vertex[i]);
+    }
+
+    Primitive primitive{};
+	primitive.firstIndex = firstIndex;
+	primitive.indexCount = indexCount;
+	primitive.materialIndex = 0;
+    primitive.islight = 1.0f;
+
+	Node* node = new Node{};
+
+    node->matrix = glm::translate(node->matrix, glm::vec3(0.0f, 4.0f, -8.0f));
+    node->matrix = glm::scale(node->matrix, glm::vec3(0.1f));
+
+	node->mesh.primitives.push_back(primitive);
+
+    //gltfModel.nodes.clear();
+    gltfModel.nodes.push_back(node);
 }
 
 HelloVulkan::HelloVulkan()
@@ -980,9 +1023,14 @@ void HelloVulkan::createGraphicsPipeline()
     dynamicState.dynamicStateCount = 2;
     dynamicState.pDynamicStates = dynamicStates;
 
-	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(glm::mat4);
+	std::array<VkPushConstantRange, 2> pushConstantRanges;
+	pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	pushConstantRanges[0].offset = 0;
+	pushConstantRanges[0].size = sizeof(glm::mat4);
+
+	pushConstantRanges[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	pushConstantRanges[1].offset = sizeof(glm::mat4);
+	pushConstantRanges[1].size = sizeof(float);
 
     std::array<VkDescriptorSetLayout, 3> setLayouts = { descriptorSetLayoutM, descriptorSetLayoutS, descriptorSetLayoutMa };
 
@@ -990,8 +1038,8 @@ void HelloVulkan::createGraphicsPipeline()
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = setLayouts.size(); // Optional
     pipelineLayoutInfo.pSetLayouts = setLayouts.data(); // Optional
-    pipelineLayoutInfo.pushConstantRangeCount = 1; // Optional
-    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange; // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = pushConstantRanges.size(); // Optional
+    pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data(); // Optional
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
     {
@@ -1657,9 +1705,7 @@ void HelloVulkan::updateUniformBuffer()
 void HelloVulkan::updateSceneUniformBuffer()
 {
     UBOParams uboparams = {};
-	uboparams.lights[0].x = 0.0f;
-	uboparams.lights[0].y = 4.0f;
-	uboparams.lights[0].z = 4.0f;
+	uboparams.lights[0] = lightPos;
 
     uboparams.lights[1] = uboparams.lights[2] = uboparams.lights[3] = uboparams.lights[0];
 

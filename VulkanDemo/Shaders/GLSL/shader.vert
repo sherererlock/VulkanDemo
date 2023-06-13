@@ -24,6 +24,7 @@ layout(location = 2) out vec2 fragTexCoord;
 layout(location = 3) out vec3 worldPos;
 layout(location = 4) out vec3 tangent;
 
+
 out gl_PerVertex {
     vec4 gl_Position;
 };
@@ -40,4 +41,5 @@ void main() {
 
    vec4 pos = primitive.model * vec4(inPosition, 1.0);
    worldPos = pos.xyz;
+
 }

@@ -28,6 +28,11 @@ layout(set = 2, binding = 2) uniform sampler2D roughnessSampler;
 
 layout(location = 0) out vec4 outColor;
 
+layout(push_constant) uniform PushConsts {
+	layout(offset = 64) float islight;
+} material;
+
+
 float D_GGX_TR(vec3 n, vec3 h, float roughness)
 {
 	float a = roughness * roughness;
@@ -77,7 +82,7 @@ vec3 blin_phong()
 	vec3 R = reflect(L, N);
 	vec3 diffuse = max(dot(N, L), 0.15) * fragColor;
 	vec3 specular = pow(max(dot(R, V), 0.0), 16.0) * vec3(0.75);
-	return diffuse * color.rgb + specular;
+	return vec3(1.0);
 }
 
 vec3 calculateNormal()
@@ -95,9 +100,7 @@ vec3 calculateNormal()
 vec3 pbr()
 {
 	vec3 albedo = texture(colorSampler, fragTexCoord).rgb;
-
 	vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
-
 	float roughness = roughMetalic.x;
 	float metallic = roughMetalic.y;
 
@@ -113,29 +116,32 @@ vec3 pbr()
 	for(int i = 0; i < 1; i ++)
 	{
 		vec3 l = normalize(uboParam.lights[i].xyz - worldPos);
-		vec3 h = normalize(v + l);
-		float distance = length(uboParam.lights[i].xyz - worldPos);
-		float atten = 1.0 / (distance * distance);
-		vec3 irradiance = vec3(1.0) * atten;
+		if(dot(n, l) > 0.0)
+		{
+			vec3 h = normalize(v + l);
+			//float distance = length(uboParam.lights[i].xyz - worldPos);
+			//float atten = 1.0 / (distance * distance);
+			//vec3 irradiance = vec3(1.0) * atten;
 
-		float ndf = D_GGX_TR(n, h, roughness);
-		float g = GeometrySmith(n, v, l, roughness);
-		vec3 f = fresnelSchlick(max(dot(v, h), 0.0), F0);
+			float ndf = D_GGX_TR(n, h, roughness);
+			float g = GeometrySmith(n, v, l, roughness);
+			vec3 f = fresnelSchlick(max(dot(v, n), 0.0), F0);
 
-		vec3 ks = f;
-		vec3 kd = (vec3(1.0)-f);
-		kd *= (1 - metallic);
+			//vec3 ks = f;
+			//vec3 kd = (vec3(1.0)-f);
+			//kd *= (1 - metallic);
 	
-		vec3 nom = ndf * g * f;
-		float denom = 4 * max(dot(n, v), 0.0) * max(dot(n,l), 0.0) + 0.001;
-		vec3 specular = nom / denom;
+			vec3 nom = ndf * g * f;
+			float denom = 4 * max(dot(n, v), 0.0) * max(dot(n,l), 0.0) + 0.001;
+			vec3 specular = nom / denom;
 
-		float ndotl = max(dot(n, l), 0.0);
-		Lo += (kd * albedo.xyz / PI + specular) * irradiance * ndotl;
+			float ndotl = max(dot(n, l), 0.0);
+			Lo += specular * ndotl;
+		}
 	}
 
 	vec3 ambient = vec3(0.03) * albedo;
-	vec3 color = ambient + Lo;
+	vec3 color = Lo;
 
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));  
@@ -143,9 +149,12 @@ vec3 pbr()
 	return color;
 }
 
-void main()
-{
+void main(){
 	//vec3 color = blin_phong();
-	vec3 color = pbr();
+	vec3 color = vec3(1.0);
+
+	if(material.islight == 0)
+		color = pbr();
+
 	outColor = vec4(color, 1.0);
 }

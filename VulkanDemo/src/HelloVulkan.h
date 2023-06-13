@@ -152,6 +152,7 @@ public:
     void loadModel();
 
     void loadgltfModel(std::string filename);
+    void AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
 
     VkDevice GetDevice()
     {
@@ -271,5 +272,7 @@ private:
 		bool middle = false;
 	} mouseButtons;
 
+
+    glm::vec4 lightPos = {0.0f, 4.0f, -4.0f, 1.0f};
 };
 

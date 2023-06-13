@@ -63,6 +63,7 @@ struct Primitive {
 	uint32_t firstIndex;
 	uint32_t indexCount;
 	int32_t materialIndex;
+	float islight = 0.0;
 };
 
 struct Mesh {
