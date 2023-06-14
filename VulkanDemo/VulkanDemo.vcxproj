@@ -105,6 +105,9 @@
       <AdditionalLibraryDirectories>$(SolutionDir)libs\vulkan;$(SolutionDir)libs\glfw</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CustomBuildStep>
+      <Command>D:\games\VulkanDemo\VulkanDemo\Shaders\GLSL\compile.bat</Command>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -125,6 +128,9 @@
       <AdditionalLibraryDirectories>$(SolutionDir)libs\vulkan;$(SolutionDir)libs\glfw</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CustomBuildStep>
+      <Command>D:\games\VulkanDemo\VulkanDemo\Shaders\GLSL\compile.bat</Command>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -141,6 +147,9 @@
       <AdditionalLibraryDirectories>$(SolutionDir)libs\vulkan;$(SolutionDir)libs\glfw</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CustomBuildStep>
+      <Command>D:\games\VulkanDemo\VulkanDemo\Shaders\GLSL\compile.bat</Command>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -161,6 +170,9 @@
       <AdditionalLibraryDirectories>$(SolutionDir)libs\vulkan;$(SolutionDir)libs\glfw</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CustomBuildStep>
+      <Command>D:\games\VulkanDemo\VulkanDemo\Shaders\GLSL\compile.bat</Command>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Buffer.cpp" />

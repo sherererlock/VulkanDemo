@@ -422,13 +422,15 @@ void HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Verte
 
 	Node* node = new Node{};
 
-    node->matrix = glm::translate(node->matrix, glm::vec3(0.0f, 4.0f, -8.0f));
+    node->matrix = glm::translate(node->matrix, glm::vec3(lightPos.x, lightPos.y, lightPos.z));
     node->matrix = glm::scale(node->matrix, glm::vec3(0.1f));
 
 	node->mesh.primitives.push_back(primitive);
 
     //gltfModel.nodes.clear();
     gltfModel.nodes.push_back(node);
+
+    lightNode = node;
 }
 
 HelloVulkan::HelloVulkan()
@@ -509,7 +511,7 @@ void HelloVulkan::InitVulkan()
 
     createSemaphores();
 
-    updateSceneUniformBuffer();
+    updateSceneUniformBuffer(0.0f);
 }
 
 void HelloVulkan::MainLoop()
@@ -541,6 +543,7 @@ void HelloVulkan::MainLoop()
             viewUpdated = false;
         }
 
+        updateSceneUniformBuffer(frameTimer);
 		timer += timerSpeed * frameTimer;
 		if (timer > 1.0)
 		{
@@ -564,6 +567,7 @@ void HelloVulkan::Cleanup()
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayoutS, nullptr);
     vkDestroyDescriptorSetLayout(device, descriptorSetLayoutM, nullptr);
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayoutMa, nullptr);
 
     vkDestroyBuffer(device, uniformBuffer, nullptr);
     vkFreeMemory(device, uniformBufferMemory, nullptr);
@@ -1702,10 +1706,20 @@ void HelloVulkan::updateUniformBuffer()
     vkUnmapMemory(device, uniformBufferMemory);
 }
 
-void HelloVulkan::updateSceneUniformBuffer()
+void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
 {
     UBOParams uboparams = {};
 	uboparams.lights[0] = lightPos;
+
+    glm::mat4 rotation;
+    glm::vec3 yaxis(0.0f, 1.0f, 0.0f);
+    constexpr float speed = glm::radians(35.0f);
+    rotation = glm::rotate(rotation, speed * frameTimer, yaxis);
+
+    glm::mat4 translation;
+    lightPos = rotation * lightPos;
+    lightNode->matrix = glm::translate(translation, glm::vec3(lightPos.x, lightPos.y, lightPos.z) );
+    lightNode->matrix = glm::scale(lightNode->matrix,  glm::vec3(0.1f) );
 
     uboparams.lights[1] = uboparams.lights[2] = uboparams.lights[3] = uboparams.lights[0];
 

@@ -17,12 +17,14 @@ void gltfModel::Cleanup()
 	vkFreeMemory(logicalDevice, vertices.memory, nullptr);
 	vkDestroyBuffer(logicalDevice, indices.buffer, nullptr);
 	vkFreeMemory(logicalDevice, indices.memory, nullptr);
-	for (Image image : images) {
+	for (Image& image : images) {
 		vkDestroyImageView(logicalDevice, image.texture.view, nullptr);
 		vkDestroyImage(logicalDevice, image.texture.image, nullptr);
 		vkDestroySampler(logicalDevice, image.texture.sampler, nullptr);
 		vkFreeMemory(logicalDevice, image.texture.deviceMemory, nullptr);
 	}
+
+
 }
 
 void gltfModel::loadImages(tinygltf::Model& input)
@@ -33,7 +35,7 @@ void gltfModel::loadImages(tinygltf::Model& input)
 	for (size_t i = 0; i < input.images.size(); i++) {
 		tinygltf::Image& glTFImage = input.images[i];
 
-		std::cout<< i << " name:" << glTFImage.name << "uri:" << glTFImage.uri << std::endl;
+		//std::cout<< i << " name:" << glTFImage.name << "uri:" << glTFImage.uri << std::endl;
 		// Get the image data from the glTF loader
 		unsigned char* buffer = nullptr;
 		VkDeviceSize bufferSize = 0;

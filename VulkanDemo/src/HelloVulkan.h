@@ -93,7 +93,7 @@ public:
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t miplevels);
 
     void updateUniformBuffer();
-    void updateSceneUniformBuffer();
+    void updateSceneUniformBuffer(float frameTimer);
     void drawFrame();
 
     void recreateSwapChain();
@@ -273,6 +273,7 @@ private:
 	} mouseButtons;
 
 
-    glm::vec4 lightPos = {0.0f, 4.0f, -4.0f, 1.0f};
+    glm::vec4 lightPos = {0.0f, 2.0f, -4.0f, 1.0f};
+    Node* lightNode;
 };
 
