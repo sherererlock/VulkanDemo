@@ -172,9 +172,9 @@ public:
 	void loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, Node* parent, std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
 
 	// Draw a single node including child nodes (if present)
-	void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node);
+	void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node) const;
 
-	void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
+	void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) const;
 
 };
 

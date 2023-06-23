@@ -9,6 +9,7 @@ struct ShadowUniformBufferObject {
 };
 
 class HelloVulkan;
+class gltfModel;
 struct PipelineCreateInfo;
 
 class Shadow
@@ -35,16 +36,17 @@ private:
 	HelloVulkan* vulkanAPP;
 
 public:
-	Shadow(VkDevice vkdevice, uint32_t w, uint32_t h) : device(vkdevice), width(w), height(h) {}
 
-	void CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo);
+	void Init(VkDevice vkdevice, uint32_t w, uint32_t h);
+	void CreateShadowPipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
 	void CreateShadowPass();
 	void CreateDescriptSetLayout();
 	void SetupDescriptSet(VkDescriptorPool pool);
 	void CreateFrameBuffer();
 	void CreateUniformBuffer();
 	void CreateShadowMap();
-	void CreateShader();
+
+	void BuildCommandBuffer(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const gltfModel& gltfmodel);
 
 	void UpateLightMVP(glm::mat4 translation);
 };

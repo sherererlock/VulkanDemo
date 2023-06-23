@@ -4,9 +4,49 @@
 
 #include <stdexcept>
 
-void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo)
+void Shadow::Init(VkDevice vkdevice, uint32_t w, uint32_t h)
 {
+    device = vkdevice;
+    width = w;
+    height = h;
+}
 
+void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGraphicsPipelineCreateInfo& creatInfo)
+{
+    auto shaderStages = vulkanAPP->CreaterShader("D:/games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.vert.spv", "D:/games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.frag.spv");
+
+    // No blend attachment states (no color attachments used)
+    pipelineCreateInfo.colorBlending.attachmentCount = 0;
+
+    // Disable culling, so all faces contribute to shadows
+    pipelineCreateInfo.rasterizer.cullMode = VK_CULL_MODE_NONE;
+    pipelineCreateInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+
+	// Enable depth bias
+	pipelineCreateInfo.rasterizer.depthBiasEnable = VK_TRUE;
+
+    VkDynamicState dynamicStates[] = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_LINE_WIDTH,
+        VK_DYNAMIC_STATE_SCISSOR,
+        VK_DYNAMIC_STATE_DEPTH_BIAS,
+    };
+
+    pipelineCreateInfo.dynamicState.dynamicStateCount = 4;
+    pipelineCreateInfo.dynamicState.pDynamicStates = dynamicStates;
+
+    creatInfo.stageCount = 1;
+    creatInfo.pStages = shaderStages.data();
+
+    creatInfo.renderPass = shadowPass;
+
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &creatInfo, nullptr, &shadowPipeline) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create graphics pipeline!");
+    }
+
+    vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
+    vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
 }
 
 void Shadow::CreateShadowPass()
@@ -211,8 +251,45 @@ void Shadow::CreateShadowMap()
 	vkCreateSampler(device, &sampler, nullptr, &shadowMapSampler);
 }
 
-void Shadow::CreateShader()
+void Shadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const gltfModel& gltfmodel)
 {
+    VkRenderPassBeginInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = shadowPass;
+    renderPassInfo.framebuffer = frameBuffer;
+
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent.width = width;
+    renderPassInfo.renderArea.extent.width = height;
+
+    VkClearValue clearValue;
+    clearValue.depthStencil = {1.0f, 0};
+
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearValue;
+
+    VkViewport viewport = {};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float) width;
+    viewport.height = (float) height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    VkRect2D scissor = {};
+    scissor.offset = {0, 0};
+    scissor.extent.width = width;
+    scissor.extent.height = height;
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline);
+
+    gltfmodel.draw(commandBuffer, pipelineLayout);
+
+    vkCmdEndRenderPass(commandBuffer);
 }
 
 void Shadow::UpateLightMVP(glm::mat4 translation)

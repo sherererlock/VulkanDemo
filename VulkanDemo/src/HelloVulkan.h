@@ -10,6 +10,7 @@
 #include <string>
 #include "gltfModel.h"
 #include "camera.hpp"
+#include "Shadow.h"
 
 struct QueueFamilyIndices
 {
@@ -293,5 +294,7 @@ private:
 
     glm::vec4 lightPos = {0.0f, 2.0f, -4.0f, 1.0f};
     Node* lightNode;
+
+    Shadow shadow;
 };
 

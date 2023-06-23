@@ -218,7 +218,7 @@ void gltfModel::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model&
 		}
 }
 
-void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node)
+void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node) const
 {
 	if (node->mesh.primitives.size() > 0) 
 	{
@@ -247,7 +247,7 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 	}
 }
 
-void gltfModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
+void gltfModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) const
 {
 	// All vertices and indices are stored in single buffers, so we only need to bind once
 	VkDeviceSize offsets[1] = { 0 };

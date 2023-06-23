@@ -484,12 +484,21 @@ void HelloVulkan::InitVulkan()
     CreateSurface();
     pickPhysicalDevice();
     CreateDevice();
+
+    shadow.Init(device, 2048, 2048);
+
     createSwapChain();
     createImageViews();
 
+    shadow.CreateShadowMap();
+
     createRenderPass();
 
+    shadow.CreateShadowPass();
+
     createDescriptorSetLayout();
+    shadow.CreateDescriptSetLayout();
+
     createDescriptorPool();
 
     createGraphicsPipeline();
@@ -497,15 +506,19 @@ void HelloVulkan::InitVulkan()
     createCommandPool();
     createColorResources();
     createDepthResources();
-    //createTextureImage();
-    //createTextureImageView();
-    //createTextureSampler();
     createFrameBuffer();
 
+    shadow.CreateFrameBuffer();
+
     createUniformBuffer();
+
+    shadow.CreateUniformBuffer();
+
     loadgltfModel(MODEL_PATH);
 
     createDescriptorSet();
+
+    shadow.SetupDescriptSet(descriptorPool);
 
     createCommandBuffers();
 
@@ -982,21 +995,6 @@ void HelloVulkan::createGraphicsPipeline()
     info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptoins.size());
     info.vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptoins.data(); // Optional
 
-    VkViewport viewport = {};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float) swapChainExtent.width;
-    viewport.height = (float) swapChainExtent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-
-    VkRect2D scissor = {};
-    scissor.offset = {0, 0};
-    scissor.extent = swapChainExtent;
-
-    info.viewportState.pViewports = &viewport;
-    info.viewportState.pScissors = &scissor;
-
 	std::array<VkPushConstantRange, 2> pushConstantRanges;
 	pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	pushConstantRanges[0].offset = 0;
@@ -1072,6 +1070,8 @@ void HelloVulkan::createGraphicsPipeline()
 
     vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
     vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
+
+    shadow.CreateShadowPipeline(info, pipelineInfo);
 }
 
 VkShaderModule HelloVulkan::createShaderModule(const std::vector<char>& code)
@@ -1225,32 +1225,53 @@ void HelloVulkan::buildCommandBuffers()
 
         vkBeginCommandBuffer(commandBuffers[i], &beginInfo);
 
-        VkRenderPassBeginInfo renderPassInfo = {};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = swapChainFramebuffers[i];
+        {
+            shadow.BuildCommandBuffer(commandBuffers[i], pipelineLayout, gltfModel);
+        }
 
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = swapChainExtent;
+        {
+            VkRenderPassBeginInfo renderPassInfo = {};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.renderPass = renderPass;
+            renderPassInfo.framebuffer = swapChainFramebuffers[i];
 
-        std::array<VkClearValue, 2> clearValues = {};
-        clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-        clearValues[1].depthStencil = {1.0f, 0};
+            renderPassInfo.renderArea.offset = {0, 0};
+            renderPassInfo.renderArea.extent = swapChainExtent;
 
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-        renderPassInfo.pClearValues = clearValues.data();
+            std::array<VkClearValue, 2> clearValues = {};
+            clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+            clearValues[1].depthStencil = {1.0f, 0};
 
-        vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+            VkViewport viewport = {};
+            viewport.x = 0.0f;
+            viewport.y = 0.0f;
+            viewport.width = (float) swapChainExtent.width;
+            viewport.height = (float) swapChainExtent.height;
+            viewport.minDepth = 0.0f;
+            viewport.maxDepth = 1.0f;
 
-		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetM, 0, nullptr);
+            VkRect2D scissor = {};
+            scissor.offset = {0, 0};
+            scissor.extent = swapChainExtent;
 
-		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptorSetS, 0, nullptr);
+            renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+            renderPassInfo.pClearValues = clearValues.data();
 
-        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+            vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        gltfModel.draw(commandBuffers[i], pipelineLayout);
+            vkCmdSetViewport(commandBuffers[i], 0, 1, &viewport);
+            vkCmdSetScissor(commandBuffers[i], 0, 1, &scissor);
 
-        vkCmdEndRenderPass(commandBuffers[i]);
+		    vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetM, 0, nullptr);
+
+		    vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptorSetS, 0, nullptr);
+
+            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+            gltfModel.draw(commandBuffers[i], pipelineLayout);
+
+            vkCmdEndRenderPass(commandBuffers[i]);
+        }
 
         if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) 
         {
@@ -1730,6 +1751,8 @@ void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
     lightNode->matrix = glm::scale(lightNode->matrix,  glm::vec3(0.1f) );
 
     uboparams.lights[1] = uboparams.lights[2] = uboparams.lights[3] = uboparams.lights[0];
+
+    shadow.UpateLightMVP(translation);
 
     void* data;
     vkMapMemory(device, uniformBufferMemoryL, 0, sizeof(uboparams), 0, &data);
