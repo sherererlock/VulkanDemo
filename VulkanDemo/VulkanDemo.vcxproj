@@ -175,6 +175,7 @@
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Shadow.cpp" />
     <ClCompile Include="src\Buffer.cpp" />
     <ClCompile Include="src\gltfModel.cpp" />
     <ClCompile Include="src\HelloVulkan.cpp" />
@@ -182,6 +183,7 @@
     <ClCompile Include="src\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Shadow.h" />
     <ClInclude Include="src\Buffer.h" />
     <ClInclude Include="src\camera.hpp" />
     <ClInclude Include="src\gltfModel.h" />

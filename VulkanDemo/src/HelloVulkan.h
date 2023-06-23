@@ -7,7 +7,7 @@
 
 #include<vector>
 #include <array>
-
+#include <string>
 #include "gltfModel.h"
 #include "camera.hpp"
 
@@ -38,6 +38,23 @@ struct UBOParams {
 	glm::vec4 lights[4];
 };
 
+struct PipelineCreateInfo
+{
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo;
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly;
+    VkPipelineViewportStateCreateInfo viewportState;
+    VkPipelineRasterizationStateCreateInfo rasterizer;
+    VkPipelineMultisampleStateCreateInfo multisampling;
+    VkPipelineColorBlendStateCreateInfo colorBlending;
+    VkPipelineDynamicStateCreateInfo dynamicState;
+    VkPipelineDepthStencilStateCreateInfo depthStencil;
+
+    PipelineCreateInfo() : vertexInputInfo({}), inputAssembly({}), viewportState({}), rasterizer({}),
+        multisampling({}), colorBlending({}), dynamicState({}), depthStencil({})
+    {        
+    }
+};
+
 class HelloVulkan
 {
 public:
@@ -63,8 +80,10 @@ public:
     void createImageViews();
 
     void createRenderPass();
+    PipelineCreateInfo CreatePipelineCreateInfo();
     void createGraphicsPipeline();
     VkShaderModule createShaderModule(const std::vector<char>& code);
+    std::array<VkPipelineShaderStageCreateInfo, 2> CreaterShader(std::string vertexFile, std::string fragmentFile);
 
     void createFrameBuffer();
 
@@ -138,7 +157,6 @@ public:
     static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
     void MouseCallback(double xpos, double ypos);
-
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
