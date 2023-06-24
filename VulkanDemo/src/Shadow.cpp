@@ -1,11 +1,12 @@
-
+ï»¿
 #include "HelloVulkan.h"
 #include "Shadow.h"
 
 #include <stdexcept>
 
-void Shadow::Init(VkDevice vkdevice, uint32_t w, uint32_t h)
+void Shadow::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
 {
+    vulkanAPP = app;
     device = vkdevice;
     width = w;
     height = h;
@@ -13,6 +14,14 @@ void Shadow::Init(VkDevice vkdevice, uint32_t w, uint32_t h)
 
 void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGraphicsPipelineCreateInfo& creatInfo)
 {
+
+    auto attributeDescriptoins = Vertex1::getAttributeDescriptions();
+    auto attributeDescriptionBindings = Vertex1::getBindingDescription();
+
+    pipelineCreateInfo.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
+    pipelineCreateInfo.vertexInputInfo.vertexAttributeDescriptionCount = 1;
+    pipelineCreateInfo.vertexInputInfo.pVertexAttributeDescriptions = &attributeDescriptoins[0]; // Optional
+
     auto shaderStages = vulkanAPP->CreaterShader("D:/games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.vert.spv", "D:/games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.frag.spv");
 
     // No blend attachment states (no color attachments used)
@@ -25,14 +34,17 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
 	// Enable depth bias
 	pipelineCreateInfo.rasterizer.depthBiasEnable = VK_TRUE;
 
+    /*
+    * â€‹xÂ validation layer: Validation Error: [ VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853 ] Object 0: handle = 0x2c38e531f70, type = VK_OBJECT_TYPE_DEVICE; | MessageID = 0x3108bb9b | vkCreateGraphicsPipelines: pCreateInfo[0].pMultisampleState->rasterizationSamples (8) does not match the number of samples of the RenderPass color and/or depth attachment. The Vulkan spec states: If the pipeline is being created with fragment output interface state, and none of the VK_AMD_mixed_attachment_samples extension, the VK_NV_framebuffer_mixed_samples extension, or the multisampledRenderToSingleSampled feature are enabled, rasterizationSamples is not dynamic, and if subpass uses color and/or depth/stencil attachments, then the rasterizationSamples member of pMultisampleState must be the same as the sample count for those subpass attachments (https://vulkan.lunarg.com/doc/view/1.3.243.0/windows/1.3-extensions/vkspec.html#VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853) 
+    */
+    pipelineCreateInfo.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
     VkDynamicState dynamicStates[] = {
         VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_LINE_WIDTH,
-        VK_DYNAMIC_STATE_SCISSOR,
-        VK_DYNAMIC_STATE_DEPTH_BIAS,
+        VK_DYNAMIC_STATE_SCISSOR
     };
 
-    pipelineCreateInfo.dynamicState.dynamicStateCount = 4;
+    pipelineCreateInfo.dynamicState.dynamicStateCount = 2;
     pipelineCreateInfo.dynamicState.pDynamicStates = dynamicStates;
 
     creatInfo.stageCount = 1;
@@ -69,10 +81,10 @@ void Shadow::CreateShadowPass()
     depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // Í¼ÏñäÖÈ¾µÄ×ÓÁ÷³Ì
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // å›¾åƒæ¸²æŸ“çš„å­æµç¨‹
 
     subpass.colorAttachmentCount = 0;
-    subpass.pColorAttachments = nullptr; // fragment shaderÊ¹ÓÃ location = 0 outcolor,Êä³ö
+    subpass.pColorAttachments = nullptr; // fragment shaderä½¿ç”¨ location = 0 outcolor,è¾“å‡º
     subpass.pDepthStencilAttachment = &depthAttachmentRef;
     subpass.pResolveAttachments = nullptr;
 
@@ -81,10 +93,10 @@ void Shadow::CreateShadowPass()
 
 	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependencies[0].dstSubpass = 0;
-	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;   //  A subpass layout·¢Éú×ª»»µÄ½×¶Î
-	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT; //  B subpass µÈ´ıÖ´ĞĞµÄ½×¶Î
-	dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT; // A subpass ÖĞĞèÒªÍê³ÉµÄ²Ù×÷
-	dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; // b subpassµÈ´ıÖ´ĞĞ²Ù×÷
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;   //  A subpass layoutå‘ç”Ÿè½¬æ¢çš„é˜¶æ®µ
+	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT; //  B subpass ç­‰å¾…æ‰§è¡Œçš„é˜¶æ®µ
+	dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT; // A subpass ä¸­éœ€è¦å®Œæˆçš„æ“ä½œ
+	dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; // b subpassç­‰å¾…æ‰§è¡Œæ“ä½œ
 	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
 	dependencies[1].srcSubpass = 0;
@@ -189,7 +201,7 @@ void Shadow::CreateUniformBuffer()
 void Shadow::CreateShadowMap()
 {
 	// For shadow mapping we only need a depth attachment
-	VkImageCreateInfo image;
+    VkImageCreateInfo image = {};
     image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	image.imageType = VK_IMAGE_TYPE_2D;
 	image.extent.width = width;
@@ -201,9 +213,12 @@ void Shadow::CreateShadowMap()
 	image.tiling = VK_IMAGE_TILING_OPTIMAL;
 	image.format = VK_FORMAT_D16_UNORM;																// Depth stencil attachment
 	image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;		// We will sample directly from the depth attachment for the shadow mapping
+    image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
 	vkCreateImage(device, &image, nullptr, &shadowMapImage);
 
-	VkMemoryAllocateInfo memAlloc;
+    VkMemoryAllocateInfo memAlloc = {};
     memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	VkMemoryRequirements memReqs;
 	vkGetImageMemoryRequirements(device, shadowMapImage, &memReqs);
@@ -213,7 +228,7 @@ void Shadow::CreateShadowMap()
 	vkAllocateMemory(device, &memAlloc, nullptr, &shadowMapMemory);
 	vkBindImageMemory(device, shadowMapImage, shadowMapMemory, 0);
 
-	VkImageViewCreateInfo depthStencilView;
+    VkImageViewCreateInfo depthStencilView = {};
     depthStencilView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	depthStencilView.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	depthStencilView.format = VK_FORMAT_D16_UNORM;
@@ -233,7 +248,7 @@ void Shadow::CreateShadowMap()
 	//	DEFAULT_SHADOWMAP_FILTER :
 	//	VK_FILTER_NEAREST;
 
-	VkSamplerCreateInfo sampler;
+    VkSamplerCreateInfo sampler = {};
 	sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	sampler.maxAnisotropy = 1.0f;
 

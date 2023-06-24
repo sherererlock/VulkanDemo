@@ -485,12 +485,10 @@ void HelloVulkan::InitVulkan()
     pickPhysicalDevice();
     CreateDevice();
 
-    shadow.Init(device, 2048, 2048);
+    shadow.Init(this, device, 2048, 2048);
 
     createSwapChain();
     createImageViews();
-
-    shadow.CreateShadowMap();
 
     createRenderPass();
 
@@ -506,6 +504,8 @@ void HelloVulkan::InitVulkan()
     createCommandPool();
     createColorResources();
     createDepthResources();
+    shadow.CreateShadowMap();
+
     createFrameBuffer();
 
     shadow.CreateFrameBuffer();
@@ -1020,12 +1020,11 @@ void HelloVulkan::createGraphicsPipeline()
 
     VkDynamicState dynamicStates[] = {
         VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_LINE_WIDTH,
         VK_DYNAMIC_STATE_SCISSOR
     };
 
     info.dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    info.dynamicState.dynamicStateCount = 3;
+    info.dynamicState.dynamicStateCount = 2;
     info.dynamicState.pDynamicStates = dynamicStates;
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
@@ -1053,7 +1052,7 @@ void HelloVulkan::createGraphicsPipeline()
     pipelineInfo.pMultisampleState = &info.multisampling;
     pipelineInfo.pDepthStencilState = &info.depthStencil; // Optional
     pipelineInfo.pColorBlendState = &info.colorBlending;
-    pipelineInfo.pDynamicState = nullptr; // Optional
+    pipelineInfo.pDynamicState = &info.dynamicState; // Optional
 
     pipelineInfo.layout = pipelineLayout; // uniform±‰¡ø
 
@@ -1963,7 +1962,7 @@ void HelloVulkan::createDescriptorPool()
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = 2;
+    poolSizes[0].descriptorCount = 3;
 
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     poolSizes[1].descriptorCount = 9;
@@ -1973,7 +1972,7 @@ void HelloVulkan::createDescriptorPool()
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
 
-    poolInfo.maxSets = 5;
+    poolInfo.maxSets = 6;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {

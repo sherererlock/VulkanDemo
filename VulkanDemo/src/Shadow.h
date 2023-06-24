@@ -37,7 +37,7 @@ private:
 
 public:
 
-	void Init(VkDevice vkdevice, uint32_t w, uint32_t h);
+	void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
 	void CreateShadowPipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
 	void CreateShadowPass();
 	void CreateDescriptSetLayout();
