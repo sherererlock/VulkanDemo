@@ -5,7 +5,7 @@
 
 
 struct ShadowUniformBufferObject {
-	glm::mat4 LightMVP;
+	glm::mat4 depthVP;
 };
 
 class HelloVulkan;
@@ -20,6 +20,7 @@ private:
 
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorSet descriptorSet;
+	VkPipelineLayout pipelineLayout;
 
 	VkFramebuffer frameBuffer;
 
@@ -46,8 +47,10 @@ public:
 	void CreateUniformBuffer();
 	void CreateShadowMap();
 
-	void BuildCommandBuffer(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const gltfModel& gltfmodel);
+	void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel);
 
 	void UpateLightMVP(glm::mat4 translation);
+
+	void Cleanup();
 };
 

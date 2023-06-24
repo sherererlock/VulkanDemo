@@ -11,7 +11,14 @@ uniform UniformBufferObject {
 layout(set = 1, binding = 0) 
 uniform uboShared {
     vec4 lights[4];
+	mat4 depthVP;
 } uboParam;
+
+layout(set = 2, binding = 0) uniform sampler2D shadowMapSampler;
+
+layout(set = 3, binding = 0) uniform sampler2D colorSampler;
+layout(set = 3, binding = 1) uniform sampler2D normalSampler;
+layout(set = 3, binding = 2) uniform sampler2D roughnessSampler;
 
 
 #define PI 3.1415192654
@@ -21,10 +28,6 @@ layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 fragTexCoord;
 layout(location = 3) in vec3 worldPos;
 layout(location = 4) in vec3 tangent;
-
-layout(set = 2, binding = 0) uniform sampler2D colorSampler;
-layout(set = 2, binding = 1) uniform sampler2D normalSampler;
-layout(set = 2, binding = 2) uniform sampler2D roughnessSampler;
 
 layout(location = 0) out vec4 outColor;
 

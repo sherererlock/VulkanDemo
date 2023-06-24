@@ -14,7 +14,6 @@ void Shadow::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
 
 void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGraphicsPipelineCreateInfo& creatInfo)
 {
-
     auto attributeDescriptoins = Vertex1::getAttributeDescriptions();
     auto attributeDescriptionBindings = Vertex1::getBindingDescription();
 
@@ -51,6 +50,25 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
     creatInfo.pStages = shaderStages.data();
 
     creatInfo.renderPass = shadowPass;
+
+    VkPushConstantRange pushConstantRange;
+	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	pushConstantRange.offset = 0;
+	pushConstantRange.size = sizeof(glm::mat4);
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 1; // Optional
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout; // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = 1; // Optional
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange; // Optional
+
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create pipeline layout!");
+    }
+
+    creatInfo.layout = pipelineLayout;
 
     if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &creatInfo, nullptr, &shadowPipeline) != VK_SUCCESS)
     {
@@ -266,7 +284,7 @@ void Shadow::CreateShadowMap()
 	vkCreateSampler(device, &sampler, nullptr, &shadowMapSampler);
 }
 
-void Shadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const gltfModel& gltfmodel)
+void Shadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel)
 {
     VkRenderPassBeginInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -298,11 +316,15 @@ void Shadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, VkPipelineLayout 
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline);
 
-    gltfmodel.draw(commandBuffer, pipelineLayout);
+    gltfmodel.draw(commandBuffer, pipelineLayout, 1);
 
     vkCmdEndRenderPass(commandBuffer);
 }
@@ -318,4 +340,23 @@ void Shadow::UpateLightMVP(glm::mat4 translation)
     vkMapMemory(device, uniformMemory, 0, sizeof(ShadowUniformBufferObject), 0, &data);
     memcpy(data, &ubo, sizeof(ShadowUniformBufferObject));
     vkUnmapMemory(device, uniformMemory);
+}
+
+void Shadow::Cleanup()
+{
+    vkDestroyImage(device, shadowMapImage, nullptr); 
+    vkDestroySampler(device, shadowMapSampler, nullptr);
+    vkDestroyImageView(device, shadowMapImageView, nullptr);
+    vkFreeMemory(device, shadowMapMemory, nullptr);
+
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+
+    vkDestroyBuffer(device, uniformBuffer, nullptr);
+    vkFreeMemory(device, uniformMemory, nullptr);
+
+    vkDestroyPipeline(device, shadowPipeline, nullptr);
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    vkDestroyRenderPass(device, shadowPass, nullptr);
+
+    vkDestroyFramebuffer(device, frameBuffer, nullptr);
 }

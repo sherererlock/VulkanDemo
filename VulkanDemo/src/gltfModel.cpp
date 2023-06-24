@@ -218,7 +218,7 @@ void gltfModel::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model&
 		}
 }
 
-void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node) const
+void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node, uint32_t flag) const
 {
 	if (node->mesh.primitives.size() > 0) 
 	{
@@ -236,18 +236,22 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 		for (Primitive& primitive : node->mesh.primitives) {
 			if (primitive.indexCount > 0) {
 
-				vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::mat4), sizeof(float), &primitive.islight);
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 2, 1, &materials[primitive.materialIndex].descriptorSet, 0, nullptr);
+				if (flag == 0)
+				{
+					vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::mat4), sizeof(float), &primitive.islight);
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 2, 1, &materials[primitive.materialIndex].descriptorSet, 0, nullptr);
+				}
+
 				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 			}
 		}
 	}
 	for (auto& child : node->children) {
-		drawNode(commandBuffer, pipelineLayout, child);
+		drawNode(commandBuffer, pipelineLayout, child, flag);
 	}
 }
 
-void gltfModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) const
+void gltfModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t flag) const
 {
 	// All vertices and indices are stored in single buffers, so we only need to bind once
 	VkDeviceSize offsets[1] = { 0 };
@@ -255,6 +259,6 @@ void gltfModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLay
 	vkCmdBindIndexBuffer(commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 	// Render all nodes at top-level
 	for (auto& node : nodes) {
-		drawNode(commandBuffer, pipelineLayout, node);
+		drawNode(commandBuffer, pipelineLayout, node, flag);
 	}
 }

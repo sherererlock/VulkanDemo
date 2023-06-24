@@ -37,6 +37,7 @@ struct UniformBufferObject {
 
 struct UBOParams {
 	glm::vec4 lights[4];
+    glm::mat4 depthVP;
 };
 
 struct PipelineCreateInfo

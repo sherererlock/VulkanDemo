@@ -594,6 +594,7 @@ void HelloVulkan::Cleanup()
     vkDestroyCommandPool(device, commandPool, nullptr);
 
     gltfModel.Cleanup();
+    shadow.Cleanup();
     vkDestroyDevice(device, nullptr);
     if (enableValidationLayers) 
     {
@@ -1225,7 +1226,7 @@ void HelloVulkan::buildCommandBuffers()
         vkBeginCommandBuffer(commandBuffers[i], &beginInfo);
 
         {
-            shadow.BuildCommandBuffer(commandBuffers[i], pipelineLayout, gltfModel);
+            shadow.BuildCommandBuffer(commandBuffers[i], gltfModel);
         }
 
         {
@@ -1267,7 +1268,7 @@ void HelloVulkan::buildCommandBuffers()
 
             vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-            gltfModel.draw(commandBuffers[i], pipelineLayout);
+            gltfModel.draw(commandBuffers[i], pipelineLayout, 0);
 
             vkCmdEndRenderPass(commandBuffers[i]);
         }
@@ -2003,6 +2004,17 @@ void HelloVulkan::createDescriptorSetLayout()
 
     uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
+    VkDescriptorSetLayoutBinding imageLayoutBinding = {};
+    imageLayoutBinding.binding = 0;
+    imageLayoutBinding.descriptorCount = 1;
+    imageLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    imageLayoutBinding.pImmutableSamplers = nullptr;
+    imageLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    std::array<VkDescriptorSetLayoutBinding, 2> scenebindings = {uniformLayoutBinding, imageLayoutBinding};
+    layoutInfo.bindingCount = scenebindings.size();
+    layoutInfo.pBindings = scenebindings.data();
+
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayoutS) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
@@ -2074,6 +2086,7 @@ void HelloVulkan::createDescriptorSet()
     bufferInfo.buffer = uniformBufferL;
     bufferInfo.offset = 0;
     bufferInfo.range = sizeof(UBOParams);
+
     descriptorWrite.dstSet = descriptorSetS;
     vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
 
