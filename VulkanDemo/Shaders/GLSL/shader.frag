@@ -5,13 +5,13 @@ layout(set = 0, binding = 0)
 uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
+	mat4 depthVP;
     vec4 viewPos;
 } ubo;
 
 layout(set = 1, binding = 0) 
 uniform uboShared {
     vec4 lights[4];
-	mat4 depthVP;
 } uboParam;
 
 layout(set = 1, binding = 1) uniform sampler2D shadowMapSampler;
@@ -28,6 +28,7 @@ layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 fragTexCoord;
 layout(location = 3) in vec3 worldPos;
 layout(location = 4) in vec3 tangent;
+layout(location = 5) in vec4 shadowCoord;
 
 layout(location = 0) out vec4 outColor;
 
@@ -110,6 +111,13 @@ vec3 pbr()
 	float roughness = roughMetalic.x;
 	float metallic = roughMetalic.y;
 
+	float shadow = 1.0;
+	float dist = texture(shadowMapSampler, shadowCoord.xy).r;
+	if ( shadowCoord.w > 0.0 && dist  > shadowCoord.z ) 
+	{
+		shadow = 0.0;
+	}
+
 	vec3 F0 = vec3(0.04);
 	F0 = mix(F0, albedo.xyz, metallic);
 
@@ -150,6 +158,7 @@ vec3 pbr()
 	vec3 ambient = vec3(0.03) * albedo;
 	vec3 color = ambient + Lo;
 
+	color *= shadow;
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));  
 

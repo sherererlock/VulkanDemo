@@ -6,6 +6,7 @@ uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
     vec4 viewPos;
+    mat4 depthVP;
 } ubo;
 
 layout(push_constant) uniform PushConsts{
@@ -23,6 +24,7 @@ layout(location = 1) out vec3 normal;
 layout(location = 2) out vec2 fragTexCoord;
 layout(location = 3) out vec3 worldPos;
 layout(location = 4) out vec3 tangent;
+layout(location = 5) out vec4 outShadowCoord;
 
 
 out gl_PerVertex {
@@ -41,5 +43,5 @@ void main() {
 
    vec4 pos = primitive.model * vec4(inPosition, 1.0);
    worldPos = pos.xyz;
-
+   outShadowCoord = ubo.depthVP * primitive.model * vec4(inPosition, 1.0);
 }

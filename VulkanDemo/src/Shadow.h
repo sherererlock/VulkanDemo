@@ -37,6 +37,9 @@ private:
 	uint32_t width, height;
 	HelloVulkan* vulkanAPP;
 
+	const VkFormat format = VK_FORMAT_D32_SFLOAT;
+	//const VkFormat format = VK_FORMAT_D16_UNORM;
+
 public:
 
 	inline VkDescriptorImageInfo GetDescriptorImageInfo() const {

@@ -82,7 +82,7 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
 void Shadow::CreateShadowPass()
 {
     VkAttachmentDescription depthAttachment = {};
-    depthAttachment.format = VK_FORMAT_D16_UNORM;
+    depthAttachment.format = format;
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -229,7 +229,7 @@ void Shadow::CreateShadowMap()
 	image.arrayLayers = 1;
 	image.samples = VK_SAMPLE_COUNT_1_BIT;
 	image.tiling = VK_IMAGE_TILING_OPTIMAL;
-	image.format = VK_FORMAT_D16_UNORM;																// Depth stencil attachment
+	image.format = format;																// Depth stencil attachment
 	image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;		// We will sample directly from the depth attachment for the shadow mapping
     image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -249,7 +249,7 @@ void Shadow::CreateShadowMap()
     VkImageViewCreateInfo depthStencilView = {};
     depthStencilView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	depthStencilView.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	depthStencilView.format = VK_FORMAT_D16_UNORM;
+	depthStencilView.format = format;
 	depthStencilView.subresourceRange = {};
 	depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 	depthStencilView.subresourceRange.baseMipLevel = 0;
