@@ -23,8 +23,6 @@ void gltfModel::Cleanup()
 		vkDestroySampler(logicalDevice, image.texture.sampler, nullptr);
 		vkFreeMemory(logicalDevice, image.texture.deviceMemory, nullptr);
 	}
-
-
 }
 
 void gltfModel::loadImages(tinygltf::Model& input)
@@ -63,8 +61,6 @@ void gltfModel::loadImages(tinygltf::Model& input)
 		if (deleteBuffer) {
 			delete[] buffer;
 		}
-
-
 	}
 }
 

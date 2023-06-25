@@ -100,7 +100,6 @@ void Shadow::CreateShadowPass()
 
     VkSubpassDescription subpass = {};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // 图像渲染的子流程
-
     subpass.colorAttachmentCount = 0;
     subpass.pColorAttachments = nullptr; // fragment shader使用 location = 0 outcolor,输出
     subpass.pDepthStencilAttachment = &depthAttachmentRef;
@@ -231,8 +230,8 @@ void Shadow::CreateShadowMap()
 	image.tiling = VK_IMAGE_TILING_OPTIMAL;
 	image.format = VK_FORMAT_D16_UNORM;																// Depth stencil attachment
 	image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;		// We will sample directly from the depth attachment for the shadow mapping
-    image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    //image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    //image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	vkCreateImage(device, &image, nullptr, &shadowMapImage);
 
@@ -258,7 +257,6 @@ void Shadow::CreateShadowMap()
 	depthStencilView.subresourceRange.layerCount = 1;
 	depthStencilView.image = shadowMapImage;
 	vkCreateImageView(device, &depthStencilView, nullptr, &shadowMapImageView);
-
 
 	// Create sampler to sample from to depth attachment
 	// Used to sample in the fragment shader for shadowed rendering
