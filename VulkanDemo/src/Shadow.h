@@ -5,7 +5,7 @@
 
 
 struct ShadowUniformBufferObject {
-	glm::mat4 depthVP;
+	glm::mat4 depthMVP;
 };
 
 class HelloVulkan;

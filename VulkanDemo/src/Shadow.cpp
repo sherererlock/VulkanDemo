@@ -21,7 +21,7 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
     pipelineCreateInfo.vertexInputInfo.vertexAttributeDescriptionCount = 1;
     pipelineCreateInfo.vertexInputInfo.pVertexAttributeDescriptions = &attributeDescriptoins[0]; // Optional
 
-    auto shaderStages = vulkanAPP->CreaterShader("./shaders/GLSL/shadow.vert.spv", "./shaders/GLSL/shadow.frag.spv");
+    auto shaderStages = vulkanAPP->CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.frag.spv");
 
     // No blend attachment states (no color attachments used)
     pipelineCreateInfo.colorBlending.attachmentCount = 0;
@@ -334,10 +334,10 @@ void Shadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& 
     vkCmdEndRenderPass(commandBuffer);
 }
 
-void Shadow::UpateLightMVP(glm::mat4 translation)
+void Shadow::UpateLightMVP(glm::mat4 depthMVP)
 {
     ShadowUniformBufferObject ubo;
-
+    ubo.depthMVP = depthMVP;
     // TODO
 
     void* data;

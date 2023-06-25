@@ -37,7 +37,7 @@ struct UniformBufferObject {
 
 struct UBOParams {
 	glm::vec4 lights[4];
-    glm::mat4 depthVP;
+    glm::mat4 depthMVP;
 };
 
 struct PipelineCreateInfo
@@ -246,7 +246,7 @@ private:
     int width = 1920;
     int height = 1080;
 
-    const std::string MODEL_PATH = "./models/buster_drone/busterDrone.gltf";
+    const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
     const std::string TEXTURE_PATH = "textures/image_512.jpg";
 
     const std::vector<const char*> validationLayers = {

@@ -513,7 +513,7 @@ void HelloVulkan::InitVulkan()
     createUniformBuffer();
 
     shadow.CreateUniformBuffer();
-
+    
     loadgltfModel(MODEL_PATH);
 
     createDescriptorSet();
@@ -985,7 +985,7 @@ PipelineCreateInfo HelloVulkan::CreatePipelineCreateInfo()
 
 void HelloVulkan::createGraphicsPipeline()
 {
-    auto shaderStages = CreaterShader("./shaders/GLSL/vert.spv", "./shaders/GLSL/frag.spv");
+    auto shaderStages = CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/frag.spv");
 
     PipelineCreateInfo info = CreatePipelineCreateInfo();
     
@@ -1752,7 +1752,13 @@ void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
 
     uboparams.lights[1] = uboparams.lights[2] = uboparams.lights[3] = uboparams.lights[0];
 
-    shadow.UpateLightMVP(translation);
+    glm::mat4 view = glm::lookAt(glm::vec3(lightPos.x, lightPos.y, lightPos.z), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 ortho = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 0.01f, 400.0f);
+
+    uboparams.depthMVP = ortho * view;
+    uboparams.depthMVP = camera.matrices.view * camera.matrices.perspective;
+
+    shadow.UpateLightMVP(uboparams.depthMVP);
 
     void* data;
     vkMapMemory(device, uniformBufferMemoryL, 0, sizeof(uboparams), 0, &data);
