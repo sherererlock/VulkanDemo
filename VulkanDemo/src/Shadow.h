@@ -31,12 +31,17 @@ private:
 	VkImageView shadowMapImageView;
 	VkDeviceMemory shadowMapMemory;
 	VkSampler shadowMapSampler;
+	VkDescriptorImageInfo descriptor;
 
 	VkDevice device;
 	uint32_t width, height;
 	HelloVulkan* vulkanAPP;
 
 public:
+
+	inline VkDescriptorImageInfo GetDescriptorImageInfo() const {
+		return descriptor;
+	}
 
 	void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
 	void CreateShadowPipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
@@ -46,9 +51,7 @@ public:
 	void CreateFrameBuffer();
 	void CreateUniformBuffer();
 	void CreateShadowMap();
-
 	void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel);
-
 	void UpateLightMVP(glm::mat4 translation);
 
 	void Cleanup();

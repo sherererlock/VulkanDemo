@@ -38,3 +38,7 @@
 #Directory
 .vs
 bin
+VulkanDemo/Shaders/GLSL/compile.bat
+VulkanDemo/VulkanDemo.vcxproj
+*.vcxproj
+*.spv

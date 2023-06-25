@@ -1966,7 +1966,7 @@ void HelloVulkan::createDescriptorPool()
     poolSizes[0].descriptorCount = 3;
 
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = 9;
+    poolSizes[1].descriptorCount = 10;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -2005,7 +2005,7 @@ void HelloVulkan::createDescriptorSetLayout()
     uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorSetLayoutBinding imageLayoutBinding = {};
-    imageLayoutBinding.binding = 0;
+    imageLayoutBinding.binding = 1;
     imageLayoutBinding.descriptorCount = 1;
     imageLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     imageLayoutBinding.pImmutableSamplers = nullptr;
@@ -2088,7 +2088,18 @@ void HelloVulkan::createDescriptorSet()
     bufferInfo.range = sizeof(UBOParams);
 
     descriptorWrite.dstSet = descriptorSetS;
-    vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+
+    std::array<VkWriteDescriptorSet, 2> sceneDescriptorWrites = { descriptorWrite, descriptorWrite };
+
+	sceneDescriptorWrites[1].dstBinding = 1;
+	sceneDescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sceneDescriptorWrites[1].descriptorCount = 1;
+    VkDescriptorImageInfo imageInfo = shadow.GetDescriptorImageInfo();
+	sceneDescriptorWrites[1].pBufferInfo = nullptr;
+	sceneDescriptorWrites[1].pImageInfo = &imageInfo; // Optional
+	sceneDescriptorWrites[1].pTexelBufferView = nullptr; // Optional
+
+    vkUpdateDescriptorSets(device, 2, sceneDescriptorWrites.data(), 0, nullptr);
 
     layouts[0] = descriptorSetLayoutMa;
     std::array<VkWriteDescriptorSet, 3> descriptorWrites = {};

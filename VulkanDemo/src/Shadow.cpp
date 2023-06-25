@@ -282,6 +282,11 @@ void Shadow::CreateShadowMap()
 	sampler.maxLod = 1.0f;
 	sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 	vkCreateSampler(device, &sampler, nullptr, &shadowMapSampler);
+
+    descriptor = {};
+	descriptor.sampler = shadowMapSampler;
+	descriptor.imageView = shadowMapImageView;
+	descriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 }
 
 void Shadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel)
@@ -334,7 +339,6 @@ void Shadow::UpateLightMVP(glm::mat4 translation)
     ShadowUniformBufferObject ubo;
 
     // TODO
-
 
     void* data;
     vkMapMemory(device, uniformMemory, 0, sizeof(ShadowUniformBufferObject), 0, &data);

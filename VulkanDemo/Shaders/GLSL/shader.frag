@@ -14,11 +14,11 @@ uniform uboShared {
 	mat4 depthVP;
 } uboParam;
 
-layout(set = 2, binding = 0) uniform sampler2D shadowMapSampler;
+layout(set = 1, binding = 1) uniform sampler2D shadowMapSampler;
 
-layout(set = 3, binding = 0) uniform sampler2D colorSampler;
-layout(set = 3, binding = 1) uniform sampler2D normalSampler;
-layout(set = 3, binding = 2) uniform sampler2D roughnessSampler;
+layout(set = 2, binding = 0) uniform sampler2D colorSampler;
+layout(set = 2, binding = 1) uniform sampler2D normalSampler;
+layout(set = 2, binding = 2) uniform sampler2D roughnessSampler;
 
 
 #define PI 3.1415192654
