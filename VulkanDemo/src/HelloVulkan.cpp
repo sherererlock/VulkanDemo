@@ -985,7 +985,7 @@ PipelineCreateInfo HelloVulkan::CreatePipelineCreateInfo()
 
 void HelloVulkan::createGraphicsPipeline()
 {
-    auto shaderStages = CreaterShader("D:/games/VulkanDemo/VulkanDemo/shaders/GLSL/vert.spv", "D:/games/VulkanDemo/VulkanDemo/shaders/GLSL/frag.spv");
+    auto shaderStages = CreaterShader("./shaders/GLSL/vert.spv", "./shaders/GLSL/frag.spv");
 
     PipelineCreateInfo info = CreatePipelineCreateInfo();
     

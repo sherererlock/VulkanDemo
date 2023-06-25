@@ -21,7 +21,7 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
     pipelineCreateInfo.vertexInputInfo.vertexAttributeDescriptionCount = 1;
     pipelineCreateInfo.vertexInputInfo.pVertexAttributeDescriptions = &attributeDescriptoins[0]; // Optional
 
-    auto shaderStages = vulkanAPP->CreaterShader("D:/games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.vert.spv", "D:/games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.frag.spv");
+    auto shaderStages = vulkanAPP->CreaterShader("./shaders/GLSL/shadow.vert.spv", "./shaders/GLSL/shadow.frag.spv");
 
     // No blend attachment states (no color attachments used)
     pipelineCreateInfo.colorBlending.attachmentCount = 0;
