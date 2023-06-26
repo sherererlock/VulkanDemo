@@ -32,12 +32,13 @@ struct SwapChainSupportDetails
 struct UniformBufferObject {
     glm::mat4 view;
     glm::mat4 proj;
+    glm::mat4 depthMVP;
     glm::vec4 viewPos;
 };
 
 struct UBOParams {
 	glm::vec4 lights[4];
-    glm::mat4 depthMVP;
+
 };
 
 struct PipelineCreateInfo

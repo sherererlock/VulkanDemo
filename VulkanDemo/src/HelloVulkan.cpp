@@ -550,7 +550,7 @@ void HelloVulkan::MainLoop()
 		    viewUpdated = true;
 	    }
 
-        if (viewUpdated)
+        //if (viewUpdated)
         {
             updateUniformBuffer();
             viewUpdated = false;
@@ -1729,6 +1729,14 @@ void HelloVulkan::updateUniformBuffer()
     ubo.proj = camera.matrices.perspective;
     ubo.viewPos = glm::vec4(camera.position * -1.0f, 1.0);
 
+    glm::mat4 view = glm::lookAt(glm::vec3(lightPos.x, lightPos.y, lightPos.z), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 ortho = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 0.01f, 400.0f);
+
+    //ubo.depthMVP = ortho * view;
+    ubo.depthMVP = camera.matrices.view * camera.matrices.perspective;
+
+    shadow.UpateLightMVP(ubo.depthMVP);
+
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);
     memcpy(data, &ubo, sizeof(ubo));
@@ -1751,14 +1759,6 @@ void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
     lightNode->matrix = glm::scale(lightNode->matrix,  glm::vec3(0.1f) );
 
     uboparams.lights[1] = uboparams.lights[2] = uboparams.lights[3] = uboparams.lights[0];
-
-    glm::mat4 view = glm::lookAt(glm::vec3(lightPos.x, lightPos.y, lightPos.z), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 ortho = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 0.01f, 400.0f);
-
-    uboparams.depthMVP = ortho * view;
-    uboparams.depthMVP = camera.matrices.view * camera.matrices.perspective;
-
-    shadow.UpateLightMVP(uboparams.depthMVP);
 
     void* data;
     vkMapMemory(device, uniformBufferMemoryL, 0, sizeof(uboparams), 0, &data);
