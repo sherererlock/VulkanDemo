@@ -5,8 +5,8 @@ layout(set = 0, binding = 0)
 uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
+    mat4 depthMVP;
     vec4 viewPos;
-    mat4 depthVP;
 } ubo;
 
 layout(push_constant) uniform PushConsts{
@@ -32,8 +32,7 @@ out gl_PerVertex {
 };
 
 void main() {
-    //gl_Position = vec4(inPosition, 1.0);
-   
+
    gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition, 1.0);
 
    fragColor = inColor;
@@ -43,5 +42,5 @@ void main() {
 
    vec4 pos = primitive.model * vec4(inPosition, 1.0);
    worldPos = pos.xyz;
-   outShadowCoord = ubo.depthVP * primitive.model * vec4(inPosition, 1.0);
+   outShadowCoord = ubo.depthMVP * primitive.model * vec4(inPosition, 1.0);
 }

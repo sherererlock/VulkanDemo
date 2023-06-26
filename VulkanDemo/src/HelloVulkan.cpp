@@ -1729,11 +1729,13 @@ void HelloVulkan::updateUniformBuffer()
     ubo.proj = camera.matrices.perspective;
     ubo.viewPos = glm::vec4(camera.position * -1.0f, 1.0);
 
-    glm::mat4 view = glm::lookAt(glm::vec3(lightPos.x, lightPos.y, lightPos.z), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 ortho = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 0.01f, 400.0f);
+    glm::vec3 pos = glm::vec3(lightPos.x, lightPos.y, lightPos.z);
+    glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 ortho = glm::ortho(-300.0f, 300.0f, -300.0f, 300.0f, 1.0f, 96.0f);
+    glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, 1.0f, 96.0f);
 
-    //ubo.depthMVP = ortho * view;
-    ubo.depthMVP = camera.matrices.view * camera.matrices.perspective;
+    ubo.depthMVP = pers * view;
+    //ubo.depthMVP = camera.matrices.perspective * camera.matrices.view;
 
     shadow.UpateLightMVP(ubo.depthMVP);
 

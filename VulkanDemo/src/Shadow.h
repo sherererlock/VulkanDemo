@@ -12,6 +12,12 @@ class HelloVulkan;
 class gltfModel;
 struct PipelineCreateInfo;
 
+#define DEPTH_FORMAT VK_FORMAT_D16_UNORM
+//#define DEPTH_FORMAT VK_FORMAT_D32_SFLOAT
+
+//const VkFormat format = VK_FORMAT_D32_SFLOAT;
+
+
 class Shadow
 {
 private:
@@ -37,8 +43,6 @@ private:
 	uint32_t width, height;
 	HelloVulkan* vulkanAPP;
 
-	const VkFormat format = VK_FORMAT_D32_SFLOAT;
-	//const VkFormat format = VK_FORMAT_D16_UNORM;
 
 public:
 

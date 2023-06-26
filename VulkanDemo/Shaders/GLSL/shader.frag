@@ -112,10 +112,14 @@ vec3 pbr()
 	float metallic = roughMetalic.y;
 
 	float shadow = 1.0;
-	float dist = texture(shadowMapSampler, shadowCoord.xy).r;
-	if ( shadowCoord.w > 0.0 && dist  > shadowCoord.z ) 
+	if ( shadowCoord.w > 0.0) 
 	{
-		shadow = 0.0;
+		vec3 coord = shadowCoord.xyz / shadowCoord.w;
+		coord = coord * 0.5 + 0.5;
+
+		float dist = texture(shadowMapSampler, coord.xy).r;
+		if (dist < coord.z)
+			shadow = 0.0;
 	}
 
 	vec3 F0 = vec3(0.04);

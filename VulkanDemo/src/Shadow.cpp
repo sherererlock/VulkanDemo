@@ -31,7 +31,7 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
     pipelineCreateInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
 	// Enable depth bias
-	pipelineCreateInfo.rasterizer.depthBiasEnable = VK_TRUE;
+	pipelineCreateInfo.rasterizer.depthBiasEnable = false;
 
     /*
     * ​x validation layer: Validation Error: [ VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853 ] Object 0: handle = 0x2c38e531f70, type = VK_OBJECT_TYPE_DEVICE; | MessageID = 0x3108bb9b | vkCreateGraphicsPipelines: pCreateInfo[0].pMultisampleState->rasterizationSamples (8) does not match the number of samples of the RenderPass color and/or depth attachment. The Vulkan spec states: If the pipeline is being created with fragment output interface state, and none of the VK_AMD_mixed_attachment_samples extension, the VK_NV_framebuffer_mixed_samples extension, or the multisampledRenderToSingleSampled feature are enabled, rasterizationSamples is not dynamic, and if subpass uses color and/or depth/stencil attachments, then the rasterizationSamples member of pMultisampleState must be the same as the sample count for those subpass attachments (https://vulkan.lunarg.com/doc/view/1.3.243.0/windows/1.3-extensions/vkspec.html#VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853) 
@@ -40,7 +40,8 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
 
     VkDynamicState dynamicStates[] = {
         VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_SCISSOR
+        VK_DYNAMIC_STATE_SCISSOR,
+        VK_DYNAMIC_STATE_DEPTH_BIAS
     };
 
     pipelineCreateInfo.dynamicState.dynamicStateCount = 2;
@@ -82,7 +83,7 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
 void Shadow::CreateShadowPass()
 {
     VkAttachmentDescription depthAttachment = {};
-    depthAttachment.format = format;
+    depthAttachment.format = DEPTH_FORMAT;
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -228,7 +229,7 @@ void Shadow::CreateShadowMap()
 	image.arrayLayers = 1;
 	image.samples = VK_SAMPLE_COUNT_1_BIT;
 	image.tiling = VK_IMAGE_TILING_OPTIMAL;
-	image.format = format;																// Depth stencil attachment
+	image.format = DEPTH_FORMAT;																// Depth stencil attachment
 	image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;		// We will sample directly from the depth attachment for the shadow mapping
     //image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     //image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -248,7 +249,7 @@ void Shadow::CreateShadowMap()
     VkImageViewCreateInfo depthStencilView = {};
     depthStencilView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	depthStencilView.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	depthStencilView.format = format;
+	depthStencilView.format = DEPTH_FORMAT;
 	depthStencilView.subresourceRange = {};
 	depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 	depthStencilView.subresourceRange.baseMipLevel = 0;
@@ -263,6 +264,8 @@ void Shadow::CreateShadowMap()
 	//VkFilter shadowmap_filter = vks::tools::formatIsFilterable(physicalDevice, DEPTH_FORMAT, VK_IMAGE_TILING_OPTIMAL) ?
 	//	DEFAULT_SHADOWMAP_FILTER :
 	//	VK_FILTER_NEAREST;
+
+    vulkanAPP->transitionImageLayout(shadowMapImage, DEPTH_FORMAT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 
     VkSamplerCreateInfo sampler = {};
 	sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -296,7 +299,7 @@ void Shadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& 
 
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent.width = width;
-    renderPassInfo.renderArea.extent.width = height;
+    renderPassInfo.renderArea.extent.height = height;
 
     VkClearValue clearValue;
     clearValue.depthStencil = {1.0f, 0};
