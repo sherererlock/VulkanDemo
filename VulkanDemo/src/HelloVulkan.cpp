@@ -550,13 +550,13 @@ void HelloVulkan::MainLoop()
 		    viewUpdated = true;
 	    }
 
+		updateSceneUniformBuffer(frameTimer);
         //if (viewUpdated)
         {
             updateUniformBuffer();
             viewUpdated = false;
         }
 
-        updateSceneUniformBuffer(frameTimer);
 		timer += timerSpeed * frameTimer;
 		if (timer > 1.0)
 		{
@@ -1731,9 +1731,10 @@ void HelloVulkan::updateUniformBuffer()
 
     glm::vec3 pos = glm::vec3(lightPos.x, lightPos.y, lightPos.z);
     glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 ortho = glm::ortho(-300.0f, 300.0f, -300.0f, 300.0f, 1.0f, 96.0f);
+    //glm::mat4 ortho = glm::ortho(-300.0f, 300.0f, -300.0f, 300.0f, 1.0f, 96.0f);
     glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, 1.0f, 96.0f);
 
+    pers[1][1] *= -1; // flip Y
     ubo.depthMVP = pers * view;
     //ubo.depthMVP = camera.matrices.perspective * camera.matrices.view;
 
@@ -1748,6 +1749,7 @@ void HelloVulkan::updateUniformBuffer()
 void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
 {
     UBOParams uboparams = {};
+    //lightPos.y *= -1.0f;
 	uboparams.lights[0] = lightPos;
 
     glm::mat4 rotation;
@@ -1758,7 +1760,7 @@ void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
     glm::mat4 translation;
     lightPos = rotation * lightPos;
     lightNode->matrix = glm::translate(translation, glm::vec3(lightPos.x, lightPos.y, lightPos.z) );
-    lightNode->matrix = glm::scale(lightNode->matrix,  glm::vec3(0.1f) );
+    lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.1f) );
 
     uboparams.lights[1] = uboparams.lights[2] = uboparams.lights[3] = uboparams.lights[0];
 

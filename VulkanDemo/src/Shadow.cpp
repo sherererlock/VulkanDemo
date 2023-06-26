@@ -31,7 +31,7 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
     pipelineCreateInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
 	// Enable depth bias
-	pipelineCreateInfo.rasterizer.depthBiasEnable = false;
+	pipelineCreateInfo.rasterizer.depthBiasEnable = true;
 
     /*
     * ​x validation layer: Validation Error: [ VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853 ] Object 0: handle = 0x2c38e531f70, type = VK_OBJECT_TYPE_DEVICE; | MessageID = 0x3108bb9b | vkCreateGraphicsPipelines: pCreateInfo[0].pMultisampleState->rasterizationSamples (8) does not match the number of samples of the RenderPass color and/or depth attachment. The Vulkan spec states: If the pipeline is being created with fragment output interface state, and none of the VK_AMD_mixed_attachment_samples extension, the VK_NV_framebuffer_mixed_samples extension, or the multisampledRenderToSingleSampled feature are enabled, rasterizationSamples is not dynamic, and if subpass uses color and/or depth/stencil attachments, then the rasterizationSamples member of pMultisampleState must be the same as the sample count for those subpass attachments (https://vulkan.lunarg.com/doc/view/1.3.243.0/windows/1.3-extensions/vkspec.html#VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853) 
@@ -271,8 +271,8 @@ void Shadow::CreateShadowMap()
 	sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	sampler.maxAnisotropy = 1.0f;
 
-	sampler.magFilter = VK_FILTER_NEAREST;
-	sampler.minFilter = VK_FILTER_NEAREST;
+	sampler.magFilter = VK_FILTER_LINEAR;
+	sampler.minFilter = VK_FILTER_LINEAR;
 	sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 	sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 	sampler.addressModeV = sampler.addressModeU;
@@ -327,6 +327,12 @@ void Shadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& 
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+
+	vkCmdSetDepthBias(
+        commandBuffer,
+		depthBiasConstant,
+		0.0f,
+		depthBiasSlope);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline);
 
