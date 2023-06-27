@@ -3,9 +3,8 @@
 #include <glm/glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
-
 struct ShadowUniformBufferObject {
-	glm::mat4 depthMVP;
+	glm::mat4 depthVP;
 };
 
 class HelloVulkan;
@@ -21,6 +20,7 @@ struct PipelineCreateInfo;
 class Shadow
 {
 private:
+
 	VkPipeline shadowPipeline;
 	VkRenderPass shadowPass;
 
@@ -56,7 +56,9 @@ public:
 	}
 
 	void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
+
 	void CreateShadowPipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
+
 	void CreateShadowPass();
 	void CreateDescriptSetLayout();
 	void SetupDescriptSet(VkDescriptorPool pool);

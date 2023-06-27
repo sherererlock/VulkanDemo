@@ -221,11 +221,15 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 		// Pass the node's matrix via push constants
 		// Traverse the node hierarchy to the top-most parent to get the final matrix of the current node
 		glm::mat4 nodeMatrix = node->matrix;
+		glm::mat4 translation;
+
+		//translation = glm::translate(translation, glm::vec3(0.0f, 10.0f, 0.0f));
 		Node* currentParent = node->parent;
 		while (currentParent) {
 			nodeMatrix = currentParent->matrix * nodeMatrix;
 			currentParent = currentParent->parent;
 		}
+		//nodeMatrix = translation * nodeMatrix ;
 		// Pass the final matrix to the vertex shader using push constants
 		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
 		

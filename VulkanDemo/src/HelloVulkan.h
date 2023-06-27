@@ -11,6 +11,7 @@
 #include "gltfModel.h"
 #include "camera.hpp"
 #include "Shadow.h"
+#include "Debug.h"
 
 struct QueueFamilyIndices
 {
@@ -32,7 +33,7 @@ struct SwapChainSupportDetails
 struct UniformBufferObject {
     glm::mat4 view;
     glm::mat4 proj;
-    glm::mat4 depthMVP;
+    glm::mat4 depthVP;
     glm::vec4 viewPos;
 };
 
@@ -175,6 +176,9 @@ public:
     void loadgltfModel(std::string filename);
     void AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
 
+    float debugtimer = 0.5f;
+    void UpdateDebug();
+
     VkDevice GetDevice()
     {
         return device;
@@ -294,9 +298,15 @@ private:
 	} mouseButtons;
 
 
-    glm::vec4 lightPos = {0.0f, 2.0f, -4.0f, 1.0f};
+    //glm::vec4 lightPos = {0.0f, 40.0f, -4.0f, 1.0f};
+
+    glm::vec4 lightPos;
     Node* lightNode;
 
+    float zNear = 1.0f;
+    float zFar = 96.0f;
     Shadow shadow;
+    Debug debug;
+    bool isDebug = true;
 };
 

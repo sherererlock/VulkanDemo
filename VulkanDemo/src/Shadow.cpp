@@ -16,12 +16,11 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
 {
     auto attributeDescriptoins = Vertex1::getAttributeDescriptions();
     auto attributeDescriptionBindings = Vertex1::getBindingDescription();
-
     pipelineCreateInfo.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
     pipelineCreateInfo.vertexInputInfo.vertexAttributeDescriptionCount = 1;
     pipelineCreateInfo.vertexInputInfo.pVertexAttributeDescriptions = &attributeDescriptoins[0]; // Optional
 
-    auto shaderStages = vulkanAPP->CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.frag.spv");
+    creatInfo.pVertexInputState = &pipelineCreateInfo.vertexInputInfo;
 
     // No blend attachment states (no color attachments used)
     pipelineCreateInfo.colorBlending.attachmentCount = 0;
@@ -43,10 +42,10 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
         VK_DYNAMIC_STATE_SCISSOR,
         VK_DYNAMIC_STATE_DEPTH_BIAS
     };
-
-    pipelineCreateInfo.dynamicState.dynamicStateCount = 2;
+    pipelineCreateInfo.dynamicState.dynamicStateCount = 3;
     pipelineCreateInfo.dynamicState.pDynamicStates = dynamicStates;
 
+	auto shaderStages = vulkanAPP->CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.frag.spv");
     creatInfo.stageCount = 1;
     creatInfo.pStages = shaderStages.data();
 
@@ -163,12 +162,11 @@ void Shadow::CreateDescriptSetLayout()
 
 void Shadow::SetupDescriptSet(VkDescriptorPool pool)
 {
-    VkDescriptorSetLayout layouts[] = {descriptorSetLayout};
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = pool;
     allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = layouts;
+    allocInfo.pSetLayouts = &descriptorSetLayout;
 
     if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS) 
     {
@@ -341,10 +339,10 @@ void Shadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& 
     vkCmdEndRenderPass(commandBuffer);
 }
 
-void Shadow::UpateLightMVP(glm::mat4 depthMVP)
+void Shadow::UpateLightMVP(glm::mat4 depthVP)
 {
     ShadowUniformBufferObject ubo;
-    ubo.depthMVP = depthMVP;
+    ubo.depthVP = depthVP;
     // TODO
 
     void* data;

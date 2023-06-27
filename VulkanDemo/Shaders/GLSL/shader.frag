@@ -103,14 +103,18 @@ vec3 blin_phong()
 	return diffuse + specular;
 }
 
-vec3 pbr()
+float Bias(float depthCtr)
 {
-	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
-	 
-	vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
-	float roughness = roughMetalic.x;
-	float metallic = roughMetalic.y;
+  vec3 lightDir = normalize(uboParam.lights[0].xyz - worldPos);
+  vec3 normal = normalize(normal);
+  float m = 300.0 / 2048.0 / 2.0; //Õý½»¾ØÕó¿í¸ß/shadowMapSize/2
+  float bias = max(m, m * (1.0 - dot(normal, lightDir))) * depthCtr;
 
+  return bias;
+}
+
+float getShadow()
+{
 	float shadow = 1.0;
 	if (shadowCoord.w > 0.0)
 	{
@@ -119,9 +123,21 @@ vec3 pbr()
 		coord.xy = coord.xy * 0.5 + 0.5;
 
 		float dist = texture(shadowMapSampler, coord.xy).r;
-		if (dist < coord.z)
+		float bias = Bias(0.015);
+		if (dist + bias < coord.z)
 			shadow = 0.0;
 	}
+
+	return shadow;
+}
+
+vec3 pbr()
+{
+	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
+	 
+	vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
+	float roughness = roughMetalic.x;
+	float metallic = roughMetalic.y;
 
 	vec3 F0 = vec3(0.04);
 	F0 = mix(F0, albedo.xyz, metallic);
@@ -163,6 +179,7 @@ vec3 pbr()
 	vec3 ambient = vec3(0.03) * albedo;
 	vec3 color = ambient + Lo;
 
+	float shadow = getShadow();
 	color *= shadow;
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));  

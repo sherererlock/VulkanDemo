@@ -148,6 +148,7 @@ void HelloVulkan::MouseButtonCallback(GLFWwindow* window, int key, int action, i
             glfwGetCursorPos(window, &xposition, &yposition);
             vulkan->mousePos = glm::vec2((float)xposition, (float)yposition);
             vulkan->mouseButtons.right = true;
+            vulkan->UpdateDebug();
         }
         else if (action == GLFW_RELEASE)
         {
@@ -180,6 +181,7 @@ void HelloVulkan::MouseCallback(double x, double y)
 	if (mouseButtons.left) {
 		camera.rotate(glm::vec3(dy * camera.rotationSpeed, -dx * camera.rotationSpeed, 0.0f));
 		viewUpdated = true;
+
 	}
 	if (mouseButtons.right) {
 		camera.translate(glm::vec3(-0.0f, 0.0f, dy * .005f));
@@ -433,9 +435,24 @@ void HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Verte
     lightNode = node;
 }
 
+void HelloVulkan::UpdateDebug()
+{
+    if (debugtimer <= 0)
+    {
+        isDebug = !isDebug;
+        debugtimer = 0.5f;
+    }
+}
+
 HelloVulkan::HelloVulkan()
 {
     helloVulkan = this;
+
+    //lightPos = { 0.0f, 60.f, 80.0f, 1.0f };
+
+    lightPos = { 0.0f, 30.f, 8.f, 1.0f };
+	zNear = 1.0f;
+	zFar = 96.0f;
 
 	camera.type = Camera::CameraType::firstperson;
 	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
@@ -486,6 +503,7 @@ void HelloVulkan::InitVulkan()
     CreateDevice();
 
     shadow.Init(this, device, 2048, 2048);
+    debug.Init(device, this, zNear, zFar);
 
     createSwapChain();
     createImageViews();
@@ -496,6 +514,7 @@ void HelloVulkan::InitVulkan()
 
     createDescriptorSetLayout();
     shadow.CreateDescriptSetLayout();
+    debug.CreateDescriptSetLayout();
 
     createDescriptorPool();
 
@@ -513,6 +532,7 @@ void HelloVulkan::InitVulkan()
     createUniformBuffer();
 
     shadow.CreateUniformBuffer();
+    debug.CreateUniformBuffer();
     
     loadgltfModel(MODEL_PATH);
 
@@ -562,6 +582,11 @@ void HelloVulkan::MainLoop()
 		{
 			timer -= 1.0f;
 		}
+
+        if (debugtimer > 0.0f)
+        {
+            debugtimer -= frameTimer;
+        }
     }
 
     vkDeviceWaitIdle(device);
@@ -595,6 +620,7 @@ void HelloVulkan::Cleanup()
 
     gltfModel.Cleanup();
     shadow.Cleanup();
+    debug.Cleanup();
     vkDestroyDevice(device, nullptr);
     if (enableValidationLayers) 
     {
@@ -723,8 +749,6 @@ void HelloVulkan::CreateSurface()
     }
 }
 
-// 若干等待呈现的图像队列
-// 应用程序从交换链获取一张图片完成渲染操作，然后交还给交换链
 void HelloVulkan::createSwapChain()
 {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
@@ -794,7 +818,6 @@ void HelloVulkan::createSwapChain()
     swapChainExtent = extent;
 }
 
-// 创建ImageView来访问vkimage
 void HelloVulkan::createImageViews()
 {
     swapChainImageViews.resize(swapChainImages.size());
@@ -803,15 +826,6 @@ void HelloVulkan::createImageViews()
         swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     }
 }
-
-// 用于渲染的帧缓冲附件
-// 子Renderpass
-// 附件引用
-//
-// RenderPass--> Attachments
-// RenderPass--> subpasses
-// AttachmentReferences --> Attachments
-// subpasses--> AttachmentReferences
 
 void HelloVulkan::createRenderPass()
 {
@@ -952,37 +966,6 @@ PipelineCreateInfo HelloVulkan::CreatePipelineCreateInfo()
     return pipelineCreateInfo;
 }
 
-// shader: shadercode->shaderModule->ShaderStage
-
-// vertexInputState: binding,attribute
-
-// InputAssemblyState:topology,顶点是否可复用 IA
- 
-// viewportstate
-// viewport 视口：宽高深度
-// scissor 裁剪
-
-// RasterizationState
-// depthClamp:shadow
-// polygonMode:wireframe
-// cullMode: 背面剔除、正面剔除、双面剔除
-// frontFace:顺时针/逆时针
-
-// MultisampleState
-//
-//
-// 
-
-// ColorBlendAttachmentState
-//
-
-// dynamicStates
-// 可以不重建管线的情况下进行动态修改
-
-
-// PipelineLayout：uniform值
-// 
-
 void HelloVulkan::createGraphicsPipeline()
 {
     auto shaderStages = CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/frag.spv");
@@ -1071,6 +1054,7 @@ void HelloVulkan::createGraphicsPipeline()
     vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
     vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
 
+    debug.CreateDebugPipeline(info, pipelineInfo);
     shadow.CreateShadowPipeline(info, pipelineInfo);
 }
 
@@ -1113,8 +1097,6 @@ std::array<VkPipelineShaderStageCreateInfo, 2> HelloVulkan::CreaterShader(std::s
 
     return {vertShaderStageInfo, fragShaderStageInfo};
 }
-
-//renderPass-> Attachment-->FrameBuffer-->vkImageView-->vkImage
 
 void HelloVulkan::createFrameBuffer()
 {
@@ -1169,8 +1151,6 @@ void HelloVulkan::createUniformBuffer()
     createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBufferL, uniformBufferMemoryL);
 }
 
-
-// 从池分配buffer对象，队列依赖
 void HelloVulkan::createCommandPool()
 {
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
@@ -1185,17 +1165,6 @@ void HelloVulkan::createCommandPool()
         throw std::runtime_error("failed to create command pool!");
     }
 }
-
-// 创建commandbuffer
-// 
-// 记录指令
-//      BeginRenderPass
-//      BindPipeline
-//      BindDescriptorSets
-//      BindVertexBuffers
-//      BindIndexBuffer
-//      DrawIndexed
-//      EndRenderPass
 
 void HelloVulkan::createCommandBuffers()
 {
@@ -1258,17 +1227,20 @@ void HelloVulkan::buildCommandBuffers()
             renderPassInfo.pClearValues = clearValues.data();
 
             vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
             vkCmdSetViewport(commandBuffers[i], 0, 1, &viewport);
             vkCmdSetScissor(commandBuffers[i], 0, 1, &scissor);
 
-		    vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetM, 0, nullptr);
-
-		    vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptorSetS, 0, nullptr);
-
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-
-            gltfModel.draw(commandBuffers[i], pipelineLayout, 0);
+            if (isDebug)
+            {
+                debug.BuildCommandBuffer(commandBuffers[i]);
+            }
+            else
+            {
+				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetM, 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptorSetS, 0, nullptr);
+				vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+				gltfModel.draw(commandBuffers[i], pipelineLayout, 0);
+            }
 
             vkCmdEndRenderPass(commandBuffers[i]);
         }
@@ -1280,8 +1252,6 @@ void HelloVulkan::buildCommandBuffers()
     }
 }
 
-// 等待获取渲染的信号量
-// 等待呈现的信号量
 void HelloVulkan::createSemaphores()
 {
     VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -1295,11 +1265,6 @@ void HelloVulkan::createSemaphores()
 
 }
 
-/// <summary>
-/// 我们首先会创建缓冲区并通过像素进行填充，接着创建一个图像对象拷贝像素。
-/// 创建一个图像与创建缓冲区类似。
-/// 就像我们之前看到的那样，它需要查询内存需求，分配设备内存并进行绑定。
-/// </summary>
 void HelloVulkan::createTextureImage()
 {
     int texWidth, texHeight, texChannels;
@@ -1336,15 +1301,6 @@ void HelloVulkan::createTextureImage()
 
     generateMipmaps(textureImage, texWidth, VK_FORMAT_R8G8B8A8_UNORM, texHeight, mipLevels);
 }
-
-/// <summary>
-
-/// </summary>
-/// <param name="image"></param>
-/// <param name="texWidth"></param>
-/// <param name="imageFormat"></param>
-/// <param name="texHeight"></param>
-/// <param name="mipLevels"></param>
 
 void HelloVulkan::generateMipmaps(VkImage image, int32_t texWidth, VkFormat imageFormat,int32_t texHeight, uint32_t mipLevels) 
 {
@@ -1440,19 +1396,6 @@ void HelloVulkan::createTextureImageView()
 {
     textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 }
-
-/*
- lod = getLodLevelFromScreenSize(); //smaller when the object is close, may be negative
-lod = clamp(lod + mipLodBias, minLod, maxLod);
-
-level = clamp(floor(lod), 0, texture.mipLevels - 1);  //clamped to the number of mip levels in the texture
-
-if (mipmapMode == VK_SAMPLER_MIPMAP_MODE_NEAREST) {
-    color = sample(level);
-} else {
-    color = blend(sample(level), sample(level + 1));
-}
-*/
 
 void HelloVulkan::createTextureSampler(VkSampler& sampler, VkFilter magFilter, VkFilter minFilter, uint32_t mipLevels)
 {
@@ -1561,15 +1504,6 @@ void HelloVulkan::createImage(uint32_t width, uint32_t height, VkFormat format, 
     vkBindImageMemory(device, image, imageMemory, 0);
 }
 
-
-/// <summary>
-
-/// </summary>
-/// <param name="image"></param>
-/// <param name="format"></param>
-/// <param name="aspectFlags"></param>
-/// <param name="miplevels"></param>
-/// <returns></returns>
 VkImageView HelloVulkan::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t miplevels)
 {
     VkImageViewCreateInfo viewInfo = {};
@@ -1711,15 +1645,6 @@ void HelloVulkan::transitionImageLayout(VkImage image, VkFormat format, VkImageL
     endSingleTimeCommands(commandBuffer);
 }
 
-// 每个操作都是异步执行的
-//     从交换链获取一张图像 
-//     对帧缓冲附件执行指令缓冲的渲染指令（提交指令）
-//     返回渲染然后的图像到交换链中进行呈现操作
-
-/// <summary>
-/// 提交渲染指令buffer
-/// </summary>
-
 void HelloVulkan::updateUniformBuffer()
 {
     UniformBufferObject ubo = {};
@@ -1730,17 +1655,17 @@ void HelloVulkan::updateUniformBuffer()
     ubo.viewPos = glm::vec4(camera.position * -1.0f, 1.0);
 
     glm::vec3 pos = glm::vec3(lightPos.x, lightPos.y, lightPos.z);
-    glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 ortho = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 0.01f, 200.0f);
-    glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, 1.0f, 96.0f);
+    glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 ortho = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 1.0f, 200.0f);
+    glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, zNear, zFar);
 
     pers[1][1] *= -1; // flip Y
     ortho[1][1] *= -1; // flip Y
 
-    //ubo.depthMVP = pers * view;
-    ubo.depthMVP = ortho * view * lightNode->matrix;
+    ubo.depthVP = pers * view;
+    //ubo.depthVP = ortho * view;
 
-    shadow.UpateLightMVP(ubo.depthMVP);
+    shadow.UpateLightMVP(ubo.depthVP);
 
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);
@@ -1760,9 +1685,9 @@ void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
     rotation = glm::rotate(rotation, speed * frameTimer, yaxis);
 
     glm::mat4 translation;
-    //lightPos = rotation * lightPos;
+    lightPos = rotation * lightPos;
     lightNode->matrix = glm::translate(translation, glm::vec3(lightPos.x, lightPos.y, lightPos.z) );
-    //lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.1f) );
+    lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.1f) );
 
     uboparams.lights[1] = uboparams.lights[2] = uboparams.lights[3] = uboparams.lights[0];
 
@@ -1834,17 +1759,6 @@ void HelloVulkan::drawFrame()
     vkQueueWaitIdle(presentQueue);
 }
 
-// 需要重新创建的对象
-// //      swapchain
-//      imageviews 
-//      renderpass 依赖于图像的格式
-//      graphicspipeline viewport改变
-//      framebuffers 交换链图像
-//      commandbuffers  交换链图像
-
-// 什么时候重建
-//      窗口大小改变时
-//      
 void HelloVulkan::recreateSwapChain()
 {
     int width = 0, height = 0;
@@ -1949,51 +1863,28 @@ void HelloVulkan::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMe
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
 
-/// <summary>
-/// 
-/// DescriptorPool
-///{
-///     DescriptorSet1
-///     {
-///         DescriptorSetLayout
-///         {
-///             DescriptorSetLayoutBinding1
-///             DescriptorSetLayoutBinding2
-///          }
-///         DescriptorSetLayout
-///         {
-///         }
-///     }
-///     DescriptorSet2
-///     {
-///         
-///     }
-///}
-/// </summary>
 void HelloVulkan::createDescriptorPool()
 {
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = 3;
+    poolSizes[0].descriptorCount = 5;
 
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = 10;
+    poolSizes[1].descriptorCount = 11;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
 
-    poolInfo.maxSets = 6;
+    poolInfo.maxSets = 7;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create descriptor pool!");
     }
 }
-
-// pipelineLayout-->descriptorSetLayout-->binding
 
 void HelloVulkan::createDescriptorSetLayout()
 {
@@ -2053,10 +1944,6 @@ void HelloVulkan::createDescriptorSetLayout()
     }
 }
 
-// descriptorPool-->descriptorSet-->descriptorSetLayout
-// 
-// descriptorWrite-->DescriptorBuffer-->uniformBuffer
-// descriptorWrite-->descriptorSet
 void HelloVulkan::createDescriptorSet()
 {
     VkDescriptorSetLayout layouts[] = {descriptorSetLayoutM};
@@ -2139,6 +2026,8 @@ void HelloVulkan::createDescriptorSet()
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
+
+    debug.SetupDescriptSet(descriptorPool, imageInfo);
 }
 
 void HelloVulkan::updateDescriptorSet(int colorIdx, int normalIdx, int roughnessIdx)
@@ -2386,11 +2275,6 @@ void HelloVulkan::pickPhysicalDevice()
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 }
-
-// 支持graphics和present的队列族
-// 支持swapchain扩展
-// 支持surface format colorspace
-// 支持present mode
 
 bool HelloVulkan::isDeviceSuitable(VkPhysicalDevice phyDevice)
 {

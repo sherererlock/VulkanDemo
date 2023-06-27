@@ -3,7 +3,7 @@
 
 layout(set = 0, binding = 0) 
 uniform UniformBufferObject {
-    mat4 depthMVP;
+    mat4 depthVP;
 } ubo;
 
 layout(push_constant) uniform PushConsts{
@@ -17,5 +17,5 @@ out gl_PerVertex {
 };
 
 void main() {
-   gl_Position = ubo.depthMVP * primitive.model * vec4(inPosition, 1.0);
+   gl_Position = ubo.depthVP * primitive.model * vec4(inPosition, 1.0);
 }
