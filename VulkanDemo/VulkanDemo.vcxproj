@@ -108,6 +108,9 @@
     <CustomBuildStep>
       <Command>D:\games\VulkanDemo\VulkanDemo\Shaders\GLSL\compile.bat</Command>
     </CustomBuildStep>
+    <PreBuildEvent>
+      <Command>call shaders\glsl\compile.bat</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -131,6 +134,9 @@
     <CustomBuildStep>
       <Command>D:\games\VulkanDemo\VulkanDemo\Shaders\GLSL\compile.bat</Command>
     </CustomBuildStep>
+    <PreBuildEvent>
+      <Command>call shaders\glsl\compile.bat</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -150,6 +156,9 @@
     <CustomBuildStep>
       <Command>D:\games\VulkanDemo\VulkanDemo\Shaders\GLSL\compile.bat</Command>
     </CustomBuildStep>
+    <PreBuildEvent>
+      <Command>call shaders\glsl\compile.bat</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -173,6 +182,9 @@
     <CustomBuildStep>
       <Command>D:\games\VulkanDemo\VulkanDemo\Shaders\GLSL\compile.bat</Command>
     </CustomBuildStep>
+    <PreBuildEvent>
+      <Command>call shaders\glsl\compile.bat</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Debug.cpp" />

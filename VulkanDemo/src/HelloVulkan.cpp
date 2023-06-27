@@ -18,7 +18,7 @@
 
 #include "Mesh.h"
 
-#define SHADOWMAP_SIZE 512
+#define SHADOWMAP_SIZE 2048
 
 HelloVulkan* HelloVulkan::helloVulkan = nullptr;
 
@@ -472,7 +472,7 @@ HelloVulkan::HelloVulkan()
 	if (isOrth)
 		lightPos = { 0.0f, 80.f, 80.0f, 1.0f };
 	else
-		lightPos = { 0.0f, 40.f, 20.0f, 1.0f };
+		lightPos = { 0.0f, 4.f, 2.0f, 1.0f };
 
 	zNear = 1.0f;
 	zFar = 96.0f;

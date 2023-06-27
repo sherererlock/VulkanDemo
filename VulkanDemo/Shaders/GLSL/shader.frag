@@ -1,6 +1,10 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#ifdef GL_ES
+precision mediump float;
+#endif
+
 layout(set = 0, binding = 0) 
 uniform UniformBufferObject {
     mat4 view;
@@ -21,7 +25,9 @@ layout(set = 2, binding = 1) uniform sampler2D normalSampler;
 layout(set = 2, binding = 2) uniform sampler2D roughnessSampler;
 
 
-#define PI 3.1415192654
+#define PI 3.141592653589793
+#define PI2 6.283185307179586
+
 
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec3 normal;
@@ -103,6 +109,63 @@ vec3 blin_phong()
 	return diffuse + specular;
 }
 
+highp float rand_1to1(highp float x ) { 
+  // -1 -1
+  return fract(sin(x)*10000.0);
+}
+
+highp float rand_2to1(vec2 uv ) { 
+  // 0 - 1
+	const highp float a = 12.9898, b = 78.233, c = 43758.5453;
+	highp float dt = dot( uv.xy, vec2( a,b ) ), sn = mod( dt, PI );
+	return fract(sin(sn) * c);
+}
+
+#define NUM_SAMPLES 10
+#define BLOCKER_SEARCH_NUM_SAMPLES NUM_SAMPLES
+#define PCF_NUM_SAMPLES NUM_SAMPLES
+#define NUM_RINGS 10
+#define EPS 1e-3
+
+
+vec2 poissonDisk[NUM_SAMPLES];
+
+void poissonDiskSamples( const in vec2 randomSeed ) {
+
+  float ANGLE_STEP = PI2 * float( NUM_RINGS ) / float( NUM_SAMPLES );
+  float INV_NUM_SAMPLES = 1.0 / float( NUM_SAMPLES );
+
+  float angle = rand_2to1( randomSeed ) * PI2;
+  float radius = INV_NUM_SAMPLES;
+  float radiusStep = radius;
+
+  for( int i = 0; i < NUM_SAMPLES; i ++ ) {
+    poissonDisk[i] = vec2( cos( angle ), sin( angle ) ) * pow( radius, 0.75 );
+    radius += radiusStep;
+    angle += ANGLE_STEP;
+  }
+}
+
+void uniformDiskSamples( const in vec2 randomSeed ) {
+
+  float randNum = rand_2to1(randomSeed);
+  float sampleX = rand_1to1( randNum ) ;
+  float sampleY = rand_1to1( sampleX ) ;
+
+  float angle = sampleX * PI2;
+  float radius = sqrt(sampleY);
+
+  for( int i = 0; i < NUM_SAMPLES; i ++ ) {
+    poissonDisk[i] = vec2( radius * cos(angle) , radius * sin(angle)  );
+
+    sampleX = rand_1to1( sampleY ) ;
+    sampleY = rand_1to1( sampleX ) ;
+
+    angle = sampleX * PI2;
+    radius = sqrt(sampleY);
+  }
+}
+
 float Bias(float depthCtr)
 {
   vec3 lightDir = normalize(uboParam.lights[0].xyz - worldPos);
@@ -111,6 +174,60 @@ float Bias(float depthCtr)
   float bias = max(m, m * (1.0 - dot(normal, lightDir))) * depthCtr;
 
   return bias;
+}
+
+float textureProj(vec3 coord, vec2 offset)
+{
+	float shadow = 1.0;
+
+	if(coord.z > -1.0 && coord.z < 1.0)
+	{
+		float dist = texture(shadowMapSampler, coord.xy + offset).r;
+		float bias = Bias(0.015);
+		if (dist < coord.z)
+			shadow = 0.0;
+	}
+	
+	return shadow;
+}
+
+float filterPCF3x3(vec3 coords)
+{	
+	ivec2 texDim = textureSize(shadowMapSampler, 0);
+	float scale = 1.5;
+	float dx = scale * 1.0 / float(texDim.x);
+	float dy = scale * 1.0 / float(texDim.y);
+
+	float shadowFactor = 0.0;
+	int count = 0;
+	int range = 1;
+	
+	for (int x = -range; x <= range; x++)
+	{
+		for (int y = -range; y <= range; y++)
+		{
+			shadowFactor += textureProj(coords, vec2(dx*x, dy*y));
+			count++;
+		}
+	
+	}
+	return shadowFactor / count;
+}
+
+float PCF(sampler2D shadowMap, vec3 coords, float filteringSize) {
+  float bias = 0.0;
+  //uniformDiskSamples(coords.xy);
+  poissonDiskSamples(coords.xy);
+  float shadow = 0.0;
+  for(int i = 0; i < NUM_SAMPLES; i ++)
+  {
+    vec2 texcoords =  coords.xy + poissonDisk[i] * filteringSize;
+    vec4 rgbaDepth = texture(shadowMap, texcoords);
+    float depth = rgbaDepth.r;
+    shadow += (depth+EPS < coords.z - bias ? 0.0 : 1.0);
+  }
+
+  return shadow / float(NUM_SAMPLES);
 }
 
 float getShadow()
@@ -123,8 +240,7 @@ float getShadow()
 		coord.xy = coord.xy * 0.5 + 0.5;
 
 		float dist = texture(shadowMapSampler, coord.xy).r;
-		float bias = Bias(0.015);
-		if (dist + 0.0001 < coord.z)
+		if (dist < coord.z)
 			shadow = 0.0;
 	}
 
@@ -179,8 +295,6 @@ vec3 pbr()
 	vec3 ambient = vec3(0.03) * albedo;
 	vec3 color = ambient + Lo;
 
-	float shadow = getShadow();
-	color *= shadow;
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));  
 
@@ -193,6 +307,23 @@ void main(){
 
 	if(material.islight == 0)
 		color = pbr();
+
+	vec3 coord = shadowCoord.xyz;
+	if(shadowCoord.w > 0.0)
+	{
+		coord = coord / shadowCoord.w;
+		coord.xy = coord.xy * 0.5 + 0.5;
+	}
+
+	//float shadow = getShadow();
+
+	//float shadow = filterPCF3x3(coord);
+
+	ivec2 texDim = textureSize(shadowMapSampler, 0);
+	float filteringSize = 10.0 / float(texDim.x);
+
+	float shadow = PCF(shadowMapSampler, coord, filteringSize);
+	color *= shadow;
 
 	outColor = vec4(color, 1.0);
 }
