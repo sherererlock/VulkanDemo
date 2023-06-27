@@ -18,6 +18,8 @@
 
 #include "Mesh.h"
 
+#define SHADOWMAP_SIZE 512
+
 HelloVulkan* HelloVulkan::helloVulkan = nullptr;
 
 static std::vector<char> readFile(const std::string& filename)
@@ -467,9 +469,11 @@ HelloVulkan::HelloVulkan()
 {
     helloVulkan = this;
 
-    lightPos = { 0.0f, 80.f, 80.0f, 1.0f };
+	if (isOrth)
+		lightPos = { 0.0f, 80.f, 80.0f, 1.0f };
+	else
+		lightPos = { 0.0f, 40.f, 20.0f, 1.0f };
 
-    //lightPos = { 0.0f, 30.f, 8.f, 1.0f };
 	zNear = 1.0f;
 	zFar = 96.0f;
 
@@ -521,7 +525,7 @@ void HelloVulkan::InitVulkan()
     pickPhysicalDevice();
     CreateDevice();
 
-    shadow.Init(this, device, 2048, 2048);
+    shadow.Init(this, device, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
     debug.Init(device, this, zNear, zFar);
 
     createSwapChain();
@@ -1706,7 +1710,7 @@ void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
     rotation = glm::rotate(rotation, speed * frameTimer, yaxis);
 
     glm::mat4 translation;
-    lightPos = rotation * lightPos;
+    //lightPos = rotation * lightPos;
     lightNode->matrix = glm::translate(translation, glm::vec3(lightPos.x, lightPos.y, lightPos.z) );
     lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.1f) );
 

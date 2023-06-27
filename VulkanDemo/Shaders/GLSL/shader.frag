@@ -124,7 +124,7 @@ float getShadow()
 
 		float dist = texture(shadowMapSampler, coord.xy).r;
 		float bias = Bias(0.015);
-		if (dist + bias < coord.z)
+		if (dist + 0.0001 < coord.z)
 			shadow = 0.0;
 	}
 
