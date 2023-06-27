@@ -177,7 +177,9 @@ public:
     void AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
 
     float debugtimer = 0.5f;
+    bool isOrth = true;
     void UpdateDebug();
+    void UpdateProjectionMatrix();
 
     VkDevice GetDevice()
     {

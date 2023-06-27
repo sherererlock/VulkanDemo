@@ -114,6 +114,11 @@ void HelloVulkan::KeyCallback(GLFWwindow* window, int key, int scancode, int act
         if(action == GLFW_RELEASE)
             camera.keys.right = false;
     }
+
+	if (key == GLFW_KEY_Q)
+	{
+        vulkan->UpdateProjectionMatrix();
+	}
 }
 
 void HelloVulkan::MouseCallback(GLFWwindow* window, double xpos, double ypos)
@@ -444,13 +449,27 @@ void HelloVulkan::UpdateDebug()
     }
 }
 
+void HelloVulkan::UpdateProjectionMatrix()
+{
+	if (debugtimer <= 0)
+	{
+		isOrth = !isOrth;
+		debugtimer = 0.5f;
+
+        if(isOrth)
+		    lightPos = { 0.0f, 80.f, 80.0f, 1.0f };
+        else
+            lightPos = { 0.0f, 40.f, 10.0f, 1.0f };
+	}
+}
+
 HelloVulkan::HelloVulkan()
 {
     helloVulkan = this;
 
-    //lightPos = { 0.0f, 60.f, 80.0f, 1.0f };
+    lightPos = { 0.0f, 80.f, 80.0f, 1.0f };
 
-    lightPos = { 0.0f, 30.f, 8.f, 1.0f };
+    //lightPos = { 0.0f, 30.f, 8.f, 1.0f };
 	zNear = 1.0f;
 	zFar = 96.0f;
 
@@ -1656,14 +1675,16 @@ void HelloVulkan::updateUniformBuffer()
 
     glm::vec3 pos = glm::vec3(lightPos.x, lightPos.y, lightPos.z);
     glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 ortho = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 1.0f, 200.0f);
-    glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, zNear, zFar);
+    glm::mat4 ortho = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 0.01f, 400.0f);
+    glm::mat4 pers = glm::perspective(glm::radians(60.0f), 1.0f, zNear, zFar);
 
     pers[1][1] *= -1; // flip Y
     ortho[1][1] *= -1; // flip Y
 
-    ubo.depthVP = pers * view;
-    //ubo.depthVP = ortho * view;
+    if (isOrth)
+        ubo.depthVP = ortho * view;
+    else
+        ubo.depthVP = pers * view;
 
     shadow.UpateLightMVP(ubo.depthVP);
 
