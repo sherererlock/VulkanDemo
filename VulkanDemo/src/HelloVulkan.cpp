@@ -18,7 +18,8 @@
 
 #include "Mesh.h"
 
-#define SHADOWMAP_SIZE 2048
+#define SHADOWMAP_SIZE 1024
+
 
 HelloVulkan* HelloVulkan::helloVulkan = nullptr;
 
@@ -120,6 +121,16 @@ void HelloVulkan::KeyCallback(GLFWwindow* window, int key, int scancode, int act
 	if (key == GLFW_KEY_Q)
 	{
         vulkan->UpdateProjectionMatrix();
+	}
+
+	if (key == GLFW_KEY_UP)
+	{
+		vulkan->UpdateShadowIndex();
+	}
+
+	if (key == GLFW_KEY_LEFT)
+	{
+		vulkan->UpdateShadowFilterSize();
 	}
 }
 
@@ -279,61 +290,6 @@ bool HelloVulkan::hasStencilComponent(VkFormat format)
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void HelloVulkan::loadModel()
-{
-    //return;
-    //tinyobj::attrib_t attrib;
-    //std::vector<tinyobj::shape_t> shapes;
-    //std::vector<tinyobj::material_t> materials;
-    //std::string warn;
-    //std::string err;
-
-    //if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str()))
-    //{
-    //    throw std::runtime_error(err);
-    //}
-
-    //if(!warn.empty())
-    //    std::cout<< "warning:" << warn << std::endl;
-
-    //std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
-    //for (const auto& shape : shapes) 
-    //{
-    //    for (const auto& index : shape.mesh.indices)
-    //    {
-    //        Vertex vertex = {};
-    //        vertex.pos = {
-    //            attrib.vertices[3 * index.vertex_index + 0],
-    //            attrib.vertices[3 * index.vertex_index + 1],
-    //            attrib.vertices[3 * index.vertex_index + 2]
-    //        };
-
-    //        int idx = std::max(index.texcoord_index, 0);
-    //        vertex.texCoord = {
-    //            attrib.texcoords[2 * idx + 0],
-    //            1.0f - attrib.texcoords[2 * idx + 1]
-    //        };
-
-    //        //vertex.texCoord = {
-    //        //    attrib.texcoords[2 * index.texcoord_index + 0],
-    //        //    attrib.texcoords[2 * index.texcoord_index + 1]
-    //        //};
-
-    //        vertex.color = {1.0f, 1.0f, 1.0f};
-
-    //        if (uniqueVertices.count(vertex) == 0)
-    //        {
-    //            uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-    //            vertices.push_back(vertex);
-    //        }
-
-    //        //vertices.push_back(vertex);
-    //        indices.push_back(uniqueVertices[vertex]);
-    //    }
-    //}
-
-}
-
 void HelloVulkan::loadgltfModel(std::string filename)
 {
     tinygltf::Model glTFInput;
@@ -465,6 +421,36 @@ void HelloVulkan::UpdateProjectionMatrix()
 	}
 }
 
+void HelloVulkan::UpdateShadowIndex(int idx)
+{
+	if (debugtimer > 0)
+		return;
+
+	debugtimer = 0.5f;
+    //if (idx != -1)
+    //{
+    //    shadowIndex = std::clamp(idx, 0, 2);
+    //}
+    //else
+    {
+		shadowIndex ++;
+		shadowIndex %= 5;
+    }
+}
+
+void HelloVulkan::UpdateShadowFilterSize()
+{
+	//if (debugtimer > 0)
+	//	return;
+
+	debugtimer = 0.5f;
+    filterSize++;
+    filterSize %= 20;
+    if (filterSize == 0)
+        filterSize = 1;
+}
+
+
 HelloVulkan::HelloVulkan()
 {
     helloVulkan = this;
@@ -474,7 +460,7 @@ HelloVulkan::HelloVulkan()
 	else
 		lightPos = { 0.0f, 4.f, 2.0f, 1.0f };
 
-	zNear = 1.0f;
+	zNear = 0.1f;
 	zFar = 96.0f;
 
 	camera.type = Camera::CameraType::firstperson;
@@ -486,6 +472,9 @@ HelloVulkan::HelloVulkan()
 	camera.rotationSpeed = 0.25f;
     //camera.updateViewMatrix();
     viewUpdated = true;
+
+    filterSize = 1;
+    shadowIndex = 4;
 }
 
 void HelloVulkan::Init()
@@ -991,7 +980,7 @@ PipelineCreateInfo HelloVulkan::CreatePipelineCreateInfo()
 
 void HelloVulkan::createGraphicsPipeline()
 {
-    auto shaderStages = CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/frag.spv");
+    auto shaderStages = CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/shader.vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/shader.frag.spv");
 
     PipelineCreateInfo info = CreatePipelineCreateInfo();
     
@@ -1676,11 +1665,13 @@ void HelloVulkan::updateUniformBuffer()
     ubo.view = camera.matrices.view;
     ubo.proj = camera.matrices.perspective;
     ubo.viewPos = glm::vec4(camera.position * -1.0f, 1.0);
+    ubo.shadowIndex = shadowIndex;
+    ubo.filterSize = (float)filterSize;
 
     glm::vec3 pos = glm::vec3(lightPos.x, lightPos.y, lightPos.z);
     glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 ortho = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 0.01f, 400.0f);
-    glm::mat4 pers = glm::perspective(glm::radians(60.0f), 1.0f, zNear, zFar);
+    glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, zNear, zFar);
 
     pers[1][1] *= -1; // flip Y
     ortho[1][1] *= -1; // flip Y

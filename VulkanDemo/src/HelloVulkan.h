@@ -35,6 +35,8 @@ struct UniformBufferObject {
     glm::mat4 proj;
     glm::mat4 depthVP;
     glm::vec4 viewPos;
+    int shadowIndex;
+    float filterSize;
 };
 
 struct UBOParams {
@@ -171,8 +173,6 @@ public:
 
     bool hasStencilComponent(VkFormat format);
 
-    void loadModel();
-
     void loadgltfModel(std::string filename);
     void AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
 
@@ -180,6 +180,11 @@ public:
     bool isOrth = false;
     void UpdateDebug();
     void UpdateProjectionMatrix();
+
+    int shadowIndex = 0;
+    void UpdateShadowIndex(int indx = -1);
+    int filterSize = 1;
+    void UpdateShadowFilterSize();
 
     VkDevice GetDevice()
     {
@@ -305,7 +310,7 @@ private:
     glm::vec4 lightPos;
     Node* lightNode;
 
-    float zNear = 1.0f;
+    float zNear = 0.1f;
     float zFar = 96.0f;
     Shadow shadow;
     Debug debug;
