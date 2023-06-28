@@ -1,9 +1,14 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-#ifdef GL_ES
-precision mediump float;
-#endif
+#define NUM_SAMPLES 10
+#define BLOCKER_SEARCH_NUM_SAMPLES NUM_SAMPLES
+#define PCF_NUM_SAMPLES NUM_SAMPLES
+#define NUM_RINGS 10
+#define EPS 1e-3
+
+#define PI 3.141592653589793
+#define PI2 6.283185307179586
 
 layout(set = 0, binding = 0) 
 uniform UniformBufferObject {
@@ -24,10 +29,9 @@ layout(set = 2, binding = 0) uniform sampler2D colorSampler;
 layout(set = 2, binding = 1) uniform sampler2D normalSampler;
 layout(set = 2, binding = 2) uniform sampler2D roughnessSampler;
 
-
-#define PI 3.141592653589793
-#define PI2 6.283185307179586
-
+layout(push_constant) uniform PushConsts {
+	layout(offset = 64) float islight;
+} material;
 
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec3 normal;
@@ -38,10 +42,7 @@ layout(location = 5) in vec4 shadowCoord;
 
 layout(location = 0) out vec4 outColor;
 
-layout(push_constant) uniform PushConsts {
-	layout(offset = 64) float islight;
-} material;
-
+/*----------------Lighting----------------*/
 
 float D_GGX_TR(vec3 n, vec3 h, float roughness)
 {
@@ -109,6 +110,64 @@ vec3 blin_phong()
 	return diffuse + specular;
 }
 
+vec3 pbr()
+{
+	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
+	 
+	vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
+	float roughness = roughMetalic.x;
+	float metallic = roughMetalic.y;
+
+	vec3 F0 = vec3(0.04);
+	F0 = mix(F0, albedo.xyz, metallic);
+
+	vec3 texnormal = calculateNormal();
+
+	vec3 n = texnormal;
+	vec3 v = normalize(ubo.viewPos.xyz - worldPos);
+
+	vec3 Lo = vec3(0.0);
+	for(int i = 0; i < 1; i ++)
+	{
+		vec3 l = normalize(uboParam.lights[i].xyz - worldPos);
+		float ndotl = dot(n, l);
+		if(ndotl > 0.0)
+		{
+			ndotl = clamp(dot(n, l), 0.0, 1.0);
+
+			vec3 h = normalize(v + l);
+			//float distance = length(uboParam.lights[i].xyz - worldPos);
+			//float atten = 1.0 / (distance * distance);
+			//vec3 irradiance = vec3(1.0) * atten;
+
+			float ndf = D_GGX_TR(n, h, roughness);
+			float g = GeometrySmith(n, v, l, roughness);
+			vec3 f = fresnelSchlick(max(dot(v, n), 0.0), F0);
+
+			vec3 ks = f;
+			vec3 kd = (vec3(1.0)-f);
+			kd *= (1 - metallic);
+	
+			vec3 nom = ndf * g * f;
+			float denom = 4 * clamp(dot(n, v), 0.0, 1.0) * ndotl + 0.001;
+			vec3 specular = nom / denom;
+			Lo += (kd * albedo / PI + specular)* ndotl;
+		}
+	}
+
+	vec3 ambient = vec3(0.03) * albedo;
+	vec3 color = ambient + Lo;
+
+    color = color / (color + vec3(1.0));
+    color = pow(color, vec3(1.0/2.2));  
+
+	return color;
+}
+
+/*----------------Lighting----------------*/
+
+/*-----------------shadow-----------------*/
+
 highp float rand_1to1(highp float x ) { 
   // -1 -1
   return fract(sin(x)*10000.0);
@@ -121,15 +180,7 @@ highp float rand_2to1(vec2 uv ) {
 	return fract(sin(sn) * c);
 }
 
-#define NUM_SAMPLES 10
-#define BLOCKER_SEARCH_NUM_SAMPLES NUM_SAMPLES
-#define PCF_NUM_SAMPLES NUM_SAMPLES
-#define NUM_RINGS 10
-#define EPS 1e-3
-
-
 vec2 poissonDisk[NUM_SAMPLES];
-
 void poissonDiskSamples( const in vec2 randomSeed ) {
 
   float ANGLE_STEP = PI2 * float( NUM_RINGS ) / float( NUM_SAMPLES );
@@ -247,59 +298,7 @@ float getShadow()
 	return shadow;
 }
 
-vec3 pbr()
-{
-	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
-	 
-	vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
-	float roughness = roughMetalic.x;
-	float metallic = roughMetalic.y;
-
-	vec3 F0 = vec3(0.04);
-	F0 = mix(F0, albedo.xyz, metallic);
-
-	vec3 texnormal = calculateNormal();
-
-	vec3 n = texnormal;
-	vec3 v = normalize(ubo.viewPos.xyz - worldPos);
-
-	vec3 Lo = vec3(0.0);
-	for(int i = 0; i < 1; i ++)
-	{
-		vec3 l = normalize(uboParam.lights[i].xyz - worldPos);
-		float ndotl = dot(n, l);
-		if(ndotl > 0.0)
-		{
-			ndotl = clamp(dot(n, l), 0.0, 1.0);
-
-			vec3 h = normalize(v + l);
-			//float distance = length(uboParam.lights[i].xyz - worldPos);
-			//float atten = 1.0 / (distance * distance);
-			//vec3 irradiance = vec3(1.0) * atten;
-
-			float ndf = D_GGX_TR(n, h, roughness);
-			float g = GeometrySmith(n, v, l, roughness);
-			vec3 f = fresnelSchlick(max(dot(v, n), 0.0), F0);
-
-			vec3 ks = f;
-			vec3 kd = (vec3(1.0)-f);
-			kd *= (1 - metallic);
-	
-			vec3 nom = ndf * g * f;
-			float denom = 4 * clamp(dot(n, v), 0.0, 1.0) * ndotl + 0.001;
-			vec3 specular = nom / denom;
-			Lo += (kd * albedo / PI + specular)* ndotl;
-		}
-	}
-
-	vec3 ambient = vec3(0.03) * albedo;
-	vec3 color = ambient + Lo;
-
-    color = color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0/2.2));  
-
-	return color;
-}
+/*-----------------shadow-----------------*/
 
 void main(){
 	//vec3 color = blin_phong();
