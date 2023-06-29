@@ -12,8 +12,8 @@ void Debug::CreateDebugPipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphi
     // Disable culling, so all faces contribute to shadows
     pipelineCreateInfo.rasterizer.cullMode = VK_CULL_MODE_NONE;
 
-	auto shaderStages = vulkanAPP->CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/quad.vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/quad.frag.spv");
-    creatInfo.stageCount = shaderStages.size();
+	auto shaderStages = vulkanAPP->CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/quad.vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/quad.frag.spv");
+    creatInfo.stageCount = (uint32_t)shaderStages.size();
     creatInfo.pStages = shaderStages.data();
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
@@ -56,7 +56,7 @@ void Debug::CreateDescriptSetLayout()
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = uniformLayoutBindings.size();
+	layoutInfo.bindingCount = (uint32_t)uniformLayoutBindings.size();
 	layoutInfo.pBindings = uniformLayoutBindings.data();
 
 	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
@@ -103,7 +103,7 @@ void Debug::SetupDescriptSet(VkDescriptorPool pool, const VkDescriptorImageInfo&
 	descriptorWrites[1].pImageInfo = &imageInfo; // Optional
 	descriptorWrites[1].pTexelBufferView = nullptr; // Optional
 
-	vkUpdateDescriptorSets(device, descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+	vkUpdateDescriptorSets(device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 }
 
 void Debug::CreateUniformBuffer()

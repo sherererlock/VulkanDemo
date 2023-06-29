@@ -12,6 +12,7 @@
 #include "camera.hpp"
 #include "Shadow.h"
 #include "Debug.h"
+#include "macros.h"
 
 struct QueueFamilyIndices
 {
@@ -33,8 +34,9 @@ struct SwapChainSupportDetails
 struct UniformBufferObject {
     glm::mat4 view;
     glm::mat4 proj;
-    glm::mat4 depthVP;
+    glm::mat4 depthVP[CASCADED_COUNT];
     glm::vec4 viewPos;
+    float splitDepth[CASCADED_COUNT];
     int shadowIndex;
     float filterSize;
 };
@@ -70,6 +72,9 @@ public:
     {
         return helloVulkan;
     }
+
+    inline float GetNear() const { return zNear; }
+    inline float GetFar() const { return zFar; }
 
     void Init();
 	void Run();

@@ -193,8 +193,8 @@ void HelloVulkan::MouseButtonCallback(GLFWwindow* window, int key, int action, i
 
 void HelloVulkan::MouseCallback(double x, double y)
 {
-	int32_t dx = (int32_t)mousePos.x - x;
-	int32_t dy = (int32_t)mousePos.y - y;
+	int32_t dx = (int32_t)(mousePos.x - x);
+	int32_t dy = (int32_t)(mousePos.y - y);
 
 	if (mouseButtons.left) {
 		camera.rotate(glm::vec3(dy * camera.rotationSpeed, -dx * camera.rotationSpeed, 0.0f));
@@ -360,7 +360,7 @@ void HelloVulkan::loadgltfModel(std::string filename)
 void HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer)
 {
     CubeMesh mesh;
-    const int indexCount = mesh.indices.size();
+    const uint32_t indexCount = (uint32_t) mesh.indices.size();
 
 	uint32_t firstIndex = static_cast<uint32_t>(indexBuffer.size());
 	uint32_t vertexStart = static_cast<uint32_t>(vertexBuffer.size());
@@ -370,7 +370,7 @@ void HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Verte
 
     for (int i = 0; i < mesh.indices.size(); i++)
     {
-        indexBuffer.push_back(mesh.indices[i] + vertexBuffer.size());
+        indexBuffer.push_back(mesh.indices[i] + (uint32_t)vertexBuffer.size());
     }
 
 
@@ -474,7 +474,7 @@ HelloVulkan::HelloVulkan()
     viewUpdated = true;
 
     filterSize = 1;
-    shadowIndex = 4;
+    shadowIndex = 3;
 }
 
 void HelloVulkan::Init()
@@ -980,7 +980,16 @@ PipelineCreateInfo HelloVulkan::CreatePipelineCreateInfo()
 
 void HelloVulkan::createGraphicsPipeline()
 {
-    auto shaderStages = CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/shader.vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/shader.frag.spv");
+    std::string vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.vert.spv";
+    std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.frag.spv";
+
+    if (CASCADED_COUNT > 1)
+    {
+		vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shaderCascaded.vert.spv";
+		fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shaderCascaded.frag.spv";
+    }
+
+    auto shaderStages = CreaterShader(vertexFileName, fragmentFileName);
 
     PipelineCreateInfo info = CreatePipelineCreateInfo();
     
@@ -1004,9 +1013,9 @@ void HelloVulkan::createGraphicsPipeline()
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = setLayouts.size(); // Optional
+    pipelineLayoutInfo.setLayoutCount = (uint32_t)setLayouts.size(); // Optional
     pipelineLayoutInfo.pSetLayouts = setLayouts.data(); // Optional
-    pipelineLayoutInfo.pushConstantRangeCount = pushConstantRanges.size(); // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = (uint32_t)pushConstantRanges.size(); // Optional
     pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data(); // Optional
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
@@ -1038,7 +1047,7 @@ void HelloVulkan::createGraphicsPipeline()
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
-    pipelineInfo.stageCount = shaderStages.size();
+    pipelineInfo.stageCount = (uint32_t)shaderStages.size();
     pipelineInfo.pStages = shaderStages.data();
 
     pipelineInfo.pVertexInputState = &info.vertexInputInfo; // bindings and attribute
@@ -1665,7 +1674,7 @@ void HelloVulkan::updateUniformBuffer()
     ubo.view = camera.matrices.view;
     ubo.proj = camera.matrices.perspective;
     ubo.viewPos = glm::vec4(camera.position * -1.0f, 1.0);
-    ubo.shadowIndex = shadowIndex;
+    ubo.shadowIndex = 3;
     ubo.filterSize = (float)filterSize;
 
     glm::vec3 pos = glm::vec3(lightPos.x, lightPos.y, lightPos.z);
@@ -1676,12 +1685,18 @@ void HelloVulkan::updateUniformBuffer()
     pers[1][1] *= -1; // flip Y
     ortho[1][1] *= -1; // flip Y
 
-    if (isOrth)
-        ubo.depthVP = ortho * view;
+    if(isOrth)
+        ubo.depthVP[0] = ortho * view;
     else
-        ubo.depthVP = pers * view;
+        ubo.depthVP[0] = pers * view;
 
-    shadow.UpateLightMVP(ubo.depthVP);
+	if (CASCADED_COUNT == 1)
+        shadow.UpdateCascaded(ubo.depthVP[0]);
+    else
+        shadow.UpdateCascaded(ubo.view, ubo.proj, lightPos);
+
+    shadow.UpateLightMVP();
+    shadow.GetCascadedInfo(ubo.depthVP, ubo.splitDepth);
 
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);
@@ -1931,7 +1946,7 @@ void HelloVulkan::createDescriptorSetLayout()
     imageLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     std::array<VkDescriptorSetLayoutBinding, 2> scenebindings = {uniformLayoutBinding, imageLayoutBinding};
-    layoutInfo.bindingCount = scenebindings.size();
+    layoutInfo.bindingCount = (uint32_t)scenebindings.size();
     layoutInfo.pBindings = scenebindings.data();
 
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayoutS) != VK_SUCCESS) {
@@ -2026,7 +2041,7 @@ void HelloVulkan::createDescriptorSet()
             throw std::runtime_error("failed to allocate descriptor set!");
         }
 
-        int indices[3] = {material.baseColorTextureIndex, material.normalTextureIndex,  material.roughnessTextureIndex };
+        uint32_t indices[3] = {material.baseColorTextureIndex, material.normalTextureIndex,  material.roughnessTextureIndex };
         for (int j = 0; j < 3; j++)
         {
             descriptorWrites[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

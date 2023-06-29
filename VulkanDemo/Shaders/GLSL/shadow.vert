@@ -1,9 +1,11 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#define CASCADED_COUNT 4
 layout(set = 0, binding = 0) 
 uniform UniformBufferObject {
-    mat4 depthVP;
+    mat4 depthVP[CASCADED_COUNT];
+    uint casecadedIndex;
 } ubo;
 
 layout(push_constant) uniform PushConsts{
@@ -17,5 +19,5 @@ out gl_PerVertex {
 };
 
 void main() {
-   gl_Position = ubo.depthVP * primitive.model * vec4(inPosition, 1.0);
+   gl_Position = ubo.depthVP[ubo.casecadedIndex] * primitive.model * vec4(inPosition, 1.0);
 }

@@ -4,6 +4,16 @@
 
 #include <stdexcept>
 
+void Shadow::GetCascadedInfo(glm::mat4* mat, float* splitDepth)
+{
+    for (int i = 0; i < casadedInfos.size(); i++)
+    {
+        glm::mat4 depthvp = casadedInfos[i].depthVP;
+        mat[i] = depthvp;
+        splitDepth[i] = casadedInfos[i].splitDepth;
+    }
+}
+
 void Shadow::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
 {
     vulkanAPP = app;
@@ -45,23 +55,23 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
     pipelineCreateInfo.dynamicState.dynamicStateCount = 3;
     pipelineCreateInfo.dynamicState.pDynamicStates = dynamicStates;
 
-	auto shaderStages = vulkanAPP->CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/shadow.frag.spv");
+	auto shaderStages = vulkanAPP->CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shadow.vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shadow.frag.spv");
     creatInfo.stageCount = 1;
     creatInfo.pStages = shaderStages.data();
 
     creatInfo.renderPass = shadowPass;
 
-    VkPushConstantRange pushConstantRange;
-	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(glm::mat4);
+    std::array<VkPushConstantRange, 1> pushConstantRanges;
+	pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	pushConstantRanges[0].offset = 0;
+	pushConstantRanges[0].size = sizeof(glm::mat4);
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1; // Optional
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout; // Optional
-    pipelineLayoutInfo.pushConstantRangeCount = 1; // Optional
-    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange; // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = (uint32_t)pushConstantRanges.size(); // Optional
+    pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data(); // Optional
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
     {
@@ -131,7 +141,7 @@ void Shadow::CreateShadowPass()
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
     
-    renderPassInfo.dependencyCount = dependencies.size();
+    renderPassInfo.dependencyCount = (uint32_t)dependencies.size();
     renderPassInfo.pDependencies = dependencies.data();
 
     if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &shadowPass) != VK_SUCCESS)
@@ -168,7 +178,7 @@ void Shadow::SetupDescriptSet(VkDescriptorPool pool)
     allocInfo.descriptorSetCount = 1;
     allocInfo.pSetLayouts = &descriptorSetLayout;
 
-    if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS) 
+    if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to allocate shadow descriptor set!");
     }
@@ -194,17 +204,20 @@ void Shadow::SetupDescriptSet(VkDescriptorPool pool)
 
 void Shadow::CreateFrameBuffer()
 {
-    VkFramebufferCreateInfo framebufferInfo = {};
-    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebufferInfo.renderPass = shadowPass;
-    framebufferInfo.attachmentCount = 1;
-    framebufferInfo.pAttachments = &shadowMapImageView;
-    framebufferInfo.width = width;
-    framebufferInfo.height = height;
-    framebufferInfo.layers = 1;
+	VkFramebufferCreateInfo framebufferInfo = {};
+	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	framebufferInfo.renderPass = shadowPass;
+	framebufferInfo.attachmentCount = 1;
+	framebufferInfo.width = width;
+	framebufferInfo.height = height;
+	framebufferInfo.layers = 1;
 
-    if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &frameBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create shadow map framebuffer!");
+    for (int i = 0; i < CASCADED_COUNT; i++)
+    {
+        framebufferInfo.pAttachments = &casadedInfos[i].shadowMapImageView;
+		if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &casadedInfos[i].frameBuffer) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create shadow map framebuffer!");
+		}
     }
 }
 
@@ -224,7 +237,7 @@ void Shadow::CreateShadowMap()
 	image.extent.height = height;
 	image.extent.depth = 1;
 	image.mipLevels = 1;
-	image.arrayLayers = 1;
+	image.arrayLayers = CASCADED_COUNT;
 	image.samples = VK_SAMPLE_COUNT_1_BIT;
 	image.tiling = VK_IMAGE_TILING_OPTIMAL;
 	image.format = DEPTH_FORMAT;																// Depth stencil attachment
@@ -244,18 +257,26 @@ void Shadow::CreateShadowMap()
 	vkAllocateMemory(device, &memAlloc, nullptr, &shadowMapMemory);
 	vkBindImageMemory(device, shadowMapImage, shadowMapMemory, 0);
 
-    VkImageViewCreateInfo depthStencilView = {};
-    depthStencilView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	depthStencilView.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    VkImageViewType viewType = CASCADED_COUNT > 1 ? VkImageViewType::VK_IMAGE_VIEW_TYPE_2D_ARRAY : VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
+	VkImageViewCreateInfo depthStencilView = {};
+	depthStencilView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	depthStencilView.viewType = viewType;
 	depthStencilView.format = DEPTH_FORMAT;
 	depthStencilView.subresourceRange = {};
 	depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 	depthStencilView.subresourceRange.baseMipLevel = 0;
 	depthStencilView.subresourceRange.levelCount = 1;
-	depthStencilView.subresourceRange.baseArrayLayer = 0;
-	depthStencilView.subresourceRange.layerCount = 1;
+	depthStencilView.subresourceRange.layerCount = CASCADED_COUNT;
 	depthStencilView.image = shadowMapImage;
-	vkCreateImageView(device, &depthStencilView, nullptr, &shadowMapImageView);
+    depthStencilView.subresourceRange.baseArrayLayer = 0;
+    vkCreateImageView(device, &depthStencilView, nullptr, &shadowMapImageView);
+
+    for (int i = 0; i < CASCADED_COUNT; i++)
+    {
+        depthStencilView.subresourceRange.layerCount = 1;
+        depthStencilView.subresourceRange.baseArrayLayer = i;
+		vkCreateImageView(device, &depthStencilView, nullptr, &casadedInfos[i].shadowMapImageView);
+    }
 
 	// Create sampler to sample from to depth attachment
 	// Used to sample in the fragment shader for shadowed rendering
@@ -293,7 +314,6 @@ void Shadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& 
     VkRenderPassBeginInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = shadowPass;
-    renderPassInfo.framebuffer = frameBuffer;
 
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent.width = width;
@@ -318,32 +338,135 @@ void Shadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& 
     scissor.extent.width = width;
     scissor.extent.height = height;
 
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-
 	vkCmdSetDepthBias(
         commandBuffer,
 		depthBiasConstant,
 		0.0f,
 		depthBiasSlope);
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline);
+    for (int i = 0; i < CASCADED_COUNT; i++)
+    {
+        if(CASCADED_COUNT > 1)
+            UpateLightMVP(i);
 
-    gltfmodel.draw(commandBuffer, pipelineLayout, 1);
+        renderPassInfo.framebuffer = casadedInfos[i].frameBuffer;
+		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline);
 
-    vkCmdEndRenderPass(commandBuffer);
+		gltfmodel.draw(commandBuffer, pipelineLayout, 1);
+		vkCmdEndRenderPass(commandBuffer);
+    }
 }
 
-void Shadow::UpateLightMVP(glm::mat4 depthVP)
+void Shadow::UpdateCascaded(glm::mat4 depthvp)
+{
+	casadedInfos[0].depthVP = depthvp;
+}
+
+void Shadow::UpdateCascaded(glm::mat4 view, glm::mat4 proj, glm::vec4 lightpos)
+{
+    float cascadeSplitLambda = 0.95f;
+
+	float cascadeSplits[CASCADED_COUNT];
+
+	float nearClip = vulkanAPP->GetNear();
+	float farClip = vulkanAPP->GetFar();
+	float clipRange = farClip - nearClip;
+
+	float minZ = nearClip;
+	float maxZ = nearClip + clipRange;
+
+	float range = maxZ - minZ;
+	float ratio = maxZ / minZ;
+
+	// Calculate split depths based on view camera frustum
+	// Based on method presented in https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html
+    for (uint32_t i = 0; i < CASCADED_COUNT; i++)
+    {
+        float p = (i + 1) / static_cast<float>(CASCADED_COUNT);
+        float log = minZ * std::pow(ratio, p);
+        float uniform = minZ + range * p;
+        float d = cascadeSplitLambda * (log - uniform) + uniform;
+        cascadeSplits[i] = (d - nearClip) / clipRange;
+    }
+
+    float lastSplitDist = 0.0;
+    for (int i = 0; i < CASCADED_COUNT; i++)
+    {
+		glm::vec3 frustumCorners[8] = {
+			glm::vec3(-1.0f,  1.0f, 0.0f),
+			glm::vec3(1.0f,  1.0f, 0.0f),
+			glm::vec3(1.0f, -1.0f, 0.0f),
+			glm::vec3(-1.0f, -1.0f, 0.0f),
+			glm::vec3(-1.0f,  1.0f,  1.0f),
+			glm::vec3(1.0f,  1.0f,  1.0f),
+			glm::vec3(1.0f, -1.0f,  1.0f),
+			glm::vec3(-1.0f, -1.0f,  1.0f),
+		};
+
+        glm::mat4 invView = glm::inverse(view);
+        glm::mat4 invProj = glm::inverse(proj);
+
+        for (int i = 0; i < 8; i++)
+        {
+            glm::vec4 cornor = glm::vec4(frustumCorners[i], 1.0);
+            cornor = invProj * cornor;
+            cornor = cornor / cornor.w;
+            cornor = invView * cornor;
+
+            frustumCorners[i] = cornor;
+        }
+
+        float splitDist = cascadeSplits[i];
+        for (int i = 0; i < 4; i++)
+        {
+            glm::vec3 dist = (frustumCorners[i + 4] - frustumCorners[i]);
+            frustumCorners[i + 4] = frustumCorners[i] + dist * splitDist;
+            frustumCorners[i] = frustumCorners[i] + dist * lastSplitDist;
+        }
+
+        glm::vec3 center = glm::vec3(0.0);
+        for (int i = 0; i < 8; i++)
+        {
+            center += frustumCorners[i];
+        }
+
+        center /= 8.0f;
+
+        float radius = 0.0f;
+		for (int i = 0; i < 8; i++)
+		{
+			float dist = glm::length(frustumCorners[i] - center);
+            radius = glm::max(radius, dist);
+		}
+        radius = std::ceil(radius * 16.0f) / 16.0f;
+
+        glm::vec3 maxExtents = glm::vec3(radius);
+        glm::vec3 minExtents = -maxExtents;
+
+		glm::vec3 lightDir = normalize(-lightpos);
+		glm::mat4 lightViewMatrix = glm::lookAt(center - lightDir * -minExtents.z, center, glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
+
+		// Store split distance and matrix in cascade
+		casadedInfos[i].splitDepth = (nearClip + splitDist * clipRange) * -1.0f;
+        casadedInfos[i].depthVP = lightOrthoMatrix * lightViewMatrix;
+
+		lastSplitDist = cascadeSplits[i];
+    }
+}
+
+void Shadow::UpateLightMVP(int i)
 {
     ShadowUniformBufferObject ubo;
-    ubo.depthVP = depthVP;
-    // TODO
+
+    for (int i = 0; i < CASCADED_COUNT; i++)
+        ubo.depthVP[i] = casadedInfos[i].depthVP;
+
+    ubo.cascadedIndex = i;
 
     void* data;
     vkMapMemory(device, uniformMemory, 0, sizeof(ShadowUniformBufferObject), 0, &data);
@@ -353,9 +476,15 @@ void Shadow::UpateLightMVP(glm::mat4 depthVP)
 
 void Shadow::Cleanup()
 {
+    for(CasadedInfo& info : casadedInfos)
+    {
+        info.Cleanup(device);
+    }
+
     vkDestroyImage(device, shadowMapImage, nullptr); 
-    vkDestroySampler(device, shadowMapSampler, nullptr);
     vkDestroyImageView(device, shadowMapImageView, nullptr);
+    vkDestroySampler(device, shadowMapSampler, nullptr);
+
     vkFreeMemory(device, shadowMapMemory, nullptr);
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
@@ -367,5 +496,10 @@ void Shadow::Cleanup()
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     vkDestroyRenderPass(device, shadowPass, nullptr);
 
+}
+
+void CasadedInfo::Cleanup(VkDevice device)
+{
     vkDestroyFramebuffer(device, frameBuffer, nullptr);
+    vkDestroyImageView(device, shadowMapImageView, nullptr);
 }
