@@ -234,7 +234,9 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
 		
 		for (Primitive& primitive : node->mesh.primitives) {
-			if (primitive.indexCount > 0) {
+			//if (primitive.indexCount > 0) {
+
+			if (primitive.indexCount == 18 || primitive.indexCount == 6642) {
 
 				if (flag == 0)
 				{

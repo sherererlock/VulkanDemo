@@ -18,9 +18,9 @@ uniform UniformBufferObject {
     mat4 proj;
 	mat4 depthVP[CASCADED_COUNT];
     vec4 viewPos;
-	int splitDepth[CASCADED_COUNT];
 	int shadowIndex;
 	float filterSize;
+	int splitDepth[CASCADED_COUNT];
 } ubo;
 
 layout(set = 1, binding = 0) 

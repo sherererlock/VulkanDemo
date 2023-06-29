@@ -11,6 +11,7 @@ uniform UniformBufferObject {
     vec4 viewPos;
 	int shadowIndex;
 	float filterSize;
+	int splitDepth[CASCADED_COUNT];
 } ubo;
 
 layout(push_constant) uniform PushConsts{

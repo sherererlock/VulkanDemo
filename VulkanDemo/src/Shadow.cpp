@@ -466,7 +466,7 @@ void Shadow::UpateLightMVP(int i)
     for (int i = 0; i < CASCADED_COUNT; i++)
         ubo.depthVP[i] = casadedInfos[i].depthVP;
 
-    ubo.cascadedIndex = i;
+    ubo.cascadedIndex = 0;
 
     void* data;
     vkMapMemory(device, uniformMemory, 0, sizeof(ShadowUniformBufferObject), 0, &data);

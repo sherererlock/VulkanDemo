@@ -417,7 +417,7 @@ void HelloVulkan::UpdateProjectionMatrix()
         if(isOrth)
 		    lightPos = { 0.0f, 80.f, 80.0f, 1.0f };
         else
-            lightPos = { 0.0f, 40.f, 10.0f, 1.0f };
+            lightPos = { 0.0f, 4.f, 2.0f, 1.0f };
 	}
 }
 
@@ -450,13 +450,13 @@ void HelloVulkan::UpdateShadowFilterSize()
         filterSize = 1;
 }
 
-
 HelloVulkan::HelloVulkan()
 {
     helloVulkan = this;
 
+    isOrth = true;
 	if (isOrth)
-		lightPos = { 0.0f, 80.f, 80.0f, 1.0f };
+		lightPos = { 0.0f, 10.f, 2.0f, 1.0f };
 	else
 		lightPos = { 0.0f, 4.f, 2.0f, 1.0f };
 
@@ -474,7 +474,7 @@ HelloVulkan::HelloVulkan()
     viewUpdated = true;
 
     filterSize = 2;
-    shadowIndex = 3;
+    shadowIndex = 0;
 }
 
 void HelloVulkan::Init()
@@ -1675,10 +1675,14 @@ void HelloVulkan::updateUniformBuffer()
     ubo.proj = camera.matrices.perspective;
     ubo.viewPos = glm::vec4(camera.position * -1.0f, 1.0);
 
+    lightPos = { 0.0f, 40.f, 0.0f, 1.0f };
 
     glm::vec3 pos = glm::vec3(lightPos.x, lightPos.y, lightPos.z);
-    glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 ortho = glm::ortho(-150.0f, 150.0f, -150.0f, 150.0f, 0.01f, 400.0f);
+    float range = 40.0f;
+    glm::vec3 direction = glm::normalize(-pos);
+    glm::mat4 view = glm::lookAt(-direction*range, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    glm::mat4 ortho = glm::ortho(-range, range, -range, range, 0.5f, 96.0f);
     glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, zNear, zFar);
 
     pers[1][1] *= -1; // flip Y
@@ -1705,6 +1709,7 @@ void HelloVulkan::updateUniformBuffer()
     memcpy(data, &ubo, sizeof(ubo));
     vkUnmapMemory(device, uniformBufferMemory);
 }
+
 
 void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
 {
