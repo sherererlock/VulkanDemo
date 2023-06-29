@@ -9,6 +9,9 @@ uniform UniformBufferObject {
     mat4 proj;
     mat4 depthVP[CASCADED_COUNT];
     vec4 viewPos;
+	int shadowIndex;
+	float filterSize;
+	float splitDepth[CASCADED_COUNT];
 } ubo;
 
 layout(push_constant) uniform PushConsts{

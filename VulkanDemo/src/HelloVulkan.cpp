@@ -473,7 +473,7 @@ HelloVulkan::HelloVulkan()
     //camera.updateViewMatrix();
     viewUpdated = true;
 
-    filterSize = 1;
+    filterSize = 2;
     shadowIndex = 3;
 }
 
@@ -1674,8 +1674,7 @@ void HelloVulkan::updateUniformBuffer()
     ubo.view = camera.matrices.view;
     ubo.proj = camera.matrices.perspective;
     ubo.viewPos = glm::vec4(camera.position * -1.0f, 1.0);
-    ubo.shadowIndex = 3;
-    ubo.filterSize = (float)filterSize;
+
 
     glm::vec3 pos = glm::vec3(lightPos.x, lightPos.y, lightPos.z);
     glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -1697,6 +1696,9 @@ void HelloVulkan::updateUniformBuffer()
 
     shadow.UpateLightMVP();
     shadow.GetCascadedInfo(ubo.depthVP, ubo.splitDepth);
+
+    ubo.shadowIndex = shadowIndex;
+    ubo.filterSize = (float)filterSize;
 
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);

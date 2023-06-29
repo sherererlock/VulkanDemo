@@ -36,9 +36,9 @@ struct UniformBufferObject {
     glm::mat4 proj;
     glm::mat4 depthVP[CASCADED_COUNT];
     glm::vec4 viewPos;
-    float splitDepth[CASCADED_COUNT];
     int shadowIndex;
     float filterSize;
+    float splitDepth[CASCADED_COUNT];
 };
 
 struct UBOParams {
