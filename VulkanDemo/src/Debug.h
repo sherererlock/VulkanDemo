@@ -8,11 +8,9 @@ struct DebugUniformBufferObject {
 	float zFar;
 };
 
-
 class HelloVulkan;
 class gltfModel;
 struct PipelineCreateInfo;
-
 
 class Debug
 {
@@ -32,6 +30,14 @@ private:
 	float zNear;
 	float zFar;
 
+	VkDebugUtilsMessengerEXT debugMessenger;
+
+#ifdef NDEBUG
+	const bool enableValidationLayers = false;
+#else
+	const bool enableValidationLayers = true;
+#endif
+
 public:
 	inline void Init(VkDevice vkdevice, HelloVulkan* app, float nearPlane, float farPlane) {
 		device = vkdevice;
@@ -46,5 +52,9 @@ public:
 	void CreateUniformBuffer();
 	void BuildCommandBuffer(VkCommandBuffer commandBuffer);
 
-	void Cleanup();
+	void Cleanup(VkInstance instance);
+
+	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+
+	void setupDebugMessenger(VkInstance instance);
 };

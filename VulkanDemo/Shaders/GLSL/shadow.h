@@ -1,47 +1,5 @@
-#version 450
-#extension GL_ARB_separate_shader_objects : enable
-#extension GL_GOOGLE_include_directive : enable
-
-#include"macros.h"
-
-#define CASCADED_COUNT 4
-
-layout(set = 0, binding = 0) 
-uniform UniformBufferObject {
-    mat4 view;
-    mat4 proj;
-	mat4 depthVP[CASCADED_COUNT];
-    vec4 viewPos;
-	int shadowIndex;
-	float filterSize;
-	int splitDepth[CASCADED_COUNT];
-} ubo;
-
-layout(set = 1, binding = 0) 
-uniform uboShared {
-    vec4 lights[4];
-} uboParam;
-
-//layout(set = 1, binding = 1) uniform sampler2D shadowMapSampler;
-layout(set = 1, binding = 1) uniform sampler2DArray shadowMapSampler;
-
-layout(set = 2, binding = 0) uniform sampler2D colorSampler;
-layout(set = 2, binding = 1) uniform sampler2D normalSampler;
-layout(set = 2, binding = 2) uniform sampler2D roughnessSampler;
-
-layout(push_constant) uniform PushConsts {
-	layout(offset = 64) float islight;
-} material;
-
-layout(location = 0) in vec3 fragColor;
-layout(location = 1) in vec3 normal;
-layout(location = 2) in vec2 fragTexCoord;
-layout(location = 3) in vec3 worldPos;
-layout(location = 4) in vec3 tangent;
-layout(location = 5) in vec3 viewPos;
-layout(location = 0) out vec4 outColor;
-
-#include "lighting.h"
+#ifndef	SHADOW
+#define SHADOW
 
 float rand_1to1(float x ) { 
   // -1 -1
@@ -94,7 +52,7 @@ void uniformDiskSamples( const in vec2 randomSeed ) {
 
 float Bias(float depthCtr)
 {
-	ivec2 texDim = textureSize(shadowMapSampler, 0).xy;
+	ivec2 texDim = textureSize(shadowMapSampler, 0);
 	vec3 lightDir = normalize(uboParam.lights[0].xyz - worldPos);
 	vec3 normal = normalize(normal);
 	float m = FRUSTUM_SIZE / float(texDim.x) / 2.0; //Õý½»¾ØÕó¿í¸ß/shadowMapSize/2
@@ -104,20 +62,20 @@ float Bias(float depthCtr)
 }
 
 float getShadowBias(float c, float filterRadiusUV){
-	ivec2 texDim = textureSize(shadowMapSampler, 0).xy;
+	ivec2 texDim = textureSize(shadowMapSampler, 0);
 	vec3 normal = normalize(normal);
 	vec3 lightDir = normalize(uboParam.lights[0].xyz - worldPos);
 	float fragSize = (1. + ceil(filterRadiusUV)) * (FRUSTUM_SIZE / texDim.x / 2.);
 	return max(fragSize, fragSize * (1.0 - dot(normal, lightDir))) * c;
 }
 
-float textureProj(vec3 coord, vec2 offset, uint index)
+float textureProj(vec3 coord, vec2 offset)
 {
 	float shadow = 1.0;
 
 	if(coord.z > -1.0 && coord.z < 1.0)
 	{
-		float dist = texture(shadowMapSampler, vec3(coord.xy + offset, index)).r;
+		float dist = texture(shadowMapSampler, coord.xy + offset).r;
 		float bias = getShadowBias(0.4, 0.0);
 		if (dist < coord.z)
 			shadow = 0.0;
@@ -126,9 +84,9 @@ float textureProj(vec3 coord, vec2 offset, uint index)
 	return shadow;
 }
 
-float filterPCF3x3(vec3 coords, uint index)
+float filterPCF3x3(vec3 coords)
 {	
-	ivec2 texDim = textureSize(shadowMapSampler, 0).xy;
+	ivec2 texDim = textureSize(shadowMapSampler, 0);
 	float scale = 1.5;
 	float dx = scale * 1.0 / float(texDim.x);
 	float dy = scale * 1.0 / float(texDim.y);
@@ -141,7 +99,7 @@ float filterPCF3x3(vec3 coords, uint index)
 	{
 		for (int y = -range; y <= range; y++)
 		{
-			shadowFactor += textureProj(coords, vec2(dx*x, dy*y), index);
+			shadowFactor += textureProj(coords, vec2(dx*x, dy*y));
 			count++;
 		}
 	
@@ -149,9 +107,9 @@ float filterPCF3x3(vec3 coords, uint index)
 	return shadowFactor / count;
 }
 
-float pcf7x7(vec3 texCoord, uint index)
+float pcf7x7(vec3 texCoord)
 {
-	ivec2 itexelSize = textureSize(shadowMapSampler, 0).xy;
+	ivec2 itexelSize = textureSize(shadowMapSampler, 0);
 
 	float deltaSize = 1.0 / float(itexelSize.x);
 	vec2 texelSize= vec2(deltaSize, deltaSize);
@@ -165,7 +123,7 @@ float pcf7x7(vec3 texCoord, uint index)
         for (int j = -range; j <= range; j++)
         {
             vec2 offset = vec2(i, j) * texelSize;
-            depth += textureProj(texCoord, offset, index);
+            depth += textureProj(texCoord, offset);
             numSamples++;
         }
     }
@@ -176,7 +134,7 @@ float pcf7x7(vec3 texCoord, uint index)
     return depth;
 }
 
-float PCF(vec3 coords, float filteringSize, uint index) {
+float PCF(vec3 coords, float filteringSize) {
 	float bias = 0.0;
 	if(ubo.shadowIndex == 2)
 		uniformDiskSamples(coords.xy);
@@ -185,28 +143,28 @@ float PCF(vec3 coords, float filteringSize, uint index) {
 
 	float shadow = 0.0;
 	for(int i = 0; i < NUM_SAMPLES; i ++)
-		shadow += textureProj(coords, poissonDisk[i] * filteringSize, index);
+		shadow += textureProj(coords, poissonDisk[i] * filteringSize);
 
 	return shadow / float(NUM_SAMPLES);
 }
 
-float findBlocker(vec2 coords, float zReceiver, uint index)
+float findBlocker(vec2 coords, float zReceiver)
 {
 	int blockerNum = 0;
 	float blockDepth = 0.;
 
-	float posZFromLight = zReceiver;// shadowCoord.z;
+	float posZFromLight = shadowCoord.z;
 
 	float searchRadius = LIGHT_SIZE_UV * (posZFromLight - NEAR_PLANE) / posZFromLight;
 
-	ivec2 itexelSize = textureSize(shadowMapSampler, 0).xy;
+	ivec2 itexelSize = textureSize(shadowMapSampler, 0);
 	float deltaSize = 1.0 / float(itexelSize.x);
 	float filterSize = 1.0;
 	float filteringRange = deltaSize * filterSize;
 
 	poissonDiskSamples(coords);
 	for(int i = 0; i < NUM_SAMPLES; i++){
-		float shadowDepth = texture(shadowMapSampler, vec3(coords + poissonDisk[i] * filteringRange, index)).r;
+		float shadowDepth = texture(shadowMapSampler, coords + poissonDisk[i] * filteringRange).r;
 		if(zReceiver > shadowDepth){
 			blockerNum++;
 			blockDepth += shadowDepth;
@@ -219,63 +177,33 @@ float findBlocker(vec2 coords, float zReceiver, uint index)
 		return blockDepth / float(blockerNum);
 }
 
-float PCSS(vec3 coords, uint index)
+float PCSS(vec3 coords)
 {
-	float blockerDepth = findBlocker(coords.xy, coords.z, index);
+	float blockerDepth = findBlocker(coords.xy, coords.z);
 	if(blockerDepth < -EPS)
 		return 1.0;
 
 	float wp = (coords.z - blockerDepth) * LIGHT_WORLD_SIZE / blockerDepth;
 
-	return PCF(coords, wp, index);
+	return PCF(coords, wp);
 }
 
-float getShadow(vec3 coord, uint index)
+float getShadow(vec3 coord)
 {
-	
 	switch(ubo.shadowIndex)
 	{
 		case 0:
-			return textureProj(coord, vec2(0.0), index);
+			return textureProj(coord, vec2(0.0));
 		case 1:
-			return filterPCF3x3(coord, index);
+			return filterPCF3x3(coord);
 		case 2:
 		case 3:
-			ivec2 texDim = textureSize(shadowMapSampler, 0).xy;
+			ivec2 texDim = textureSize(shadowMapSampler, 0);
 			float filteringSize = ubo.filterSize / float(texDim.x);
-			return PCF(coord, filteringSize, index);
+			return PCF(coord, filteringSize);
 		case 4:
-			return PCSS(coord, index);
+			return PCSS(coord);
 	}
 }
 
-/*-----------------shadow-----------------*/
-
-void main(){
-	//vec3 color = blin_phong();
-	vec3 color = vec3(1.0);
-
-	if(material.islight == 0)
-		color = pbr();
-
-	int cascadedIndex = 0;
-	for(int i = 0; i < CASCADED_COUNT; i ++)
-	{
-		if(viewPos.z < ubo.splitDepth[i])
-			cascadedIndex ++;
-	}
-
-	vec4 shadowCoord = ubo.depthVP[cascadedIndex] * vec4(worldPos, 1.0);
-
-	vec3 coord = shadowCoord.xyz;
-	if(shadowCoord.w > 0.0)
-	{
-		coord = coord / shadowCoord.w;
-		coord.xy = coord.xy * 0.5 + 0.5;
-	}
-
-	float shadow = getShadow(coord, cascadedIndex);
-	color *= shadow;
-
-	outColor = vec4(color, 1.0);
-}
+#endif

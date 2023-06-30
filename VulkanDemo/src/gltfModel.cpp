@@ -236,7 +236,7 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 		for (Primitive& primitive : node->mesh.primitives) {
 			//if (primitive.indexCount > 0) {
 
-			if (primitive.indexCount == 18 || primitive.indexCount == 6642) {
+			if (primitive.indexCount == 36 || primitive.indexCount == 18) {
 
 				if (flag == 0)
 				{

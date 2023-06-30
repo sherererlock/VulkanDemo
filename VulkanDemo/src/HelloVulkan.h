@@ -12,6 +12,7 @@
 #include "camera.hpp"
 #include "Shadow.h"
 #include "Debug.h"
+#include "Input.h"
 #include "macros.h"
 
 struct QueueFamilyIndices
@@ -122,7 +123,7 @@ public:
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t miplevels);
 
-    void updateUniformBuffer();
+    void updateUniformBuffer(float frameTimer);
     void updateSceneUniformBuffer(float frameTimer);
     void drawFrame();
 
@@ -145,13 +146,6 @@ public:
     bool checkValidationLayerSupport();
     bool checkDeviceExtensionSupport(VkPhysicalDevice phydevice);
 
-    VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
-    void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
-
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-
-    void setupDebugMessenger();
-
     void pickPhysicalDevice();
     bool isDeviceSuitable(VkPhysicalDevice phyDevice);
 
@@ -161,13 +155,7 @@ public:
 
     VkSampleCountFlagBits getMaxUsableSampleCount();
 
-    static void onWindowResized(GLFWwindow* window, int width, int height);
-    static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-    static void MouseCallback(GLFWwindow* window, double xpos, double ypos);
-    static void MouseButtonCallback(GLFWwindow* window, int key, int action, int mods);
-    static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
-    void MouseCallback(double xpos, double ypos);
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -179,7 +167,7 @@ public:
     bool hasStencilComponent(VkFormat format);
 
     void loadgltfModel(std::string filename);
-    void AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
+    Node* AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
 
     float debugtimer = 0.5f;
     bool isOrth = false;
@@ -196,12 +184,26 @@ public:
         return device;
     }
 
+    inline Camera& GetCamera()
+    {
+        return camera;
+    }
+
+    inline Input& GetInput()
+    {
+        return input;
+    }
+
+    inline void ViewUpdated()
+    {
+        viewUpdated = true;
+    }
+
 private:
     GLFWwindow* window;
     VkInstance instance;
     VkDevice device;
     VkPhysicalDevice physicalDevice;
-    VkDebugUtilsMessengerEXT debugMessenger;
 
     VkQueue graphicsQueue;
     VkQueue presentQueue;
@@ -260,8 +262,8 @@ private:
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
-    int width = 1920;
-    int height = 1080;
+    int width = 1280;
+    int height = 720;
 
     const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
     const std::string TEXTURE_PATH = "textures/image_512.jpg";
@@ -274,10 +276,11 @@ private:
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
+
 #ifdef NDEBUG
-    const bool enableValidationLayers = false;
+	const bool enableValidationLayers = false;
 #else
-    const bool enableValidationLayers = true;
+	const bool enableValidationLayers = true;
 #endif
 
     size_t currentFrame = 0;
@@ -300,25 +303,21 @@ private:
 	float timerSpeed = 0.25f;
 
     Camera camera;
-    glm::vec2 mousePos;
     bool viewUpdated = false;
-
-    struct {
-		bool left = false;
-		bool right = false;
-		bool middle = false;
-	} mouseButtons;
-
-
     //glm::vec4 lightPos = {0.0f, 40.0f, -4.0f, 1.0f};
 
     glm::vec4 lightPos;
+    glm::vec4 debugPos;
+
     Node* lightNode;
+    Node* debugNode;
 
     float zNear = 0.1f;
     float zFar = 96.0f;
     Shadow shadow;
     Debug debug;
+    Input input;
     bool isDebug = false;
+    float accTime = 0.0f;
 };
 

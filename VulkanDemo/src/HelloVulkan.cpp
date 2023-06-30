@@ -42,183 +42,6 @@ static std::vector<char> readFile(const std::string& filename)
     return buffer;
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT  messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) 
-{
-        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-
-        return VK_FALSE;
-}
-
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
-{
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr) 
-    {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    } 
-    else
-    {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
-{
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr)
-    {
-        func(instance, debugMessenger, pAllocator);
-    }
-}
-
-void HelloVulkan::onWindowResized(GLFWwindow* window, int width, int height)
-{
-    if (width == 0 || height == 0) return;
-
-    HelloVulkan* app = reinterpret_cast<HelloVulkan*>(glfwGetWindowUserPointer(window));
-    app->recreateSwapChain();
-}
-
-void HelloVulkan::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-
-    HelloVulkan* vulkan = HelloVulkan::GetHelloVulkan();
-    Camera& camera = vulkan->camera;
-    if (key == GLFW_KEY_W)
-    {
-        if(action == GLFW_PRESS)
-            camera.keys.up = true;
-        if(action == GLFW_RELEASE)
-            camera.keys.up = false;
-    }
-
-    if (key == GLFW_KEY_S)
-    {
-        if(action == GLFW_PRESS)
-            camera.keys.down = true;
-        if(action == GLFW_RELEASE)
-            camera.keys.down = false;
-    }
-
-    if (key == GLFW_KEY_A )
-    {
-        if(action == GLFW_PRESS)
-            camera.keys.left = true;
-        if(action == GLFW_RELEASE)
-            camera.keys.left = false;
-    }
-
-    if (key == GLFW_KEY_D)
-    {
-        if(action == GLFW_PRESS)
-            camera.keys.right = true;
-        if(action == GLFW_RELEASE)
-            camera.keys.right = false;
-    }
-
-	if (key == GLFW_KEY_Q)
-	{
-        vulkan->UpdateProjectionMatrix();
-	}
-
-	if (key == GLFW_KEY_UP)
-	{
-		vulkan->UpdateShadowIndex();
-	}
-
-	if (key == GLFW_KEY_LEFT)
-	{
-		vulkan->UpdateShadowFilterSize();
-	}
-}
-
-void HelloVulkan::MouseCallback(GLFWwindow* window, double xpos, double ypos)
-{
-    HelloVulkan* vulkan = HelloVulkan::GetHelloVulkan();
-    vulkan->MouseCallback(xpos, ypos);
-}
-
-void HelloVulkan::MouseButtonCallback(GLFWwindow* window, int key, int action, int mods)
-{
-    HelloVulkan* vulkan = HelloVulkan::GetHelloVulkan();
-    if (key == GLFW_MOUSE_BUTTON_LEFT)
-    {
-        if (action == GLFW_PRESS)
-        {
-            double xposition, yposition;
-            glfwGetCursorPos(window, &xposition, &yposition);
-            vulkan->mousePos = glm::vec2((float)xposition, (float)yposition);
-            vulkan->mouseButtons.left = true;
-        }
-        else if (action == GLFW_RELEASE)
-        {
-            vulkan->mouseButtons.left = false;
-        }
-    }
-
-    if (key == GLFW_MOUSE_BUTTON_RIGHT)
-    {
-        if (action == GLFW_PRESS)
-        {
-            double xposition, yposition;
-            glfwGetCursorPos(window, &xposition, &yposition);
-            vulkan->mousePos = glm::vec2((float)xposition, (float)yposition);
-            vulkan->mouseButtons.right = true;
-            vulkan->UpdateDebug();
-        }
-        else if (action == GLFW_RELEASE)
-        {
-            vulkan->mouseButtons.right = false;
-        }
-    }
-     
-    if (key == GLFW_MOUSE_BUTTON_MIDDLE)
-    {
-        if (action == GLFW_PRESS)
-        {
-            double xposition, yposition;
-            glfwGetCursorPos(window, &xposition, &yposition);
-            vulkan->mousePos = glm::vec2((float)xposition, (float)yposition);
-
-            vulkan->mouseButtons.middle = true;
-        }
-        else if (action == GLFW_RELEASE)
-        {
-            vulkan->mouseButtons.middle = false;
-        }
-    }
-}
-
-void HelloVulkan::MouseCallback(double x, double y)
-{
-	int32_t dx = (int32_t)(mousePos.x - x);
-	int32_t dy = (int32_t)(mousePos.y - y);
-
-	if (mouseButtons.left) {
-		camera.rotate(glm::vec3(dy * camera.rotationSpeed, -dx * camera.rotationSpeed, 0.0f));
-		viewUpdated = true;
-
-	}
-	if (mouseButtons.right) {
-		camera.translate(glm::vec3(-0.0f, 0.0f, dy * .005f));
-		viewUpdated = true;
-	}
-	if (mouseButtons.middle) {
-		camera.translate(glm::vec3(-dx * 0.005f, -dy * 0.005f, 0.0f));
-		viewUpdated = true;
-	}
-	mousePos = glm::vec2((float)x, (float)y);
-}
-
-void HelloVulkan::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
-{
-    HelloVulkan* vulkan = HelloVulkan::GetHelloVulkan();
-	vulkan->camera.translate(glm::vec3(0.0f, 0.0f, (float)yoffset * 0.005f));
-	vulkan->viewUpdated = true;
-}
-
 VkCommandBuffer HelloVulkan::beginSingleTimeCommands()
 {
     VkCommandBufferAllocateInfo allocInfo = {};
@@ -316,7 +139,9 @@ void HelloVulkan::loadgltfModel(std::string filename)
 		throw std::runtime_error("validation layers requested, but not available!");("Could not open the glTF file.\n\nThe file is part of the additional asset pack.\n\nRun \"download_assets.py\" in the repository root to download the latest version.", -1);
 	}
 
-    AddLight(indexBuffer, vertexBuffer);
+    lightNode = AddLight(indexBuffer, vertexBuffer);
+
+    debugNode = AddLight(indexBuffer, vertexBuffer);
 
 	size_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex1);
 	size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
@@ -357,7 +182,7 @@ void HelloVulkan::loadgltfModel(std::string filename)
 
 }
 
-void HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer)
+Node* HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer)
 {
     CubeMesh mesh;
     const uint32_t indexCount = (uint32_t) mesh.indices.size();
@@ -388,14 +213,14 @@ void HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Verte
 	Node* node = new Node{};
 
     node->matrix = glm::translate(node->matrix, glm::vec3(lightPos.x, lightPos.y, lightPos.z));
-    node->matrix = glm::scale(node->matrix, glm::vec3(0.1f));
+    //node->matrix = glm::scale(node->matrix, glm::vec3(0.1f));
 
 	node->mesh.primitives.push_back(primitive);
 
     //gltfModel.nodes.clear();
     gltfModel.nodes.push_back(node);
 
-    lightNode = node;
+    return node;
 }
 
 void HelloVulkan::UpdateDebug()
@@ -456,9 +281,9 @@ HelloVulkan::HelloVulkan()
 
     isOrth = true;
 	if (isOrth)
-		lightPos = { 0.0f, 10.f, 2.0f, 1.0f };
+		lightPos = { 0.0f, 8.f, 8.0f, 1.0f };
 	else
-		lightPos = { 0.0f, 4.f, 2.0f, 1.0f };
+		lightPos = { 0.0f, 10.f, 2.0f, 1.0f };
 
 	zNear = 0.1f;
 	zFar = 96.0f;
@@ -498,17 +323,19 @@ void HelloVulkan::InitWindow()
     window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
 
     glfwSetWindowUserPointer(window, this);
-    glfwSetWindowSizeCallback(window, HelloVulkan::onWindowResized);
-    glfwSetKeyCallback(window, HelloVulkan::KeyCallback);
-    glfwSetCursorPosCallback(window, HelloVulkan::MouseCallback);
-    glfwSetMouseButtonCallback(window, HelloVulkan::MouseButtonCallback);
-    glfwSetScrollCallback(window, HelloVulkan::ScrollCallback);
+    glfwSetWindowSizeCallback(window, Input::onWindowResized);
+    glfwSetKeyCallback(window, Input::KeyCallback);
+    glfwSetCursorPosCallback(window, Input::MouseCallback);
+    glfwSetMouseButtonCallback(window, Input::MouseButtonCallback);
+    glfwSetScrollCallback(window, Input::ScrollCallback);
+
+    input.Init(this);
 }
 
 void HelloVulkan::InitVulkan()
 {
     CreateInstance();
-    setupDebugMessenger();
+    debug.setupDebugMessenger(instance);
 
     CreateSurface();
     pickPhysicalDevice();
@@ -585,7 +412,7 @@ void HelloVulkan::MainLoop()
 		updateSceneUniformBuffer(frameTimer);
         //if (viewUpdated)
         {
-            updateUniformBuffer();
+            updateUniformBuffer(frameTimer);
             viewUpdated = false;
         }
 
@@ -632,13 +459,9 @@ void HelloVulkan::Cleanup()
 
     gltfModel.Cleanup();
     shadow.Cleanup();
-    debug.Cleanup();
+    debug.Cleanup(instance);
     vkDestroyDevice(device, nullptr);
-    if (enableValidationLayers) 
-    {
-        DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-    }
-    //DestroyDebugReportCallbackEXT(instance, callback, nullptr);
+
     vkDestroySurfaceKHR(instance, surface, nullptr);
 
     vkDestroyInstance(instance, nullptr);
@@ -681,7 +504,7 @@ void HelloVulkan::CreateInstance()
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
 
-        populateDebugMessengerCreateInfo(debugCreateInfo);
+        debug.populateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
     }
     else 
@@ -697,8 +520,6 @@ void HelloVulkan::CreateInstance()
     }
 }
 
-// 队列：支持graphics与present
-// 支持swapChain扩展
 void HelloVulkan::CreateDevice()
 {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
@@ -720,6 +541,7 @@ void HelloVulkan::CreateDevice()
     VkPhysicalDeviceFeatures deviceFeatures = {};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
     deviceFeatures.sampleRateShading = VK_TRUE;
+    deviceFeatures.fillModeNonSolid = VK_TRUE;
 
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -939,6 +761,7 @@ PipelineCreateInfo HelloVulkan::CreatePipelineCreateInfo()
     pipelineCreateInfo.rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     pipelineCreateInfo.rasterizer.depthClampEnable = VK_FALSE;
     pipelineCreateInfo.rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // VK_POLYGON_MODE_LINE
+    //pipelineCreateInfo.rasterizer.polygonMode = VK_POLYGON_MODE_LINE; // VK_POLYGON_MODE_LINE
 
     pipelineCreateInfo.rasterizer.lineWidth = 1.0f;
 
@@ -1666,30 +1489,57 @@ void HelloVulkan::transitionImageLayout(VkImage image, VkFormat format, VkImageL
     endSingleTimeCommands(commandBuffer);
 }
 
-void HelloVulkan::updateUniformBuffer()
+void HelloVulkan::updateUniformBuffer(float frameTimer)
 {
     UniformBufferObject ubo = {};
-
     //ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.view = camera.matrices.view;
     ubo.proj = camera.matrices.perspective;
     ubo.viewPos = glm::vec4(camera.position * -1.0f, 1.0);
 
-    lightPos = { 0.0f, 40.f, 0.0f, 1.0f };
+    //lightPos = { 0.0f, 80.f, 80.0f, 1.0f };
 
-    glm::vec3 pos = glm::vec3(lightPos.x, lightPos.y, lightPos.z);
-    float range = 40.0f;
-    glm::vec3 direction = glm::normalize(-pos);
-    glm::mat4 view = glm::lookAt(-direction*range, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    //lightPos = { 0.0f, 0.f, 34.f, 1.0f };
 
-    glm::mat4 ortho = glm::ortho(-range, range, -range, range, 0.5f, 96.0f);
+    glm::vec3 pos = lightPos;
+    glm::vec3 center = glm::vec3(0.0);
+    glm::vec3 direction = glm::normalize(center - pos);
+
+    //glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	if (accTime > 5)
+		accTime = 0.0f;
+	accTime += frameTimer;
+
+	float lenth = accTime;
+
+    debugNode->matrix = glm::mat4(1.0f);
+    debugNode->matrix = glm::scale(debugNode->matrix, glm::vec3(0.05f));
+    glm::vec3 light = pos - direction * lenth;
+    glm::mat4 view = glm::lookAt(light, center, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 cameratoworld = glm::inverse(view);
+
+	float range = 5.0f;
+	glm::mat4 ortho = glm::ortho(-range, range, -range, range, 0.1f, 48.0f);
+
+    glm::vec4 tpos = view * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    glm::vec4 testPos = ortho * tpos;
+    if (testPos.z >= 0.0f)
+    {
+        int a = 0;
+    }
+
+    //lightNode->matrix = cameratoworld;
+    //lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.1f));
+
     glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, zNear, zFar);
 
     pers[1][1] *= -1; // flip Y
     ortho[1][1] *= -1; // flip Y
 
-    if(isOrth)
+    if (isOrth)
+    {
         ubo.depthVP[0] = ortho * view;
+    }
     else
         ubo.depthVP[0] = pers * view;
 
@@ -1710,11 +1560,9 @@ void HelloVulkan::updateUniformBuffer()
     vkUnmapMemory(device, uniformBufferMemory);
 }
 
-
 void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
 {
     UBOParams uboparams = {};
-    //lightPos.y *= -1.0f;
 	uboparams.lights[0] = lightPos;
 
     glm::mat4 rotation;
@@ -2240,48 +2088,6 @@ bool HelloVulkan::checkValidationLayerSupport()
     }
 
     return true;
-}
-
-VkResult HelloVulkan::CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
-{
-    auto func = (PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
-    if (func != nullptr)
-    {
-        return func(instance, pCreateInfo, pAllocator, pCallback);
-    } 
-    else
-    {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void HelloVulkan::DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator)
-{
-    auto func = (PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
-    if (func != nullptr) {
-        func(instance, callback, pAllocator);
-    }
-}
-
-void HelloVulkan::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
-{
-    createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    createInfo.pfnUserCallback = debugCallback;
-}
-
-void HelloVulkan::setupDebugMessenger() {
-    if (!enableValidationLayers) return;
-
-    VkDebugUtilsMessengerCreateInfoEXT createInfo;
-    populateDebugMessengerCreateInfo(createInfo);
-
-    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to set up debug messenger!");
-    }
 }
 
 void HelloVulkan::pickPhysicalDevice()
