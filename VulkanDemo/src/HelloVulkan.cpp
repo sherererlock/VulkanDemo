@@ -1501,20 +1501,20 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, zNear, zFar);
 
     pers[1][1] *= -1; // flip Y
-    //ortho[1][1] *= -1; // flip Y
+    ortho[1][1] *= -1; // flip Y
 
     if (isOrth)
+    {
         ubo.depthVP[0] = ortho * view;
+        shadow.UpateLightMVP(view, ortho, lightPos);
+    }
     else
+    {
         ubo.depthVP[0] = pers * view;
+        shadow.UpateLightMVP(view, pers, lightPos);
+    }
 
-	if (CASCADED_COUNT == 1)
-        shadow.UpdateCascaded(ubo.depthVP[0]);
-    else
-        shadow.UpdateCascaded(ubo.view, ubo.proj, lightPos);
-
-    shadow.UpateLightMVP();
-    shadow.GetCascadedInfo(ubo.depthVP, ubo.splitDepth);
+    //shadow.GetCascadedInfo(ubo.depthVP, ubo.splitDepth);
 
     ubo.shadowIndex = shadowIndex;
     ubo.filterSize = (float)filterSize;

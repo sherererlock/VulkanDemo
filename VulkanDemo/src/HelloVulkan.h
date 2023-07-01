@@ -11,7 +11,7 @@
 #include <string>
 #include "gltfModel.h"
 #include "camera.hpp"
-#include "Shadow.h"
+#include "CommonShadow.h"
 #include "Debug.h"
 #include "Input.h"
 #include "macros.h"
@@ -316,7 +316,7 @@ private:
 
     float zNear = 1.0f;
     float zFar = 96.0f;
-    Shadow shadow;
+    CommonShadow shadow;
     Debug debug;
     Input input;
     bool isDebug = false;

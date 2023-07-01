@@ -187,6 +187,8 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\CommonShadow.cpp" />
+    <ClCompile Include="src\CascadedShadow.cpp" />
     <ClCompile Include="src\Debug.cpp" />
     <ClCompile Include="src\Input.cpp" />
     <ClCompile Include="src\Shadow.cpp" />
@@ -197,6 +199,8 @@
     <ClCompile Include="src\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\CommonShadow.h" />
+    <ClInclude Include="src\CascadedShadow.h" />
     <ClInclude Include="src\Debug.h" />
     <ClInclude Include="src\Input.h" />
     <ClInclude Include="src\macros.h" />
