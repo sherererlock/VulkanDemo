@@ -10,8 +10,7 @@
 #include <glm/glm/glm.hpp>
 #include <glm/glm/gtc/matrix_transform.hpp>
 #include <stb/stb_image.h>
-//#define TINYOBJLOADER_IMPLEMENTATION
-//#include <tinyobjloader/tiny_obj_loader.h>
+
 #include <chrono>
 
 #include <unordered_map>
@@ -141,8 +140,6 @@ void HelloVulkan::loadgltfModel(std::string filename)
 
     lightNode = AddLight(indexBuffer, vertexBuffer);
 
-    debugNode = AddLight(indexBuffer, vertexBuffer);
-
 	size_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex1);
 	size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
 	gltfModel.indices.count = static_cast<uint32_t>(indexBuffer.size());
@@ -190,20 +187,12 @@ Node* HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vert
 	uint32_t firstIndex = static_cast<uint32_t>(indexBuffer.size());
 	uint32_t vertexStart = static_cast<uint32_t>(vertexBuffer.size());
    
-    //std::copy(mesh.vertex.begin(), mesh.vertex.end(), std::back_inserter(vertexBuffer));
-    //std::copy(mesh.indices.begin(), mesh.indices.end(), std::back_inserter(indexBuffer));
-
     for (int i = 0; i < mesh.indices.size(); i++)
-    {
         indexBuffer.push_back(mesh.indices[i] + (uint32_t)vertexBuffer.size());
-    }
-
 
     for (int i = 0; i < mesh.vertex.size(); i++)
-    {
         vertexBuffer.push_back(mesh.vertex[i]);
-    }
-
+ 
     Primitive primitive{};
 	primitive.firstIndex = firstIndex;
 	primitive.indexCount = indexCount;
@@ -211,13 +200,9 @@ Node* HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vert
     primitive.islight = 1.0f;
 
 	Node* node = new Node{};
-
     node->matrix = glm::translate(node->matrix, glm::vec3(lightPos.x, lightPos.y, lightPos.z));
-    //node->matrix = glm::scale(node->matrix, glm::vec3(0.1f));
-
 	node->mesh.primitives.push_back(primitive);
 
-    //gltfModel.nodes.clear();
     gltfModel.nodes.push_back(node);
 
     return node;
@@ -239,10 +224,7 @@ void HelloVulkan::UpdateProjectionMatrix()
 		isOrth = !isOrth;
 		debugtimer = 0.5f;
 
-        if(isOrth)
-		    lightPos = { 0.0f, 80.f, 80.0f, 1.0f };
-        else
-            lightPos = { 0.0f, 4.f, 2.0f, 1.0f };
+        std::cout << (isOrth ? "Orth" : "Pers") << std::endl;
 	}
 }
 
@@ -252,14 +234,29 @@ void HelloVulkan::UpdateShadowIndex(int idx)
 		return;
 
 	debugtimer = 0.5f;
-    //if (idx != -1)
-    //{
-    //    shadowIndex = std::clamp(idx, 0, 2);
-    //}
-    //else
+
     {
 		shadowIndex ++;
 		shadowIndex %= 5;
+    }
+
+    switch (shadowIndex)
+    {
+		case 0:
+	        std::cout << "shadow without pcf" << std::endl;
+            break;
+		case 1:
+	        std::cout << "pcf3x3" << std::endl;
+            break;
+		case 2:
+            std::cout << "pcf with uniform sample" << std::endl;
+            break;
+		case 3:
+	        std::cout << "pcf with poisson disk" << std::endl;
+            break;
+		case 4:
+	        std::cout << "pcss" << std::endl;
+            break;
     }
 }
 
@@ -280,12 +277,10 @@ HelloVulkan::HelloVulkan()
     helloVulkan = this;
 
     isOrth = true;
-	if (isOrth)
-		lightPos = { 0.0f, 8.f, 8.0f, 1.0f };
-	else
-		lightPos = { 0.0f, 10.f, 2.0f, 1.0f };
 
-	zNear = 0.1f;
+	lightPos = { 0.0f, 4.f, 4.0f, 1.0f };
+
+	zNear = 1.f;
 	zFar = 96.0f;
 
 	camera.type = Camera::CameraType::firstperson;
@@ -409,6 +404,7 @@ void HelloVulkan::MainLoop()
 		    viewUpdated = true;
 	    }
 
+        updateLight(frameTimer);
 		updateSceneUniformBuffer(frameTimer);
         //if (viewUpdated)
         {
@@ -1442,7 +1438,7 @@ void HelloVulkan::transitionImageLayout(VkImage image, VkFormat format, VkImageL
 
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout ==       VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout ==  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
     {
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
@@ -1492,54 +1488,23 @@ void HelloVulkan::transitionImageLayout(VkImage image, VkFormat format, VkImageL
 void HelloVulkan::updateUniformBuffer(float frameTimer)
 {
     UniformBufferObject ubo = {};
-    //ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
     ubo.view = camera.matrices.view;
     ubo.proj = camera.matrices.perspective;
     ubo.viewPos = glm::vec4(camera.position * -1.0f, 1.0);
 
-    //lightPos = { 0.0f, 80.f, 80.0f, 1.0f };
-
-    //lightPos = { 0.0f, 0.f, 34.f, 1.0f };
-
-    glm::vec3 pos = lightPos;
-    glm::vec3 center = glm::vec3(0.0);
-    glm::vec3 direction = glm::normalize(center - pos);
-
-    //glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	if (accTime > 5)
-		accTime = 0.0f;
-	accTime += frameTimer;
-
-	float lenth = accTime;
-
-    debugNode->matrix = glm::mat4(1.0f);
-    debugNode->matrix = glm::scale(debugNode->matrix, glm::vec3(0.05f));
-    glm::vec3 light = pos - direction * lenth;
-    glm::mat4 view = glm::lookAt(light, center, glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 cameratoworld = glm::inverse(view);
+    glm::vec3 pos = {lightPos.x, lightPos.y, lightPos.z};
+    glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 	float range = 5.0f;
-	glm::mat4 ortho = glm::ortho(-range, range, -range, range, 0.1f, 48.0f);
-
-    glm::vec4 tpos = view * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    glm::vec4 testPos = ortho * tpos;
-    if (testPos.z >= 0.0f)
-    {
-        int a = 0;
-    }
-
-    //lightNode->matrix = cameratoworld;
-    //lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.1f));
-
+	glm::mat4 ortho = glm::ortho(-range, range, -range, range, zNear, zFar);
     glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, zNear, zFar);
 
     pers[1][1] *= -1; // flip Y
-    ortho[1][1] *= -1; // flip Y
+    //ortho[1][1] *= -1; // flip Y
 
     if (isOrth)
-    {
         ubo.depthVP[0] = ortho * view;
-    }
     else
         ubo.depthVP[0] = pers * view;
 
@@ -1558,23 +1523,26 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);
     memcpy(data, &ubo, sizeof(ubo));
     vkUnmapMemory(device, uniformBufferMemory);
+
+    glm::mat4 cameratoworld = glm::inverse(view);
+    lightNode->matrix = cameratoworld;
+    lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.1f));
+}
+
+void HelloVulkan::updateLight(float frameTimer)
+{
+    glm::mat4 rotation;
+    glm::vec3 yaxis(0.0f, 1.0f, 0.0f);
+    constexpr float speed = glm::radians(35.0f);
+    rotation = glm::rotate(rotation, speed * frameTimer, yaxis);
+
+    //lightPos = rotation * lightPos;
 }
 
 void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
 {
     UBOParams uboparams = {};
 	uboparams.lights[0] = lightPos;
-
-    glm::mat4 rotation;
-    glm::vec3 yaxis(0.0f, 1.0f, 0.0f);
-    constexpr float speed = glm::radians(35.0f);
-    rotation = glm::rotate(rotation, speed * frameTimer, yaxis);
-
-    glm::mat4 translation;
-    //lightPos = rotation * lightPos;
-    lightNode->matrix = glm::translate(translation, glm::vec3(lightPos.x, lightPos.y, lightPos.z) );
-    lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.1f) );
-
     uboparams.lights[1] = uboparams.lights[2] = uboparams.lights[3] = uboparams.lights[0];
 
     void* data;

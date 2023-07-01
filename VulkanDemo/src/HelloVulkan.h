@@ -1,6 +1,7 @@
 #pragma once
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm/gtx/hash.hpp>
@@ -124,6 +125,7 @@ public:
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t miplevels);
 
     void updateUniformBuffer(float frameTimer);
+    void updateLight(float frameTimer);
     void updateSceneUniformBuffer(float frameTimer);
     void drawFrame();
 
@@ -266,6 +268,7 @@ private:
     int height = 720;
 
     const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+    //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
     const std::string TEXTURE_PATH = "textures/image_512.jpg";
 
     const std::vector<const char*> validationLayers = {
@@ -310,9 +313,8 @@ private:
     glm::vec4 debugPos;
 
     Node* lightNode;
-    Node* debugNode;
 
-    float zNear = 0.1f;
+    float zNear = 1.0f;
     float zFar = 96.0f;
     Shadow shadow;
     Debug debug;

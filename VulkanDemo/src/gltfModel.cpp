@@ -214,6 +214,19 @@ void gltfModel::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model&
 		}
 }
 
+void PrintMatrix(glm::mat4 mat)
+{
+	std::cout << "----------------" << std::endl;
+	
+	//std::cout << mat[0][0] << " " << mat[0][1] << " " << mat[0][2] << " " << mat[0][3] << std::endl;
+	//std::cout << mat[1][0] << " " << mat[1][1] << " " << mat[1][2] << " " << mat[1][3] << std::endl;
+	//std::cout << mat[2][0] << " " << mat[2][1] << " " << mat[2][2] << " " << mat[2][3] << std::endl;
+	std::cout << mat[3][0] << " " << mat[3][1] << " " << mat[3][2] << " " << mat[3][3] << std::endl;
+
+
+	std::cout << "----------------" << std::endl;
+}
+
 void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node, uint32_t flag) const
 {
 	if (node->mesh.primitives.size() > 0) 
@@ -233,10 +246,11 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 		// Pass the final matrix to the vertex shader using push constants
 		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
 		
+		
 		for (Primitive& primitive : node->mesh.primitives) {
-			//if (primitive.indexCount > 0) {
+			if (primitive.indexCount > 0) {
 
-			if (primitive.indexCount == 36 || primitive.indexCount == 18) {
+			//if (primitive.indexCount == 36 || primitive.indexCount == 18) {
 
 				if (flag == 0)
 				{
