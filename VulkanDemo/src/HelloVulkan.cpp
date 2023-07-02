@@ -16,6 +16,8 @@
 #include <unordered_map>
 
 #include "Mesh.h"
+#include "CommonShadow.h"
+#include "CascadedShadow.h"
 
 #define SHADOWMAP_SIZE 1024
 
@@ -293,6 +295,11 @@ HelloVulkan::HelloVulkan()
     //camera.updateViewMatrix();
     viewUpdated = true;
 
+    if(CASCADED_COUNT > 1)
+        shadow = new CascadedShadow();
+    else
+        shadow = new CommonShadow();
+
     filterSize = 2;
     shadowIndex = 0;
 }
@@ -336,7 +343,7 @@ void HelloVulkan::InitVulkan()
     pickPhysicalDevice();
     CreateDevice();
 
-    shadow.Init(this, device, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
+    shadow->Init(this, device, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
     debug.Init(device, this, zNear, zFar);
 
     createSwapChain();
@@ -344,10 +351,10 @@ void HelloVulkan::InitVulkan()
 
     createRenderPass();
 
-    shadow.CreateShadowPass();
+    shadow->CreateShadowPass();
 
     createDescriptorSetLayout();
-    shadow.CreateDescriptSetLayout();
+    shadow->CreateDescriptSetLayout();
     debug.CreateDescriptSetLayout();
 
     createDescriptorPool();
@@ -357,22 +364,22 @@ void HelloVulkan::InitVulkan()
     createCommandPool();
     createColorResources();
     createDepthResources();
-    shadow.CreateShadowMap();
+    shadow->CreateShadowMap();
 
     createFrameBuffer();
 
-    shadow.CreateFrameBuffer();
+    shadow->CreateFrameBuffer();
 
     createUniformBuffer();
 
-    shadow.CreateUniformBuffer();
+    shadow->CreateUniformBuffer();
     debug.CreateUniformBuffer();
     
     loadgltfModel(MODEL_PATH);
 
     createDescriptorSet();
 
-    shadow.SetupDescriptSet(descriptorPool);
+    shadow->SetupDescriptSet(descriptorPool);
 
     createCommandBuffers();
 
@@ -454,7 +461,7 @@ void HelloVulkan::Cleanup()
     vkDestroyCommandPool(device, commandPool, nullptr);
 
     gltfModel.Cleanup();
-    shadow.Cleanup();
+    shadow->Cleanup();
     debug.Cleanup(instance);
     vkDestroyDevice(device, nullptr);
 
@@ -895,7 +902,7 @@ void HelloVulkan::createGraphicsPipeline()
     vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
 
     debug.CreateDebugPipeline(info, pipelineInfo);
-    shadow.CreateShadowPipeline(info, pipelineInfo);
+    shadow->CreateShadowPipeline(info, pipelineInfo);
 }
 
 VkShaderModule HelloVulkan::createShaderModule(const std::vector<char>& code)
@@ -1035,7 +1042,7 @@ void HelloVulkan::buildCommandBuffers()
         vkBeginCommandBuffer(commandBuffers[i], &beginInfo);
 
         {
-            shadow.BuildCommandBuffer(commandBuffers[i], gltfModel);
+            shadow->BuildCommandBuffer(commandBuffers[i], gltfModel);
         }
 
         {
@@ -1506,15 +1513,15 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     if (isOrth)
     {
         ubo.depthVP[0] = ortho * view;
-        shadow.UpateLightMVP(view, ortho, lightPos);
+        shadow->UpateLightMVP(view, ortho, lightPos);
     }
     else
     {
         ubo.depthVP[0] = pers * view;
-        shadow.UpateLightMVP(view, pers, lightPos);
+        shadow->UpateLightMVP(view, pers, lightPos);
     }
 
-    //shadow.GetCascadedInfo(ubo.depthVP, ubo.splitDepth);
+    ((CascadedShadow*)shadow)->GetCascadedInfo(ubo.depthVP, ubo.splitDepth);
 
     ubo.shadowIndex = shadowIndex;
     ubo.filterSize = (float)filterSize;
@@ -1847,7 +1854,7 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[1].dstBinding = 1;
 	sceneDescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	sceneDescriptorWrites[1].descriptorCount = 1;
-    VkDescriptorImageInfo imageInfo = shadow.GetDescriptorImageInfo();
+    VkDescriptorImageInfo imageInfo = shadow->GetDescriptorImageInfo();
 	sceneDescriptorWrites[1].pBufferInfo = nullptr;
 	sceneDescriptorWrites[1].pImageInfo = &imageInfo; // Optional
 	sceneDescriptorWrites[1].pTexelBufferView = nullptr; // Optional

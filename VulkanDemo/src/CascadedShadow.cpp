@@ -121,6 +121,7 @@ void CascadedShadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, const glt
     }
 }
 
+
 void CascadedShadow::UpdateCascaded(glm::mat4 view, glm::mat4 proj, glm::vec4 lightpos)
 {
     float cascadeSplitLambda = 0.95f;
@@ -214,8 +215,11 @@ void CascadedShadow::UpdateCascaded(glm::mat4 view, glm::mat4 proj, glm::vec4 li
     }
 }
 
+
 void CascadedShadow::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos)
 {
+    UpdateCascaded(view, proj, lightPos);
+
     ShadowUniformBufferObject ubo;
 
     for (int i = 0; i < CASCADED_COUNT; i++)

@@ -7,7 +7,7 @@ layout(set = 0, binding = 0)
 uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
-    mat4 depthVP[CASCADED_COUNT];
+    mat4 depthVP;
     vec4 viewPos;
 	int shadowIndex;
 	float filterSize;
@@ -47,5 +47,5 @@ void main() {
 
    vec4 pos = primitive.model * vec4(inPosition, 1.0);
    worldPos = pos.xyz;
-   outShadowCoord = ubo.depthVP[0] * primitive.model * vec4(inPosition, 1.0);
+   outShadowCoord = ubo.depthVP * primitive.model * vec4(inPosition, 1.0);
 }

@@ -19,7 +19,7 @@ struct CasadedInfo
 	void Cleanup(VkDevice device);
 };
 
-class CascadedShadow : Shadow
+class CascadedShadow : public Shadow
 {
 private:
 	struct ShadowUniformBufferObject {

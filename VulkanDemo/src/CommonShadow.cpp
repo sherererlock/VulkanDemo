@@ -70,7 +70,6 @@ void CommonShadow::CreateFrameBuffer()
 	framebufferInfo.width = width;
 	framebufferInfo.height = height;
 	framebufferInfo.layers = 1;
-
     framebufferInfo.pAttachments = &shadowMapImageView;
 
 	if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &frameBuffer) != VK_SUCCESS) {

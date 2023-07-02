@@ -28,9 +28,9 @@ layout(location = 4) in vec3 inTangent;
 layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec3 normal;
 layout(location = 2) out vec2 fragTexCoord;
-layout(location = 3) out vec4 worldPos;
+layout(location = 3) out vec3 worldPos;
 layout(location = 4) out vec3 tangent;
-layout(location = 5) out vec4 viewPos;
+layout(location = 5) out vec3 viewPos;
 
 
 out gl_PerVertex {
@@ -39,13 +39,14 @@ out gl_PerVertex {
 
 void main() {
 
-   worldPos = primitive.model * vec4(inPosition, 1.0);
-   gl_Position = ubo.proj * ubo.view * worldPos;
+   worldPos = (primitive.model * vec4(inPosition, 1.0)).xyz;
+   viewPos = (ubo.view * vec4(worldPos, 1.0)).xyz;
+   gl_Position = ubo.proj * vec4(viewPos, 1.0);
 
    fragColor = inColor;
    fragTexCoord = inTexCoord;
    normal = mat3(primitive.model) * inNormal;
    tangent = mat3(primitive.model) * inTangent;
 
-   viewPos = ubo.view * worldPos;
+
 }

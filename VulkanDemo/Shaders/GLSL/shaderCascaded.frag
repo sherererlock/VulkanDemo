@@ -14,7 +14,7 @@ uniform UniformBufferObject {
     vec4 viewPos;
 	int shadowIndex;
 	float filterSize;
-	int splitDepth[CASCADED_COUNT];
+	float splitDepth[CASCADED_COUNT];
 } ubo;
 
 layout(set = 1, binding = 0) 
@@ -39,6 +39,7 @@ layout(location = 2) in vec2 fragTexCoord;
 layout(location = 3) in vec3 worldPos;
 layout(location = 4) in vec3 tangent;
 layout(location = 5) in vec3 viewPos;
+
 layout(location = 0) out vec4 outColor;
 
 #include "lighting.h"
@@ -265,6 +266,7 @@ void main(){
 			cascadedIndex ++;
 	}
 
+	cascadedIndex = 0;
 	vec4 shadowCoord = ubo.depthVP[cascadedIndex] * vec4(worldPos, 1.0);
 
 	vec3 coord = shadowCoord.xyz;
@@ -277,5 +279,6 @@ void main(){
 	float shadow = getShadow(coord, cascadedIndex);
 	color *= shadow;
 
+	//outColor = vec4(viewPos.z / (-32.0), 0.0,0.0, 1.0);
 	outColor = vec4(color, 1.0);
 }

@@ -45,7 +45,6 @@ struct UniformBufferObject {
 
 struct UBOParams {
 	glm::vec4 lights[4];
-
 };
 
 struct PipelineCreateInfo
@@ -316,7 +315,7 @@ private:
 
     float zNear = 1.0f;
     float zFar = 96.0f;
-    CommonShadow shadow;
+    Shadow* shadow;
     Debug debug;
     Input input;
     bool isDebug = false;

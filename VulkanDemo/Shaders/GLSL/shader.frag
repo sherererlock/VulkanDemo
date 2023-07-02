@@ -10,7 +10,7 @@ layout(set = 0, binding = 0)
 uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
-	mat4 depthVP[CASCADED_COUNT];
+	mat4 depthVP;
     vec4 viewPos;
 	int shadowIndex;
 	float filterSize;
