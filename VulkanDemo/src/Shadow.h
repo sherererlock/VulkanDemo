@@ -43,6 +43,13 @@ protected:
 	VkImageViewType viewType;
 	int layerCount;
 	VkDeviceSize size;
+
+	struct primitiveInfo {
+		glm::mat4 model;
+		int cascadedIndx;
+	};
+
+
 public:
 
 	inline VkDescriptorImageInfo GetDescriptorImageInfo() const {

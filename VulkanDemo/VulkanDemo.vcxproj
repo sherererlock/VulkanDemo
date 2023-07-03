@@ -190,6 +190,7 @@
     <ClCompile Include="src\CommonShadow.cpp" />
     <ClCompile Include="src\CascadedShadow.cpp" />
     <ClCompile Include="src\Debug.cpp" />
+    <ClCompile Include="src\HelloVulkanTool.cpp" />
     <ClCompile Include="src\Input.cpp" />
     <ClCompile Include="src\Shadow.cpp" />
     <ClCompile Include="src\Buffer.cpp" />

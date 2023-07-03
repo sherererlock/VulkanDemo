@@ -11,15 +11,16 @@ uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
 	mat4 depthVP[CASCADED_COUNT];
+	vec4 splitDepth;
     vec4 viewPos;
 	int shadowIndex;
 	float filterSize;
-	float splitDepth[CASCADED_COUNT];
 } ubo;
 
 layout(set = 1, binding = 0) 
 uniform uboShared {
     vec4 lights[4];
+	int colorCascades;
 } uboParam;
 
 //layout(set = 1, binding = 1) uniform sampler2D shadowMapSampler;
@@ -266,7 +267,6 @@ void main(){
 			cascadedIndex ++;
 	}
 
-	cascadedIndex = 0;
 	vec4 shadowCoord = ubo.depthVP[cascadedIndex] * vec4(worldPos, 1.0);
 
 	vec3 coord = shadowCoord.xyz;
@@ -281,4 +281,21 @@ void main(){
 
 	//outColor = vec4(viewPos.z / (-32.0), 0.0,0.0, 1.0);
 	outColor = vec4(color, 1.0);
+
+	if (uboParam.colorCascades == 1) {
+		switch(cascadedIndex) {
+			case 0 : 
+				outColor.rgb *= vec3(1.0f, 0.25f, 0.25f);
+				break;
+			case 1 : 
+				outColor.rgb *= vec3(0.25f, 1.0f, 0.25f);
+				break;
+			case 2 : 
+				outColor.rgb *= vec3(0.25f, 0.25f, 1.0f);
+				break;
+			case 3 : 
+				outColor.rgb *= vec3(1.0f, 1.0f, 0.25f);
+				break;
+		}
+	}
 }

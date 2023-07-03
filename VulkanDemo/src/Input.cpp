@@ -1,5 +1,7 @@
 #include "Input.h"
 #include "HelloVulkan.h"
+#include <iostream>
+#include <fstream>
 
 void Input::onWindowResized(GLFWwindow* window, int width, int height)
 {
@@ -149,4 +151,68 @@ void Input::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 
 	vulkan->GetCamera().translate(glm::vec3(0.0f, 0.0f, (float)yoffset * 0.005f));
 	vulkan->ViewUpdated();
+}
+
+void HelloVulkan::UpdateDebug()
+{
+	if (debugtimer <= 0)
+	{
+		isDebug = !isDebug;
+		debugtimer = 0.5f;
+	}
+}
+
+void HelloVulkan::UpdateProjectionMatrix()
+{
+	if (debugtimer <= 0)
+	{
+		isOrth = !isOrth;
+		debugtimer = 0.5f;
+
+		std::cout << (isOrth ? "Orth" : "Pers") << std::endl;
+	}
+}
+
+void HelloVulkan::UpdateShadowIndex(int idx)
+{
+	if (debugtimer > 0)
+		return;
+
+	debugtimer = 0.5f;
+
+	{
+		shadowIndex++;
+		shadowIndex %= 5;
+	}
+
+	switch (shadowIndex)
+	{
+	case 0:
+		std::cout << "shadow without pcf" << std::endl;
+		break;
+	case 1:
+		std::cout << "pcf3x3" << std::endl;
+		break;
+	case 2:
+		std::cout << "pcf with uniform sample" << std::endl;
+		break;
+	case 3:
+		std::cout << "pcf with poisson disk" << std::endl;
+		break;
+	case 4:
+		std::cout << "pcss" << std::endl;
+		break;
+	}
+}
+
+void HelloVulkan::UpdateShadowFilterSize()
+{
+	//if (debugtimer > 0)
+	//	return;
+
+	debugtimer = 0.5f;
+	filterSize++;
+	filterSize %= 20;
+	if (filterSize == 0)
+		filterSize = 1;
 }

@@ -50,10 +50,11 @@ void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGr
 
     creatInfo.renderPass = shadowPass;
 
+
     std::array<VkPushConstantRange, 1> pushConstantRanges;
 	pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	pushConstantRanges[0].offset = 0;
-	pushConstantRanges[0].size = sizeof(glm::mat4);
+	pushConstantRanges[0].size = sizeof(primitiveInfo);
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

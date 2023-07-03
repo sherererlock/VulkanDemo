@@ -8,15 +8,14 @@ uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
     mat4 depthVP[CASCADED_COUNT];
+	vec4 splitDepth;
     vec4 viewPos;
 	int shadowIndex;
 	float filterSize;
-	int splitDepth[CASCADED_COUNT];
 } ubo;
 
 layout(push_constant) uniform PushConsts{
     mat4 model;
-
 }primitive;
 
 layout(location = 0) in vec3 inPosition;
@@ -47,6 +46,4 @@ void main() {
    fragTexCoord = inTexCoord;
    normal = mat3(primitive.model) * inNormal;
    tangent = mat3(primitive.model) * inTangent;
-
-
 }

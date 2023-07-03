@@ -135,6 +135,8 @@ public:
 
 	VkDevice logicalDevice;
 
+	mutable glm::mat4 translation;
+	mutable int cascadedIndex = 0; 
 	void Cleanup();
 
 	void loadImages(tinygltf::Model& input);
@@ -175,6 +177,8 @@ public:
 	void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node, uint32_t flag) const;
 
 	void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t flag) const;
+
+	void drawWithOffset(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t flag) const;
 
 };
 

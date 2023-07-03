@@ -116,11 +116,13 @@ void CascadedShadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, const glt
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline);
 
-		gltfmodel.draw(commandBuffer, pipelineLayout, 1);
+        gltfmodel.cascadedIndex = i;
+        //gltfmodel.draw(commandBuffer, pipelineLayout, 1);
+        gltfmodel.drawWithOffset(commandBuffer, pipelineLayout, 1);
+
 		vkCmdEndRenderPass(commandBuffer);
     }
 }
-
 
 void CascadedShadow::UpdateCascaded(glm::mat4 view, glm::mat4 proj, glm::vec4 lightpos)
 {
@@ -215,7 +217,6 @@ void CascadedShadow::UpdateCascaded(glm::mat4 view, glm::mat4 proj, glm::vec4 li
     }
 }
 
-
 void CascadedShadow::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos)
 {
     UpdateCascaded(view, proj, lightPos);
@@ -224,8 +225,6 @@ void CascadedShadow::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lig
 
     for (int i = 0; i < CASCADED_COUNT; i++)
         ubo.depthVP[i] = casadedInfos[i].depthVP;
-
-    ubo.cascadedIndex = 0;
 
     void* data;
     vkMapMemory(device, uniformMemory, 0, sizeof(ShadowUniformBufferObject), 0, &data);

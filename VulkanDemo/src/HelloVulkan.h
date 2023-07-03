@@ -37,14 +37,15 @@ struct UniformBufferObject {
     glm::mat4 view;
     glm::mat4 proj;
     glm::mat4 depthVP[CASCADED_COUNT];
+	glm::vec4 splitDepth;
     glm::vec4 viewPos;
     int shadowIndex;
     float filterSize;
-    float splitDepth[CASCADED_COUNT];
 };
 
 struct UBOParams {
 	glm::vec4 lights[4];
+    int colorCascades;
 };
 
 struct PipelineCreateInfo
@@ -155,8 +156,6 @@ public:
     std::vector<const char*> getRequiredExtensions();
 
     VkSampleCountFlagBits getMaxUsableSampleCount();
-
-
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);

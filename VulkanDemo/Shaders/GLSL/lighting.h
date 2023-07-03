@@ -112,7 +112,7 @@ vec3 pbr()
 		}
 	}
 
-	vec3 ambient = vec3(0.03) * albedo;
+	vec3 ambient = vec3(0.3) * albedo;
 	vec3 color = ambient + Lo;
 
     color = color / (color + vec3(1.0));

@@ -24,7 +24,6 @@ class CascadedShadow : public Shadow
 private:
 	struct ShadowUniformBufferObject {
 		glm::mat4 depthVP[CASCADED_COUNT];
-		uint32_t cascadedIndex;
 	};
 
 	std::array<CasadedInfo, CASCADED_COUNT> casadedInfos;
