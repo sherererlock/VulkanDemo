@@ -227,6 +227,7 @@ void PrintMatrix(glm::mat4 mat)
 	std::cout << "----------------" << std::endl;
 }
 
+
 void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node, uint32_t flag) const
 {
 	if (node->mesh.primitives.size() > 0) 
@@ -240,16 +241,11 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 			nodeMatrix = currentParent->matrix * nodeMatrix;
 			currentParent = currentParent->parent;
 		}
-
-
-		glm::vec3 yaxis(0.0f, 1.0f, 0.0f);
-		float speed = glm::radians(45.0f);
-		translation = glm::rotate(translation, speed, yaxis);
-		nodeMatrix = translation * nodeMatrix;
+		//nodeMatrix = translation * nodeMatrix;
 
 		for (Primitive& primitive : node->mesh.primitives) {
-			//if (primitive.indexCount > 0) {
-			if (primitive.indexCount == 36 || primitive.indexCount == 18 || primitive.indexCount == 6642) {
+			if (primitive.indexCount > 0) {
+			//if (primitive.indexCount == 36 || primitive.indexCount == 18 || primitive.indexCount == 6642) {
 
 				if (flag == 1)
 				{

@@ -151,6 +151,7 @@ void CascadedShadow::UpdateCascaded(glm::mat4 view, glm::mat4 proj, glm::vec4 li
         cascadeSplits[i] = (d - nearClip) / clipRange;
     }
 
+
     float lastSplitDist = 0.0;
     for (int i = 0; i < CASCADED_COUNT; i++)
     {

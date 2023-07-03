@@ -165,7 +165,7 @@ HelloVulkan::HelloVulkan()
 
     isOrth = true;
 
-	lightPos = { 0.0f, 4.f, -4.0f, 1.0f };
+	lightPos = { 0.0f, 4.f, 4.0f, 1.0f };
 
 	zNear = 1.f;
 	zFar = 96.0f;
@@ -184,8 +184,8 @@ HelloVulkan::HelloVulkan()
     else
         shadow = new CommonShadow();
 
-    filterSize = 2;
-    shadowIndex = 0;
+    filterSize = 1;
+    shadowIndex = 4;
 }
 
 void HelloVulkan::Init()
@@ -1156,7 +1156,7 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, zNear, zFar);
 
     pers[1][1] *= -1; // flip Y
-    ortho[1][1] *= -1; // flip Y
+    //ortho[1][1] *= -1; // flip Y
 
     if (isOrth)
     {

@@ -158,8 +158,8 @@ float findBlocker(vec2 coords, float zReceiver)
 
 	ivec2 itexelSize = textureSize(shadowMapSampler, 0);
 	float deltaSize = 1.0 / float(itexelSize.x);
-	float filterSize = 1.0;
-	float filteringRange = deltaSize * filterSize;
+
+	float filteringRange = deltaSize * searchRadius;
 
 	poissonDiskSamples(coords);
 	for(int i = 0; i < NUM_SAMPLES; i++){
@@ -170,20 +170,26 @@ float findBlocker(vec2 coords, float zReceiver)
 		}
 	}
 
-	if(blockerNum == 0)
-		return -1.;
-	else
-		return blockDepth / float(blockerNum);
+	if (blockerNum == 0)
+		return 1.0;
+
+	if (blockerNum == NUM_SAMPLES)
+		return -1.0;
+
+	float avgDepth = blockDepth / float(blockerNum);
+
+	return avgDepth;
 }
 
 float findBlocker2(vec2 uv, float zReceiver) {
+
 	poissonDiskSamples(uv);
 	int blockerCount = 0;
 	float blockerDepth = 0.0;
 
 	ivec2 itexelSize = textureSize(shadowMapSampler, 0);
 	float textureSize = float(itexelSize.x);
-	float filterSize = 5.0;
+	float filterSize = 20.0;
 	float filteringRange = filterSize / textureSize;
 
 	for (int i = 0; i < BLOCKER_SEARCH_NUM_SAMPLES; i++)
@@ -212,20 +218,23 @@ float findBlocker2(vec2 uv, float zReceiver) {
 float PCSS(vec3 coords)
 {
 	float blockerDepth = findBlocker2(coords.xy, coords.z);
-	if(blockerDepth < -EPS)
+	if(blockerDepth < 0.0)
 		return 0.0;
 
-	if (blockerDepth == 0.0)
+	if (blockerDepth == 1.0)
 		return 1.0;
 
 	float wp = (coords.z - blockerDepth) * Light_width / blockerDepth;
+
+	//float wp = (coords.z - blockerDepth) * LIGHT_SIZE_UV / blockerDepth;
+
 	ivec2 itexelSize = textureSize(shadowMapSampler, 0);
 
 	float textureSize = itexelSize.x;
 
 	float filteringSize = wp * 1.0 / textureSize;
 
-	return PCF(coords, wp);
+	return PCF(coords, filteringSize);
 }
 
 float getShadow(vec3 coord)

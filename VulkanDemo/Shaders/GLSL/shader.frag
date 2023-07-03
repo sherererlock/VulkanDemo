@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#include"macros.h"
+#include"macros.hlsl"
 
 #define CASCADED_COUNT 1
 
@@ -41,8 +41,8 @@ layout(location = 5) in vec4 shadowCoord;
 
 layout(location = 0) out vec4 outColor;
 
-#include"lighting.h"
-#include"shadow.h"
+#include"lighting.hlsl"
+#include"shadow.hlsl"
 
 void main(){
 	//vec3 color = blin_phong();
@@ -62,4 +62,5 @@ void main(){
 	color *= shadow;
 
 	outColor = vec4(color, 1.0);
+	//outColor = vec4(shadow, 0.0, 0.0, 1.0);
 }

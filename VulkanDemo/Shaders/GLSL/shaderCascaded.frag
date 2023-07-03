@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#include"macros.h"
+#include"macros.hlsl"
 
 #define CASCADED_COUNT 4
 
@@ -43,7 +43,7 @@ layout(location = 5) in vec3 viewPos;
 
 layout(location = 0) out vec4 outColor;
 
-#include "lighting.h"
+#include "lighting.hlsl"
 
 float rand_1to1(float x ) { 
   // -1 -1

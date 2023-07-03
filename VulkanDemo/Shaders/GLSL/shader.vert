@@ -31,7 +31,6 @@ layout(location = 3) out vec3 worldPos;
 layout(location = 4) out vec3 tangent;
 layout(location = 5) out vec4 outShadowCoord;
 
-
 out gl_PerVertex {
     vec4 gl_Position;
 };
