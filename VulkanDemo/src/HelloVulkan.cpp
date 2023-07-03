@@ -19,7 +19,7 @@
 #include "CommonShadow.h"
 #include "CascadedShadow.h"
 
-#define SHADOWMAP_SIZE 1024
+#define SHADOWMAP_SIZE 2048
 
 HelloVulkan* HelloVulkan::helloVulkan = nullptr;
 
@@ -165,7 +165,7 @@ HelloVulkan::HelloVulkan()
 
     isOrth = true;
 
-	lightPos = { 0.0f, 4.f, 4.0f, 1.0f };
+	lightPos = { 0.0f, 4.f, -4.0f, 1.0f };
 
 	zNear = 1.f;
 	zFar = 96.0f;
@@ -177,7 +177,6 @@ HelloVulkan::HelloVulkan()
     camera.flipY = true;
 	camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 256.0f);
 	camera.rotationSpeed = 0.25f;
-    //camera.updateViewMatrix();
     viewUpdated = true;
 
     if(CASCADED_COUNT > 1)
@@ -914,11 +913,11 @@ void HelloVulkan::buildCommandBuffers()
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptorSetS, 0, nullptr);
 				vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-                //if (CASCADED_COUNT == 1)
-                //{
-                //    gltfModel.draw(commandBuffers[i], pipelineLayout, 0);
-                //}
-                //else
+                if (CASCADED_COUNT == 1)
+                {
+                    gltfModel.draw(commandBuffers[i], pipelineLayout, 0);
+                }
+                else
                 {
                     gltfModel.drawWithOffset(commandBuffers[i], pipelineLayout, 0);
                 }
@@ -1152,7 +1151,7 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     glm::vec3 pos = {lightPos.x, lightPos.y, lightPos.z};
     glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-	float range = 100.0f;
+	float range = 5.0f;
 	glm::mat4 ortho = glm::ortho(-range, range, -range, range, zNear, zFar);
     glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, zNear, zFar);
 
@@ -1335,7 +1334,7 @@ void HelloVulkan::createDepthResources()
     VkFormat depthFormat = findDepthFormat();
     //createImage(swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory, 1, VK_SAMPLE_COUNT_1_BIT);
 
-     createImage(swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory, 1, msaaSamples);
+    createImage(swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory, 1, msaaSamples);
 
     depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 

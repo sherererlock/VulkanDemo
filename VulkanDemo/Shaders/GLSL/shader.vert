@@ -8,10 +8,10 @@ uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
     mat4 depthVP;
+    vec4 splitDepth;
     vec4 viewPos;
 	int shadowIndex;
 	float filterSize;
-	float splitDepth[CASCADED_COUNT];
 } ubo;
 
 layout(push_constant) uniform PushConsts{
@@ -47,5 +47,5 @@ void main() {
 
    vec4 pos = primitive.model * vec4(inPosition, 1.0);
    worldPos = pos.xyz;
-   outShadowCoord = ubo.depthVP * primitive.model * vec4(inPosition, 1.0);
+   outShadowCoord = ubo.depthVP * pos;
 }

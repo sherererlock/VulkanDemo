@@ -241,6 +241,10 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 			currentParent = currentParent->parent;
 		}
 
+
+		glm::vec3 yaxis(0.0f, 1.0f, 0.0f);
+		float speed = glm::radians(45.0f);
+		translation = glm::rotate(translation, speed, yaxis);
 		nodeMatrix = translation * nodeMatrix;
 
 		for (Primitive& primitive : node->mesh.primitives) {
