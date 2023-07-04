@@ -266,8 +266,9 @@ private:
     int height = 720;
 
     const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+    const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
     //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
-    const std::string TEXTURE_PATH = "textures/image_512.jpg";
+    const std::string TEXTURE_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/hdr/gcanyon_cube.ktx";
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"

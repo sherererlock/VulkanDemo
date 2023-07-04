@@ -127,7 +127,6 @@ void HelloVulkan::loadgltfModel(std::string filename)
 	vkFreeMemory(device, vertexStaging.memory, nullptr);
 	vkDestroyBuffer(device, indexStaging.buffer, nullptr);
 	vkFreeMemory(device, indexStaging.memory, nullptr);
-
 }
 
 Node* HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer)
@@ -258,7 +257,8 @@ void HelloVulkan::InitVulkan()
 
     shadow->CreateUniformBuffer();
     debug.CreateUniformBuffer();
-    
+ 
+    loadgltfModel(SKYBOX_PATH);
     loadgltfModel(MODEL_PATH);
 
     createDescriptorSet();
@@ -1204,9 +1204,21 @@ void HelloVulkan::updateLight(float frameTimer)
 
 void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
 {
+    auto RotateLight = [](float angle) {
+        glm::mat4 rotation;
+        glm::vec3 yaxis(0.0f, 1.0f, 0.0f);
+        float rot = glm::radians(angle);
+        rotation = glm::rotate(rotation, rot, yaxis);
+
+        return rotation;
+    };
+
     UBOParams uboparams = {};
 	uboparams.lights[0] = lightPos;
-    uboparams.lights[1] = uboparams.lights[2] = uboparams.lights[3] = uboparams.lights[0];
+    
+    uboparams.lights[1] = RotateLight(45.0f) * lightPos;
+    uboparams.lights[2] = RotateLight(90.0f) * lightPos;
+    uboparams.lights[3] = RotateLight(135.0f) * lightPos;
     uboparams.colorCascades = 0;
 
     void* data;

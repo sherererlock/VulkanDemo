@@ -78,7 +78,7 @@ vec3 pbr()
 	vec3 v = normalize(ubo.viewPos.xyz - worldPos);
 
 	vec3 Lo = vec3(0.0);
-	for(int i = 0; i < 1; i ++)
+	for(int i = 0; i < 4; i ++)
 	{
 		vec3 l = normalize(uboParam.lights[i].xyz - worldPos);
 		float ndotl = dot(n, l);
