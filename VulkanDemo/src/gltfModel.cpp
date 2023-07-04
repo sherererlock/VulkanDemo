@@ -227,7 +227,6 @@ void PrintMatrix(glm::mat4 mat)
 	std::cout << "----------------" << std::endl;
 }
 
-
 void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node, uint32_t flag) const
 {
 	if (node->mesh.primitives.size() > 0) 

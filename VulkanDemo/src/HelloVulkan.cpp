@@ -1156,7 +1156,7 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     glm::mat4 pers = glm::perspective(glm::radians(45.0f), 1.0f, zNear, zFar);
 
     pers[1][1] *= -1; // flip Y
-    //ortho[1][1] *= -1; // flip Y
+    ortho[1][1] *= -1; // flip Y
 
     if (isOrth)
     {

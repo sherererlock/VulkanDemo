@@ -4,8 +4,6 @@
 
 #include"macros.hlsl"
 
-#define CASCADED_COUNT 1
-
 layout(set = 0, binding = 0) 
 uniform UniformBufferObject {
     mat4 view;
@@ -62,5 +60,4 @@ void main(){
 	color *= shadow;
 
 	outColor = vec4(color, 1.0);
-	//outColor = vec4(shadow, 0.0, 0.0, 1.0);
 }

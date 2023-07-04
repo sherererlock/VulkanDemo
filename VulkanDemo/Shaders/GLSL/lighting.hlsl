@@ -1,16 +1,13 @@
 #ifndef LIGHTING
 #define LIGHTING
 
-float D_GGX_TR(vec3 n, vec3 h, float roughness)
+float D_GGX_TR(float ndoth, float roughness)
 {
 	float a = roughness * roughness;
 	float a2 = a * a;
 
-	float ndoth = max(dot(n, h), 0.0);
-	float ndoth2 = ndoth * ndoth;
-
 	float nom = a2;
-	float denom = ndoth2 * (a2 - 1.0) + 1.0;
+	float denom = ndoth * ndoth * (a2 - 1.0) + 1.0;
 	denom = PI * denom * denom;
 
 	return nom / max(denom, 0.0001f);
@@ -23,13 +20,10 @@ float GeometrySchlickGGX(float dotp, float k)
 	return nom / denom;
 }
 
-float GeometrySmith(vec3 n, vec3 v, vec3 l, float roughness)
+float GeometrySmith(float ndotv, float ndotl, float roughness)
 {
 	float r = (roughness + 1.0);
 	float k = (r * r) / 8.0f;
-
-	float ndotv = max(dot(n, v), 0.0);
-	float ndotl = max(dot(n, l), 0.0);
 
 	return GeometrySchlickGGX(ndotv, k) * GeometrySchlickGGX(ndotl, k);
 }
@@ -76,7 +70,7 @@ vec3 pbr()
 	float metallic = roughMetalic.y;
 
 	vec3 F0 = vec3(0.04);
-	F0 = mix(F0, albedo.xyz, metallic);
+	F0 = mix(F0, albedo, metallic);
 
 	vec3 texnormal = calculateNormal();
 
@@ -90,32 +84,34 @@ vec3 pbr()
 		float ndotl = dot(n, l);
 		if(ndotl > 0.0)
 		{
-			ndotl = clamp(dot(n, l), 0.0, 1.0);
-
+			ndotl = clamp(ndotl, 0.0, 1.0);
 			vec3 h = normalize(v + l);
-			//float distance = length(uboParam.lights[i].xyz - worldPos);
-			//float atten = 1.0 / (distance * distance);
-			//vec3 irradiance = vec3(1.0) * atten;
 
-			float ndf = D_GGX_TR(n, h, roughness);
-			float g = GeometrySmith(n, v, l, roughness);
-			vec3 f = fresnelSchlick(max(dot(v, n), 0.0), F0);
+			float ndoth = clamp(dot(n, h), 0.0, 1.0);
+			float ndotv = clamp(dot(n, v), 0.0, 1.0);
+
+			float ndf = D_GGX_TR(ndoth, roughness);
+			float g = GeometrySmith(ndotv, ndotl, roughness);
+			vec3 f = fresnelSchlick(ndotv, F0);
+
+			vec3 nom = ndf * g * f;
+			float denom = 4 * ndotv * ndotl + 0.001;
+			vec3 specular = nom / denom;
 
 			vec3 ks = f;
 			vec3 kd = (vec3(1.0)-f);
 			kd *= (1 - metallic);
 	
-			vec3 nom = ndf * g * f;
-			float denom = 4 * clamp(dot(n, v), 0.0, 1.0) * ndotl + 0.001;
-			vec3 specular = nom / denom;
-			Lo += (kd * albedo / PI + specular)* ndotl;
+			//Lo += (kd * albedo / PI + specular)* ndotl;
+
+			Lo += specular * ndotl;
 		}
 	}
 
-	vec3 ambient = vec3(0.3) * albedo;
-	vec3 color = ambient + Lo;
+	//vec3 ambient = vec3(0.3) * albedo;
+	//vec3 color = ambient + Lo;
 
-    color = color / (color + vec3(1.0));
+	vec3 color = Lo;
     color = pow(color, vec3(1.0/2.2));  
 
 	return color;
