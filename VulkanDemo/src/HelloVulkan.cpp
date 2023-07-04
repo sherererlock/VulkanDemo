@@ -1482,6 +1482,11 @@ void HelloVulkan::createDescriptorSet()
         throw std::runtime_error("failed to allocate descriptor set!");
     }
 
+    if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSetSkybox) != VK_SUCCESS) 
+    {
+        throw std::runtime_error("failed to allocate descriptor set!");
+    }
+
     bufferInfo.buffer = uniformBufferL;
     bufferInfo.offset = 0;
     bufferInfo.range = sizeof(UBOParams);
@@ -1497,6 +1502,12 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[1].pBufferInfo = nullptr;
 	sceneDescriptorWrites[1].pImageInfo = &imageInfo; // Optional
 	sceneDescriptorWrites[1].pTexelBufferView = nullptr; // Optional
+
+    vkUpdateDescriptorSets(device, 2, sceneDescriptorWrites.data(), 0, nullptr);
+
+    sceneDescriptorWrites[0].dstSet = descriptorSetSkybox;
+    sceneDescriptorWrites[1].dstSet = descriptorSetSkybox;
+    sceneDescriptorWrites[1].pImageInfo = &imageInfo; // Optional
 
     vkUpdateDescriptorSets(device, 2, sceneDescriptorWrites.data(), 0, nullptr);
 

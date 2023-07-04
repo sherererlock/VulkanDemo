@@ -19,11 +19,21 @@ public:
 
 	void      updateDescriptor();
 	void      destroy();
+	ktxResult loadKTXFile(std::string filename, ktxTexture **target);
 };
 
 class Texture2D : public Texture
 {
 public:
+	void loadFromFile(
+		HelloVulkan*	   helloVulkan,
+	    std::string        filename,
+	    VkFormat           format,
+	    VkQueue            copyQueue,
+	    VkImageUsageFlags  imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
+	    VkImageLayout      imageLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	    bool               forceLinear     = false);
+
 	void fromBuffer(
 		HelloVulkan*	   helloVulkan,
 		void *             buffer,
@@ -34,4 +44,17 @@ public:
 		VkFilter           filter          = VK_FILTER_LINEAR,
 		VkImageUsageFlags  imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
 		VkImageLayout      imageLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+};
+
+class TextureCubeMap : public Texture
+{
+  public:
+	void loadFromFile(
+		HelloVulkan*	   helloVulkan,
+	    std::string        filename,
+	    VkFormat           format,
+	    VkQueue            copyQueue,
+	    VkImageUsageFlags  imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
+	    VkImageLayout      imageLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 };

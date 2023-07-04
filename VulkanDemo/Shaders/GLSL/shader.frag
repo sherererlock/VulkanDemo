@@ -18,6 +18,9 @@ uniform UniformBufferObject {
 layout(set = 1, binding = 0) 
 uniform uboShared {
     vec4 lights[4];
+    int colorCascades;
+	float exposure;
+	float gamma;
 } uboParam;
 
 layout(set = 1, binding = 1) uniform sampler2D shadowMapSampler;

@@ -33,8 +33,6 @@ void gltfModel::loadImages(tinygltf::Model& input)
 	for (size_t i = 0; i < input.images.size(); i++) {
 		tinygltf::Image& glTFImage = input.images[i];
 
-		//std::cout<< i << " name:" << glTFImage.name << "uri:" << glTFImage.uri << std::endl;
-		// Get the image data from the glTF loader
 		unsigned char* buffer = nullptr;
 		VkDeviceSize bufferSize = 0;
 		bool deleteBuffer = false;
