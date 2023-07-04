@@ -46,6 +46,8 @@ struct UniformBufferObject {
 struct UBOParams {
 	glm::vec4 lights[4];
     int colorCascades;
+	float exposure = 4.5f;
+	float gamma = 2.2f;
 };
 
 struct PipelineCreateInfo
@@ -123,6 +125,14 @@ public:
 
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t miplevels);
+
+	void transitionImageLayout(
+		VkImage image,
+		VkImageLayout oldImageLayout,
+		VkImageLayout newImageLayout,
+		VkImageSubresourceRange subresourceRange,
+		VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+		VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
     void updateUniformBuffer(float frameTimer);
     void updateLight(float frameTimer);
@@ -216,21 +226,31 @@ private:
     VkExtent2D swapChainExtent;
 
     VkRenderPass renderPass;
-
     VkDescriptorPool descriptorPool;
 
     VkDescriptorSetLayout descriptorSetLayoutM;
-    VkDescriptorSet descriptorSetM;
-
     VkDescriptorSetLayout descriptorSetLayoutS;
-    VkDescriptorSet descriptorSetS;
-
     VkDescriptorSetLayout descriptorSetLayoutMa;
 
     VkPushConstantRange pushConstantRange;
     VkPipelineLayout pipelineLayout;
 
+    VkDescriptorSet descriptorSetM;
+    VkDescriptorSet descriptorSetS;
     VkPipeline graphicsPipeline;
+
+    struct Skybox
+    {
+        VkDescriptorSet descriptorSet;
+        VkPipeline pipeline;
+
+        VkSampler sampler;
+        VkImage image;
+        VkImageView imageView;
+        VkDeviceMemory memory;
+    };
+
+    Skybox skybox;
 
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
@@ -242,7 +262,6 @@ private:
 
     VkBuffer uniformBuffer;
     VkDeviceMemory uniformBufferMemory;
-
     VkBuffer uniformBufferL;
     VkDeviceMemory uniformBufferMemoryL;
 
@@ -292,8 +311,8 @@ private:
 
     static HelloVulkan* helloVulkan;
 
-    // Model
-
+    // Model    
+    gltfModel skybox;
     gltfModel gltfModel;
 
     float frameTimer = 1.0f;
