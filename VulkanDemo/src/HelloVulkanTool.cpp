@@ -630,15 +630,15 @@ void HelloVulkan::createImageView(VkImageView& view, VkImage& image, VkFormat fo
 	}
 }
 
-void HelloVulkan::createTextureSampler(VkSampler& sampler, VkFilter magFilter, VkFilter minFilter, uint32_t mipLevels)
+void HelloVulkan::createTextureSampler(VkSampler& sampler, VkFilter magFilter, VkFilter minFilter, uint32_t mipLevels, VkSamplerAddressMode addressMode)
 {
 	VkSamplerCreateInfo samplerInfo = {};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	samplerInfo.magFilter = magFilter;
 	samplerInfo.minFilter = minFilter;
-	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeU = addressMode;
+	samplerInfo.addressModeV = addressMode;
+	samplerInfo.addressModeW = addressMode;
 
 	samplerInfo.anisotropyEnable = VK_TRUE;
 	samplerInfo.maxAnisotropy = 16;

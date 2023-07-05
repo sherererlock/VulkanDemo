@@ -32,7 +32,7 @@ void main()
 	uvw.y = 1.0 - uvw.y;
 	vec3 color = texture(samplerEnv, uvw).rgb;
 
-	// Tone mapping
+//	// Tone mapping
 	color = Uncharted2Tonemap(color * uboParams.exposure);
 	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
 	// Gamma correction

@@ -215,7 +215,7 @@ void TextureCubeMap::loadFromFile(HelloVulkan*	helloVulkan, std::string filename
 		subresourceRange);
 
 	// Create sampler
-	helloVulkan->createTextureSampler(sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, mipLevels);
+	helloVulkan->createTextureSampler(sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, mipLevels, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 	// Create image view
 	helloVulkan->createImageView(view, image, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, VK_IMAGE_VIEW_TYPE_CUBE, 6);
 

@@ -69,16 +69,33 @@ struct PipelineCreateInfo
 
 class HelloVulkan
 {
+private:
+	struct Skybox
+	{
+		VkDescriptorSet descriptorSetM;
+		VkDescriptorSet descriptorSetS;
+		VkPipeline pipeline;
+
+		TextureCubeMap cubeMap;
+		VkBuffer uniformBuffer;
+		VkDeviceMemory uniformBufferMemory;
+
+		inline void Cleanup(VkDevice device)
+		{
+			cubeMap.destroy();
+
+			vkDestroyBuffer(device, uniformBuffer, nullptr);
+			vkFreeMemory(device, uniformBufferMemory, nullptr);
+		}
+	};
+
+    struct EnviromentLight
+    {
+        TextureCubeMap irradianceCube;
+    };
+
 public:
     HelloVulkan();
-
-    static HelloVulkan* GetHelloVulkan()
-    {
-        return helloVulkan;
-    }
-
-    inline float GetNear() const { return zNear; }
-    inline float GetFar() const { return zFar; }
 
     void Init();
 	void Run();
@@ -101,28 +118,27 @@ public:
     std::array<VkPipelineShaderStageCreateInfo, 2> CreaterShader(std::string vertexFile, std::string fragmentFile);
 
     void createFrameBuffer();
-
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
     void createUniformBuffer();
     void createDescriptorPool();
     void createDescriptorSetLayout();
     void createDescriptorSet();
     void updateDescriptorSet(int colorIdx, int normalIdx, int roughnessIdx);
 
+	VkCommandBuffer beginSingleTimeCommands();
+	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
     void createCommandPool();
     void createCommandBuffers();
     void buildCommandBuffers();
     void createSemaphores();
 
+	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void generateMipmaps(VkImage image, int32_t texWidth, VkFormat imageFormat,int32_t texHeight, uint32_t mipLevels);
-    void createTextureSampler(VkSampler& sampler, VkFilter magFilter, VkFilter minFilter, uint32_t mipLevels);
+    void createTextureSampler(VkSampler& sampler, VkFilter magFilter, VkFilter minFilter, uint32_t mipLevels, VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT);
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, uint32_t miplevels, VkSampleCountFlagBits  numSamples, uint32_t layers = 1, VkImageCreateFlags flag = 0);
     void createImageView(VkImageView& view, VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t miplevels, VkImageViewType viewtype = VK_IMAGE_VIEW_TYPE_2D, uint32_t layers = 1);
-
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t miplevels);
-
 	void transitionImageLayout(
 		VkImage image,
 		VkImageLayout oldImageLayout,
@@ -138,75 +154,54 @@ public:
 
     void recreateSwapChain();
     void cleanupSwapChain();
-
     void createDepthResources();
-
     void createColorResources();
 
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-
     bool checkValidationLayerSupport();
     bool checkDeviceExtensionSupport(VkPhysicalDevice phydevice);
-
     void pickPhysicalDevice();
     bool isDeviceSuitable(VkPhysicalDevice phyDevice);
-
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-
     std::vector<const char*> getRequiredExtensions();
-
     VkSampleCountFlagBits getMaxUsableSampleCount();
-
-    VkCommandBuffer beginSingleTimeCommands();
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-
     VkFormat findDepthFormat();
-
     bool hasStencilComponent(VkFormat format);
 
     void loadgltfModel(std::string filename, gltfModel& gltfmodel);
     Node* AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
 
+	bool isDebug = false;
+	float accTime = 0.0f;
+    int filterSize = 1;
+	int shadowIndex = 0;
     float debugtimer = 0.5f;
     bool isOrth = false;
     void UpdateDebug();
     void UpdateProjectionMatrix();
-
-    int shadowIndex = 0;
     void UpdateShadowIndex(int indx = -1);
-    int filterSize = 1;
     void UpdateShadowFilterSize();
 
-    VkDevice GetDevice()
-    {
-        return device;
-    }
-
-    inline Camera& GetCamera()
-    {
-        return camera;
-    }
-
-    inline Input& GetInput()
-    {
-        return input;
-    }
-
-    inline void ViewUpdated()
-    {
-        viewUpdated = true;
-    }
+	static HelloVulkan* GetHelloVulkan() { return helloVulkan; }
+	inline float GetNear() const { return zNear; }
+	inline float GetFar() const { return zFar; }
+    inline VkDevice GetDevice() { return device; }
+    inline Camera& GetCamera() { return camera; }
+    inline Input& GetInput() { return input; }
+    inline void ViewUpdated() { viewUpdated = true; }
 
 private:
+	static HelloVulkan* helloVulkan;
+
+	float zNear = 1.0f;
+	float zFar = 96.0f;
+	int width = 1280;
+	int height = 720;
     GLFWwindow* window;
     VkInstance instance;
     VkDevice device;
@@ -219,6 +214,9 @@ private:
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
+	std::vector<VkFramebuffer> swapChainFramebuffers;
+	std::vector<VkCommandBuffer> commandBuffers;
+	VkCommandPool commandPool;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
 
@@ -236,31 +234,7 @@ private:
     VkDescriptorSet descriptorSetS;
     VkPipeline graphicsPipeline;
 
-    struct Skybox
-    {
-        VkDescriptorSet descriptorSetM;
-        VkDescriptorSet descriptorSetS;
-        VkPipeline pipeline;
-
-        TextureCubeMap cubeMap;
-		VkBuffer uniformBuffer;
-		VkDeviceMemory uniformBufferMemory;
-
-        inline void Cleanup(VkDevice device)
-        {
-            cubeMap.destroy();
-
-			vkDestroyBuffer(device, uniformBuffer, nullptr);
-			vkFreeMemory(device, uniformBufferMemory, nullptr);
-        }
-    };
-
     Skybox skybox;
-
-    std::vector<VkFramebuffer> swapChainFramebuffers;
-
-    VkCommandPool commandPool;
-    std::vector<VkCommandBuffer> commandBuffers;
 
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
@@ -271,33 +245,38 @@ private:
     VkDeviceMemory uniformBufferMemoryL;
 
     uint32_t mipLevels;
-
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
-
     VkImage colorImage;
     VkDeviceMemory colorImageMemory;
     VkImageView colorImageView;
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
-    int width = 1280;
-    int height = 720;
+    size_t currentFrame = 0;
+    const int Max_Frames_In_Fight = 2;
+    std::vector<VkSemaphore> imageAvailableSemaphores;
+    std::vector<VkSemaphore> renderFinishedSemaphores;
 
-    const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
-    const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
-    //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
-    const std::string TEXTURE_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/hdr/gcanyon_cube.ktx";
+    // Model    
+    gltfModel skyboxModel;
+    gltfModel gltfmodel;
 
-    const std::vector<const char*> validationLayers = {
-        "VK_LAYER_KHRONOS_validation"
-    };
+    float frameTimer = 1.0f;
+	float timer = 0.0f;
+	float timerSpeed = 0.25f;
 
-    const std::vector<const char*> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
+    Camera camera;
+    bool viewUpdated = false;
 
+    glm::vec4 lightPos;
+    glm::vec4 debugPos;
+
+    Node* lightNode;
+    Shadow* shadow;
+    Debug debug;
+    Input input;
 
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;
@@ -305,40 +284,11 @@ private:
 	const bool enableValidationLayers = true;
 #endif
 
-    size_t currentFrame = 0;
-    const int Max_Frames_In_Fight = 2;
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-
-    static HelloVulkan* helloVulkan;
-
-    // Model    
-    gltfModel skyboxModel;
-    gltfModel gltfmodel;
-
-    float frameTimer = 1.0f;
-
-	// Defines a frame rate independent timer value clamped from -1.0...1.0
-	// For use in animations, rotations, etc.
-	float timer = 0.0f;
-	// Multiplier for speeding up (or slowing down) the global timer
-	float timerSpeed = 0.25f;
-
-    Camera camera;
-    bool viewUpdated = false;
-    //glm::vec4 lightPos = {0.0f, 40.0f, -4.0f, 1.0f};
-
-    glm::vec4 lightPos;
-    glm::vec4 debugPos;
-
-    Node* lightNode;
-
-    float zNear = 1.0f;
-    float zFar = 96.0f;
-    Shadow* shadow;
-    Debug debug;
-    Input input;
-    bool isDebug = false;
-    float accTime = 0.0f;
+	const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+	const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
+	//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
+	const std::string TEXTURE_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/hdr/gcanyon_cube.ktx";
+	const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+	const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 };
 

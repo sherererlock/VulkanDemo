@@ -102,16 +102,16 @@ vec3 pbr()
 			vec3 kd = (vec3(1.0)-f);
 			kd *= (1 - metallic);
 	
-			//Lo += (kd * albedo / PI + specular)* ndotl;
+			Lo += (kd * albedo / PI + specular)* ndotl;
 
-			Lo += specular * ndotl;
+			//Lo += specular * ndotl;
 		}
 	}
 
-	//vec3 ambient = vec3(0.3) * albedo;
-	//vec3 color = ambient + Lo;
+	vec3 ambient = vec3(0.05) * albedo;
+	vec3 color = ambient + Lo;
 
-	vec3 color = Lo;
+	//vec3 color = Lo * albedo;
     color = pow(color, vec3(1.0/2.2));  
 
 	return color;
