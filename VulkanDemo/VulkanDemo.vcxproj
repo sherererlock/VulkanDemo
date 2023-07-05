@@ -193,7 +193,7 @@
     <ClCompile Include="..\include\ktx\lib\memstream.c" />
     <ClCompile Include="..\include\ktx\lib\swap.c" />
     <ClCompile Include="..\include\ktx\lib\texture.c" />
-    <ClCompile Include="src\PrePrecess.cpp" />
+    <ClCompile Include="src\PreProess.cpp" />
     <ClCompile Include="src\CommonShadow.cpp" />
     <ClCompile Include="src\CascadedShadow.cpp" />
     <ClCompile Include="src\Debug.cpp" />
@@ -207,7 +207,7 @@
     <ClCompile Include="src\TextureAsset.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\PrePrecess.h" />
+    <ClInclude Include="src\PreProcess.h" />
     <ClInclude Include="src\CommonShadow.h" />
     <ClInclude Include="src\CascadedShadow.h" />
     <ClInclude Include="src\Debug.h" />

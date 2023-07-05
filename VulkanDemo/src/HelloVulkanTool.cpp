@@ -453,9 +453,12 @@ void HelloVulkan::transitionImageLayout(
 	VkImageLayout newImageLayout,
 	VkImageSubresourceRange subresourceRange,
 	VkPipelineStageFlags srcStageMask,
-	VkPipelineStageFlags dstStageMask)
+	VkPipelineStageFlags dstStageMask,
+	VkCommandBuffer commandBuffer)
 {
-	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+	if(commandBuffer == nullptr)
+		commandBuffer = beginSingleTimeCommands();
+
 	// Create an image barrier object
 	VkImageMemoryBarrier imageMemoryBarrier = {};
 	imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -569,7 +572,8 @@ void HelloVulkan::transitionImageLayout(
 		0, nullptr,
 		1, &imageMemoryBarrier);
 
-	endSingleTimeCommands(commandBuffer);
+	if(commandBuffer == nullptr)
+		endSingleTimeCommands(commandBuffer);
 }
 
 void HelloVulkan::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, uint32_t miplevels, VkSampleCountFlagBits numSamples, uint32_t layers, VkImageCreateFlags flag)

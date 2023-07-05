@@ -19,6 +19,8 @@
 #include "CommonShadow.h"
 #include "CascadedShadow.h"
 
+#include "PreProcess.h"
+
 #define SHADOWMAP_SIZE 2048
 
 HelloVulkan* HelloVulkan::helloVulkan = nullptr;
@@ -261,8 +263,11 @@ void HelloVulkan::InitVulkan()
     loadgltfModel(SKYBOX_PATH, skyboxModel);
     loadgltfModel(MODEL_PATH, gltfmodel);
     skybox.cubeMap.loadFromFile(this, TEXTURE_PATH, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    
+    PreProcess::generateIrradianceCube(this, skybox.cubeMap, envLight.irradianceCube);
 
     createDescriptorSet();
+
 
     shadow->SetupDescriptSet(descriptorPool);
 
@@ -271,6 +276,7 @@ void HelloVulkan::InitVulkan()
     createSemaphores();
 
     updateSceneUniformBuffer(0.0f);
+
 }
 
 void HelloVulkan::MainLoop()
@@ -651,8 +657,6 @@ PipelineCreateInfo HelloVulkan::CreatePipelineCreateInfo()
 
     pipelineCreateInfo.rasterizer.lineWidth = 1.0f;
 
-    //rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    //rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
     pipelineCreateInfo.rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
     pipelineCreateInfo.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
@@ -689,26 +693,6 @@ PipelineCreateInfo HelloVulkan::CreatePipelineCreateInfo()
 
 void HelloVulkan::createGraphicsPipeline()
 {
-    std::string vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.vert.spv";
-    std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.frag.spv";
-
-    if (CASCADED_COUNT > 1)
-    {
-		vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shaderCascaded.vert.spv";
-		fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shaderCascaded.frag.spv";
-    }
-
-    auto shaderStages = CreaterShader(vertexFileName, fragmentFileName);
-
-    PipelineCreateInfo info = CreatePipelineCreateInfo();
-    
-    auto attributeDescriptoins = Vertex1::getAttributeDescriptions();
-    auto attributeDescriptionBindings = Vertex1::getBindingDescription();
-
-    info.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
-    info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptoins.size());
-    info.vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptoins.data(); // Optional
-
 	std::array<VkPushConstantRange, 2> pushConstantRanges;
 	pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	pushConstantRanges[0].offset = 0;
@@ -731,6 +715,26 @@ void HelloVulkan::createGraphicsPipeline()
     {
         throw std::runtime_error("failed to create pipeline layout!");
     }
+
+    std::string vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.vert.spv";
+    std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.frag.spv";
+
+    if (CASCADED_COUNT > 1)
+    {
+		vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shaderCascaded.vert.spv";
+		fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shaderCascaded.frag.spv";
+    }
+
+    auto shaderStages = CreaterShader(vertexFileName, fragmentFileName);
+
+    PipelineCreateInfo info = CreatePipelineCreateInfo();
+    
+    auto attributeDescriptoins = Vertex1::getAttributeDescriptions();
+    auto attributeDescriptionBindings = Vertex1::getBindingDescription();
+
+    info.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
+    info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptoins.size());
+    info.vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptoins.data(); // Optional
 
     VkDynamicState dynamicStates[] = {
         VK_DYNAMIC_STATE_VIEWPORT,

@@ -145,7 +145,8 @@ public:
 		VkImageLayout newImageLayout,
 		VkImageSubresourceRange subresourceRange,
 		VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-		VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+		VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 
+        VkCommandBuffer cmdBuffer = nullptr);
 
     void updateUniformBuffer(float frameTimer);
     void updateLight(float frameTimer);
@@ -194,7 +195,7 @@ public:
     inline Camera& GetCamera() { return camera; }
     inline Input& GetInput() { return input; }
     inline void ViewUpdated() { viewUpdated = true; }
-
+    inline gltfModel& GetSkybox() { return skyboxModel; }
 private:
 	static HelloVulkan* helloVulkan;
 
@@ -235,6 +236,7 @@ private:
     VkPipeline graphicsPipeline;
 
     Skybox skybox;
+    EnviromentLight envLight;
 
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
