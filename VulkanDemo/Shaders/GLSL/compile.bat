@@ -9,4 +9,7 @@ glslangValidator.exe -V Shaders\GLSL\shadow.frag -o Shaders\GLSL\spv\shadow.frag
 
 glslangValidator.exe -V Shaders\GLSL\quad.vert -o Shaders\GLSL\spv\quad.vert.spv
 glslangValidator.exe -V Shaders\GLSL\quad.frag -o Shaders\GLSL\spv\quad.frag.spv
+
+glslangValidator.exe -V Shaders\GLSL\skybox.vert -o Shaders\GLSL\spv\skybox.vert.spv
+glslangValidator.exe -V Shaders\GLSL\skybox.frag -o Shaders\GLSL\spv\skybox.frag.spv
 pause

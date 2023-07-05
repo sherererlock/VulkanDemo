@@ -115,13 +115,10 @@ public:
     void buildCommandBuffers();
     void createSemaphores();
 
-    void createTextureImage();
     void generateMipmaps(VkImage image, int32_t texWidth, VkFormat imageFormat,int32_t texHeight, uint32_t mipLevels);
-    void createTextureImageView();
     void createTextureSampler(VkSampler& sampler, VkFilter magFilter, VkFilter minFilter, uint32_t mipLevels);
-    void createTextureSampler();
-    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, uint32_t miplevels, VkSampleCountFlagBits  numSamples);
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t miplevels);
+    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, uint32_t miplevels, VkSampleCountFlagBits  numSamples, uint32_t layers = 1, VkImageCreateFlags flag = 0);
+    void createImageView(VkImageView& view, VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t miplevels, VkImageViewType viewtype = VK_IMAGE_VIEW_TYPE_2D, uint32_t layers = 1);
 
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t miplevels);
@@ -176,7 +173,7 @@ public:
 
     bool hasStencilComponent(VkFormat format);
 
-    void loadgltfModel(std::string filename);
+    void loadgltfModel(std::string filename, gltfModel& gltfmodel);
     Node* AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
 
     float debugtimer = 0.5f;
@@ -241,13 +238,21 @@ private:
 
     struct Skybox
     {
-        VkDescriptorSet descriptorSet;
+        VkDescriptorSet descriptorSetM;
+        VkDescriptorSet descriptorSetS;
         VkPipeline pipeline;
 
-        VkSampler sampler;
-        VkImage image;
-        VkImageView imageView;
-        VkDeviceMemory memory;
+        TextureCubeMap cubeMap;
+		VkBuffer uniformBuffer;
+		VkDeviceMemory uniformBufferMemory;
+
+        inline void Cleanup(VkDevice device)
+        {
+            cubeMap.destroy();
+
+			vkDestroyBuffer(device, uniformBuffer, nullptr);
+			vkFreeMemory(device, uniformBufferMemory, nullptr);
+        }
     };
 
     Skybox skybox;
@@ -265,11 +270,7 @@ private:
     VkBuffer uniformBufferL;
     VkDeviceMemory uniformBufferMemoryL;
 
-    VkSampler textureSampler;
     uint32_t mipLevels;
-    VkImage textureImage;
-    VkImageView textureImageView;
-    VkDeviceMemory textureImageMemory;
 
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
@@ -312,8 +313,8 @@ private:
     static HelloVulkan* helloVulkan;
 
     // Model    
-    gltfModel skybox;
-    gltfModel gltfModel;
+    gltfModel skyboxModel;
+    gltfModel gltfmodel;
 
     float frameTimer = 1.0f;
 

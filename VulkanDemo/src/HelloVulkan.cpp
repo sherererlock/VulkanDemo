@@ -63,7 +63,7 @@ bool HelloVulkan::hasStencilComponent(VkFormat format)
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void HelloVulkan::loadgltfModel(std::string filename)
+void HelloVulkan::loadgltfModel(std::string filename, gltfModel& model)
 {
     tinygltf::Model glTFInput;
 	tinygltf::TinyGLTF gltfContext;
@@ -75,14 +75,14 @@ void HelloVulkan::loadgltfModel(std::string filename)
 	std::vector<Vertex1> vertexBuffer;
 
 	if (fileLoaded) {
-        gltfModel.logicalDevice = device;
-		gltfModel.loadImages(glTFInput);
-		gltfModel.loadMaterials(glTFInput);
-		gltfModel.loadTextures(glTFInput);
+        model.logicalDevice = device;
+		model.loadImages(glTFInput);
+		model.loadMaterials(glTFInput);
+		model.loadTextures(glTFInput);
 		const tinygltf::Scene& scene = glTFInput.scenes[0];
 		for (size_t i = 0; i < scene.nodes.size(); i++) {
 			const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
-			gltfModel.loadNode(node, glTFInput, nullptr, indexBuffer, vertexBuffer);
+			model.loadNode(node, glTFInput, nullptr, indexBuffer, vertexBuffer);
 		}
 	}
 	else {
@@ -93,7 +93,7 @@ void HelloVulkan::loadgltfModel(std::string filename)
 
 	size_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex1);
 	size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
-	gltfModel.indices.count = static_cast<uint32_t>(indexBuffer.size());
+	model.indices.count = static_cast<uint32_t>(indexBuffer.size());
 
 	struct StagingBuffer {
 		VkBuffer buffer;
@@ -115,13 +115,13 @@ void HelloVulkan::loadgltfModel(std::string filename)
     memcpy(data1, indexBuffer.data(), indexBufferSize);
     vkUnmapMemory(device, indexStaging.memory);
 
-    createBuffer(vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, gltfModel.vertices.buffer, gltfModel.vertices.memory);
+    createBuffer(vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model.vertices.buffer, model.vertices.memory);
 
-    createBuffer(indexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, gltfModel.indices.buffer, gltfModel.indices.memory);
+    createBuffer(indexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, model.indices.buffer, model.indices.memory);
 
-    copyBuffer(vertexStaging.buffer, gltfModel.vertices.buffer, vertexBufferSize);
+    copyBuffer(vertexStaging.buffer, model.vertices.buffer, vertexBufferSize);
 
-    copyBuffer(indexStaging.buffer, gltfModel.indices.buffer, indexBufferSize);
+    copyBuffer(indexStaging.buffer, model.indices.buffer, indexBufferSize);
 
 	vkDestroyBuffer(device, vertexStaging.buffer, nullptr);
 	vkFreeMemory(device, vertexStaging.memory, nullptr);
@@ -153,7 +153,7 @@ Node* HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vert
     node->matrix = glm::translate(node->matrix, glm::vec3(lightPos.x, lightPos.y, lightPos.z));
 	node->mesh.primitives.push_back(primitive);
 
-    gltfModel.nodes.push_back(node);
+    //gltfmodel.nodes.push_back(node);
 
     return node;
 }
@@ -258,8 +258,9 @@ void HelloVulkan::InitVulkan()
     shadow->CreateUniformBuffer();
     debug.CreateUniformBuffer();
  
-    loadgltfModel(SKYBOX_PATH);
-    loadgltfModel(MODEL_PATH);
+    loadgltfModel(SKYBOX_PATH, skyboxModel);
+    loadgltfModel(MODEL_PATH, gltfmodel);
+    skybox.cubeMap.loadFromFile(this, TEXTURE_PATH, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
     createDescriptorSet();
 
@@ -322,11 +323,6 @@ void HelloVulkan::Cleanup()
 {
     cleanupSwapChain();
 
-    vkDestroyImage(device, textureImage, nullptr); 
-    vkDestroySampler(device, textureSampler, nullptr);
-    vkDestroyImageView(device, textureImageView, nullptr);
-    vkFreeMemory(device, textureImageMemory, nullptr);
-
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayoutS, nullptr);
@@ -344,7 +340,10 @@ void HelloVulkan::Cleanup()
 
     vkDestroyCommandPool(device, commandPool, nullptr);
 
-    gltfModel.Cleanup();
+    skybox.Cleanup(device);
+    gltfmodel.Cleanup();
+    skyboxModel.Cleanup();
+
     shadow->Cleanup();
     debug.Cleanup(instance);
     vkDestroyDevice(device, nullptr);
@@ -544,7 +543,7 @@ void HelloVulkan::createImageViews()
     swapChainImageViews.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); i++) 
     {
-        swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        createImageView(swapChainImageViews[i], swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     }
 }
 
@@ -785,6 +784,26 @@ void HelloVulkan::createGraphicsPipeline()
     vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
     vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
 
+    std::vector<VkVertexInputAttributeDescription> atrtibutes = Vertex1::getAttributeDescriptions({ Vertex1::VertexComponent::Position, Vertex1::VertexComponent::Normal, Vertex1::VertexComponent::UV});
+	info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(atrtibutes.size());
+	info.vertexInputInfo.pVertexAttributeDescriptions = atrtibutes.data(); // Optional
+
+    info.rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
+	vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/skybox.vert.spv";
+	fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/skybox.frag.spv";
+    shaderStages = CreaterShader(vertexFileName, fragmentFileName);
+
+	pipelineInfo.stageCount = (uint32_t)shaderStages.size();
+	pipelineInfo.pStages = shaderStages.data();
+
+	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &skybox.pipeline) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create graphics pipeline!");
+	}
+
+	vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
+	vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
+
     debug.CreateDebugPipeline(info, pipelineInfo);
     shadow->CreateShadowPipeline(info, pipelineInfo);
 }
@@ -819,6 +838,8 @@ void HelloVulkan::createUniformBuffer()
 {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
     createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffer, uniformBufferMemory);
+
+	createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, skybox.uniformBuffer, skybox.uniformBufferMemory);
 
     bufferSize = sizeof(UBOParams);
     createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBufferL, uniformBufferMemoryL);
@@ -868,7 +889,7 @@ void HelloVulkan::buildCommandBuffers()
         vkBeginCommandBuffer(commandBuffers[i], &beginInfo);
 
         {
-            shadow->BuildCommandBuffer(commandBuffers[i], gltfModel);
+            shadow->BuildCommandBuffer(commandBuffers[i], gltfmodel);
         }
 
         {
@@ -909,17 +930,22 @@ void HelloVulkan::buildCommandBuffers()
             }
             else
             {
+                vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &skybox.descriptorSetM, 0, nullptr);
+                vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &skybox.descriptorSetS, 0, nullptr);
+                vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipeline);
+                skyboxModel.draw(commandBuffers[i], pipelineLayout, 2);
+
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetM, 0, nullptr);
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptorSetS, 0, nullptr);
 				vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
                 if (CASCADED_COUNT == 1)
                 {
-                    gltfModel.draw(commandBuffers[i], pipelineLayout, 0);
+                    gltfmodel.draw(commandBuffers[i], pipelineLayout, 0);
                 }
                 else
                 {
-                    gltfModel.drawWithOffset(commandBuffers[i], pipelineLayout, 0);
+                    gltfmodel.drawWithOffset(commandBuffers[i], pipelineLayout, 0);
                 }
             }
 
@@ -944,43 +970,6 @@ void HelloVulkan::createSemaphores()
         throw std::runtime_error("failed to create semaphores!");
     }
 
-}
-
-void HelloVulkan::createTextureImage()
-{
-    int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-    if (!pixels)
-    {
-        throw std::runtime_error("failed to load texture image!");
-    }
-
-    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, pixels, static_cast<size_t>(imageSize));
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    stbi_image_free(pixels);
-
-    createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,textureImage, textureImageMemory, mipLevels, VK_SAMPLE_COUNT_1_BIT);
-
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL , mipLevels);
-
-    copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    //transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-
-    generateMipmaps(textureImage, texWidth, VK_FORMAT_R8G8B8A8_UNORM, texHeight, mipLevels);
 }
 
 void HelloVulkan::generateMipmaps(VkImage image, int32_t texWidth, VkFormat imageFormat,int32_t texHeight, uint32_t mipLevels) 
@@ -1073,73 +1062,6 @@ void HelloVulkan::generateMipmaps(VkImage image, int32_t texWidth, VkFormat imag
     endSingleTimeCommands(commandBuffer);
 }
 
-void HelloVulkan::createTextureImageView()
-{
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
-}
-
-void HelloVulkan::createTextureSampler(VkSampler& sampler, VkFilter magFilter, VkFilter minFilter, uint32_t mipLevels)
-{
-    VkSamplerCreateInfo samplerInfo = {};
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.magFilter = magFilter;
-    samplerInfo.minFilter = minFilter;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = 16;
-
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-
-    samplerInfo.compareEnable = VK_FALSE;
-    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.mipLodBias = 0.0f;
-    //samplerInfo.minLod = static_cast<float>(mipLevels / 2);
-    samplerInfo.minLod = 0.0f;
-    samplerInfo.maxLod = static_cast<float>(mipLevels);
-
-    if (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
-}
-
-void HelloVulkan::createTextureSampler()
-{
-    VkSamplerCreateInfo samplerInfo = {};
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.magFilter = VK_FILTER_LINEAR;
-    samplerInfo.minFilter = VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = 16;
-
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-
-    samplerInfo.compareEnable = VK_FALSE;
-    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.mipLodBias = 0.0f;
-    //samplerInfo.minLod = static_cast<float>(mipLevels / 2);
-    samplerInfo.minLod = 0.0f;
-    samplerInfo.maxLod = static_cast<float>(mipLevels);
-
-    if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
-}
-
 void HelloVulkan::updateUniformBuffer(float frameTimer)
 {
     UniformBufferObject ubo = {};
@@ -1186,6 +1108,11 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(UniformBufferObject), 0, &data);
     memcpy(data, &ubo, sizeof(UniformBufferObject));
     vkUnmapMemory(device, uniformBufferMemory);
+
+    ubo.view = glm::mat4(glm::mat3(camera.matrices.view));
+	vkMapMemory(device, skybox.uniformBufferMemory, 0, sizeof(UniformBufferObject), 0, &data);
+	memcpy(data, &ubo, sizeof(UniformBufferObject));
+	vkUnmapMemory(device, skybox.uniformBufferMemory);
 
     glm::mat4 cameratoworld = glm::inverse(view);
     lightNode->matrix = cameratoworld;
@@ -1329,6 +1256,7 @@ void HelloVulkan::cleanupSwapChain()
 
     vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
+    vkDestroyPipeline(device, skybox.pipeline, nullptr);
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     vkDestroyRenderPass(device, renderPass, nullptr);
@@ -1348,7 +1276,7 @@ void HelloVulkan::createDepthResources()
 
     createImage(swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory, 1, msaaSamples);
 
-    depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+    createImageView(depthImageView, depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
     transitionImageLayout(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 }
@@ -1358,7 +1286,7 @@ void HelloVulkan::createColorResources() {
 
     createImage(swapChainExtent.width, swapChainExtent.height, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory,  1, msaaSamples);
 
-    colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+    createImageView(colorImageView, colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
     transitionImageLayout(colorImage, colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
 }
@@ -1368,17 +1296,17 @@ void HelloVulkan::createDescriptorPool()
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = 5;
+    poolSizes[0].descriptorCount = 6;
 
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = 11;
+    poolSizes[1].descriptorCount = 12;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
 
-    poolInfo.maxSets = 7;
+    poolInfo.maxSets = 9;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {
@@ -1458,6 +1386,11 @@ void HelloVulkan::createDescriptorSet()
         throw std::runtime_error("failed to allocate descriptor set!");
     }
 
+	if (vkAllocateDescriptorSets(device, &allocInfo, &skybox.descriptorSetM) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to allocate descriptor set!");
+	}
+
     VkDescriptorBufferInfo bufferInfo = {};
     bufferInfo.buffer = uniformBuffer;
     bufferInfo.offset = 0;
@@ -1476,13 +1409,21 @@ void HelloVulkan::createDescriptorSet()
 
     vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
 
+	descriptorWrite.dstSet = skybox.descriptorSetM;
+	bufferInfo.buffer = skybox.uniformBuffer;
+	bufferInfo.offset = 0;
+	bufferInfo.range = sizeof(UniformBufferObject);
+
+	vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+
+
     layouts[0] = descriptorSetLayoutS;
     if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSetS) != VK_SUCCESS) 
     {
         throw std::runtime_error("failed to allocate descriptor set!");
     }
 
-    if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSetSkybox) != VK_SUCCESS) 
+    if (vkAllocateDescriptorSets(device, &allocInfo, &skybox.descriptorSetS) != VK_SUCCESS) 
     {
         throw std::runtime_error("failed to allocate descriptor set!");
     }
@@ -1505,17 +1446,17 @@ void HelloVulkan::createDescriptorSet()
 
     vkUpdateDescriptorSets(device, 2, sceneDescriptorWrites.data(), 0, nullptr);
 
-    sceneDescriptorWrites[0].dstSet = descriptorSetSkybox;
-    sceneDescriptorWrites[1].dstSet = descriptorSetSkybox;
-    sceneDescriptorWrites[1].pImageInfo = &imageInfo; // Optional
+    sceneDescriptorWrites[0].dstSet = skybox.descriptorSetS;
+    sceneDescriptorWrites[1].dstSet = skybox.descriptorSetS;
+    sceneDescriptorWrites[1].pImageInfo = &skybox.cubeMap.descriptor; // Optional
 
     vkUpdateDescriptorSets(device, 2, sceneDescriptorWrites.data(), 0, nullptr);
 
     layouts[0] = descriptorSetLayoutMa;
     std::array<VkWriteDescriptorSet, 3> descriptorWrites = {};
-    for (int i = 0; i < gltfModel.materials.size(); i++)
+    for (int i = 0; i < gltfmodel.materials.size(); i++)
     {
-        Material& material = gltfModel.materials[i];
+        Material& material = gltfmodel.materials[i];
         if (vkAllocateDescriptorSets(device, &allocInfo, &material.descriptorSet) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to allocate descriptor set!");
@@ -1531,7 +1472,7 @@ void HelloVulkan::createDescriptorSet()
             descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[j].descriptorCount = 1;
             descriptorWrites[j].pBufferInfo = nullptr;
-            descriptorWrites[j].pImageInfo =  &gltfModel.images[indices[j]].texture.descriptor; // Optional
+            descriptorWrites[j].pImageInfo =  &gltfmodel.images[indices[j]].texture.descriptor; // Optional
             descriptorWrites[j].pTexelBufferView = nullptr; // Optional
         }
 
@@ -1564,9 +1505,9 @@ void HelloVulkan::updateDescriptorSet(int colorIdx, int normalIdx, int roughness
 
     SetUpWrites(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &bufferInfo, nullptr);
 
-    SetUpWrites(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, nullptr, &gltfModel.images[colorIdx].texture.descriptor);
-    SetUpWrites(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, nullptr, &gltfModel.images[normalIdx].texture.descriptor);
-    SetUpWrites(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, nullptr, &gltfModel.images[roughnessIdx].texture.descriptor);
+    SetUpWrites(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, nullptr, &gltfmodel.images[colorIdx].texture.descriptor);
+    SetUpWrites(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, nullptr, &gltfmodel.images[normalIdx].texture.descriptor);
+    SetUpWrites(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, nullptr, &gltfmodel.images[roughnessIdx].texture.descriptor);
 
     vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }

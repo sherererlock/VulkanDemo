@@ -28,7 +28,9 @@ vec3 Uncharted2Tonemap(vec3 color)
 
 void main() 
 {
-	vec3 color = texture(samplerEnv, inUVW).rgb;
+	vec3 uvw = inUVW;
+	uvw.y = 1.0 - uvw.y;
+	vec3 color = texture(samplerEnv, uvw).rgb;
 
 	// Tone mapping
 	color = Uncharted2Tonemap(color * uboParams.exposure);

@@ -14,6 +14,8 @@ struct Vertex1 {
 	glm::vec3 color;
 	glm::vec3 tangent;
 
+	enum class VertexComponent { Position, Normal, UV, Color, Tangent, Joint0, Weight0 };
+
 	static VkVertexInputBindingDescription getBindingDescription()
     {
         VkVertexInputBindingDescription bindingDescription = {};
@@ -56,6 +58,61 @@ struct Vertex1 {
 
         return attributeDescriptions;
     }
+
+	static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions(const std::vector<VertexComponent> components)
+	{
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions = {};
+		attributeDescriptions.resize(components.size());
+
+		for (int i = 0; i < components.size(); i++)
+		{
+			VertexComponent component = components[i];
+			switch (component)
+			{
+			case Vertex1::VertexComponent::Position:
+
+				attributeDescriptions[i].binding = 0;
+				attributeDescriptions[i].location = i;
+				attributeDescriptions[i].format = VK_FORMAT_R32G32B32_SFLOAT;
+				attributeDescriptions[i].offset = offsetof(Vertex1, pos);
+
+				break;
+			case Vertex1::VertexComponent::Normal:
+				attributeDescriptions[i].binding = 0;
+				attributeDescriptions[i].location = i;
+				attributeDescriptions[i].format = VK_FORMAT_R32G32B32_SFLOAT;
+				attributeDescriptions[i].offset = offsetof(Vertex1, normal);
+				break;
+			case Vertex1::VertexComponent::UV:
+				attributeDescriptions[i].binding = 0;
+				attributeDescriptions[i].location = i;
+				attributeDescriptions[i].format = VK_FORMAT_R32G32_SFLOAT;
+				attributeDescriptions[i].offset = offsetof(Vertex1, uv);
+				break;
+			case Vertex1::VertexComponent::Color:
+				attributeDescriptions[i].binding = 0;
+				attributeDescriptions[i].location = i;
+				attributeDescriptions[i].format = VK_FORMAT_R32G32B32_SFLOAT;
+				attributeDescriptions[i].offset = offsetof(Vertex1, color);
+				break;
+			case Vertex1::VertexComponent::Tangent:
+				attributeDescriptions[i].binding = 0;
+				attributeDescriptions[i].location = i;
+				attributeDescriptions[i].format = VK_FORMAT_R32G32B32_SFLOAT;
+				attributeDescriptions[i].offset = offsetof(Vertex1, tangent);
+				break;
+			case Vertex1::VertexComponent::Joint0:
+				break;
+			case Vertex1::VertexComponent::Weight0:
+				break;
+			default:
+				break;
+			}
+
+		}
+
+		return attributeDescriptions;
+	}
 };
 
 // A primitive contains the data for a single draw call
