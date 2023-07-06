@@ -92,6 +92,14 @@ private:
     struct EnviromentLight
     {
         TextureCubeMap irradianceCube;
+        TextureCubeMap prefilteredMap;
+        Texture2D BRDFLutMap;
+        inline void Cleanup()
+        {
+            irradianceCube.destroy();
+            //prefilteredMap.destroy();
+            //BRDFLutMap.destroy();
+        }
     };
 
 public:

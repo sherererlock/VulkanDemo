@@ -188,13 +188,13 @@ void TextureCubeMap::loadFromFile(HelloVulkan*	helloVulkan, std::string filename
 	subresourceRange.levelCount = mipLevels;
 	subresourceRange.layerCount = 6;
 
+	VkCommandBuffer commandBuffer = helloVulkan->beginSingleTimeCommands();
+
 	helloVulkan->transitionImageLayout(
 		image,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		subresourceRange);
-
-	VkCommandBuffer commandBuffer = helloVulkan->beginSingleTimeCommands();
+		subresourceRange, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, commandBuffer);
 
 	vkCmdCopyBufferToImage(
 		commandBuffer,
@@ -204,15 +204,16 @@ void TextureCubeMap::loadFromFile(HelloVulkan*	helloVulkan, std::string filename
 		static_cast<uint32_t>(bufferCopyRegions.size()),
 		bufferCopyRegions.data());
 
+	helloVulkan->transitionImageLayout(
+		image,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		imageLayout,
+		subresourceRange, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, commandBuffer);
+
 	helloVulkan->endSingleTimeCommands(commandBuffer);
 
 	// Change texture image layout to shader read after all faces have been copied
 	this->imageLayout = imageLayout;
-	 helloVulkan->transitionImageLayout(
-		image,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		imageLayout,
-		subresourceRange);
 
 	// Create sampler
 	helloVulkan->createTextureSampler(sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, mipLevels, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);

@@ -33,6 +33,11 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 } 
 
+vec3 F_SchlickR(float cosTheta, vec3 F0, float roughness)
+{
+	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
 vec3 calculateNormal()
 {
 	vec3 tangentNormal = texture(normalSampler, fragTexCoord).xyz * 2.0 - 1.0;
@@ -76,9 +81,11 @@ vec3 pbr()
 
 	vec3 n = texnormal;
 	vec3 v = normalize(ubo.viewPos.xyz - worldPos);
+	float ndotv = clamp(dot(n, v), 0.0, 1.0);
+	vec3 f = fresnelSchlick(ndotv, F0);
 
 	vec3 Lo = vec3(0.0);
-	for(int i = 0; i < 4; i ++)
+	for(int i = 0; i < 1; i ++)
 	{
 		vec3 l = normalize(uboParam.lights[i].xyz - worldPos);
 		float ndotl = dot(n, l);
@@ -88,11 +95,9 @@ vec3 pbr()
 			vec3 h = normalize(v + l);
 
 			float ndoth = clamp(dot(n, h), 0.0, 1.0);
-			float ndotv = clamp(dot(n, v), 0.0, 1.0);
 
 			float ndf = D_GGX_TR(ndoth, roughness);
 			float g = GeometrySmith(ndotv, ndotl, roughness);
-			vec3 f = fresnelSchlick(ndotv, F0);
 
 			vec3 nom = ndf * g * f;
 			float denom = 4 * ndotv * ndotl + 0.001;
@@ -108,13 +113,21 @@ vec3 pbr()
 		}
 	}
 
-	vec3 ambient = vec3(0.05) * albedo;
-	vec3 color = ambient + Lo;
+	vec3 F = F_SchlickR(ndotv, F0, roughness);
+	vec3 Kd = vec3(1.0) - F;
+	Kd *= 1.0 - metallic;
+	vec3 irradiance = texture(irradianceCubeMapSampler, n).rgb;
+	vec3 diffuse = irradiance * albedo;
+
+	vec3 ambient = Kd * diffuse;
+
+	vec3 color = ambient;
 
 	//vec3 color = Lo * albedo;
     color = pow(color, vec3(1.0/2.2));  
 
 	return color;
 }
+
 
 #endif

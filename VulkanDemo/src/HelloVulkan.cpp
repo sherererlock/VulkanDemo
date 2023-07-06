@@ -1,24 +1,23 @@
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 
-#include "HelloVulkan.h"
 #include <stdexcept>
 #include <iostream>
 #include <set>
 #include <fstream>
+#include <chrono>
+#include <algorithm>
+#include <unordered_map>
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm/glm.hpp>
 #include <glm/glm/gtc/matrix_transform.hpp>
 #include <stb/stb_image.h>
 
-#include <chrono>
-
-#include <unordered_map>
-
+#include "HelloVulkan.h"
 #include "Mesh.h"
 #include "CommonShadow.h"
 #include "CascadedShadow.h"
-
 #include "PreProcess.h"
 
 #define SHADOWMAP_SIZE 2048
@@ -268,7 +267,6 @@ void HelloVulkan::InitVulkan()
 
     createDescriptorSet();
 
-
     shadow->SetupDescriptSet(descriptorPool);
 
     createCommandBuffers();
@@ -349,6 +347,8 @@ void HelloVulkan::Cleanup()
     skybox.Cleanup(device);
     gltfmodel.Cleanup();
     skyboxModel.Cleanup();
+    envLight.Cleanup();
+
 
     shadow->Cleanup();
     debug.Cleanup(instance);
@@ -434,6 +434,7 @@ void HelloVulkan::CreateDevice()
     deviceFeatures.samplerAnisotropy = VK_TRUE;
     deviceFeatures.sampleRateShading = VK_TRUE;
     deviceFeatures.fillModeNonSolid = VK_TRUE;
+    deviceFeatures.imageCubeArray = VK_TRUE;
 
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -1303,7 +1304,7 @@ void HelloVulkan::createDescriptorPool()
     poolSizes[0].descriptorCount = 6;
 
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = 12;
+    poolSizes[1].descriptorCount = 20;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1346,7 +1347,12 @@ void HelloVulkan::createDescriptorSetLayout()
     imageLayoutBinding.pImmutableSamplers = nullptr;
     imageLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    std::array<VkDescriptorSetLayoutBinding, 2> scenebindings = {uniformLayoutBinding, imageLayoutBinding};
+    int binding = 0;
+    std::array<VkDescriptorSetLayoutBinding, 5> scenebindings = {uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding };
+	std::for_each(scenebindings.begin(), scenebindings.end(), [&binding](VkDescriptorSetLayoutBinding& imageLayoutBinding) {
+        imageLayoutBinding.binding = binding++;
+	});
+
     layoutInfo.bindingCount = (uint32_t)scenebindings.size();
     layoutInfo.pBindings = scenebindings.data();
 
@@ -1419,8 +1425,6 @@ void HelloVulkan::createDescriptorSet()
 	bufferInfo.range = sizeof(UniformBufferObject);
 
 	vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
-
-
     layouts[0] = descriptorSetLayoutS;
     if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSetS) != VK_SUCCESS) 
     {
@@ -1438,23 +1442,37 @@ void HelloVulkan::createDescriptorSet()
 
     descriptorWrite.dstSet = descriptorSetS;
 
-    std::array<VkWriteDescriptorSet, 2> sceneDescriptorWrites = { descriptorWrite, descriptorWrite };
+    std::array<VkWriteDescriptorSet, 5> sceneDescriptorWrites = { descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite };
 
+    VkDescriptorImageInfo imageInfo = shadow->GetDescriptorImageInfo();
 	sceneDescriptorWrites[1].dstBinding = 1;
 	sceneDescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	sceneDescriptorWrites[1].descriptorCount = 1;
-    VkDescriptorImageInfo imageInfo = shadow->GetDescriptorImageInfo();
 	sceneDescriptorWrites[1].pBufferInfo = nullptr;
 	sceneDescriptorWrites[1].pImageInfo = &imageInfo; // Optional
 	sceneDescriptorWrites[1].pTexelBufferView = nullptr; // Optional
 
-    vkUpdateDescriptorSets(device, 2, sceneDescriptorWrites.data(), 0, nullptr);
+    sceneDescriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    sceneDescriptorWrites[2].pBufferInfo = nullptr;
+	sceneDescriptorWrites[2].dstBinding = 2;
+	sceneDescriptorWrites[2].pImageInfo = &envLight.irradianceCube.descriptor; // Optional
+
+	sceneDescriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sceneDescriptorWrites[3].pBufferInfo = nullptr;
+	sceneDescriptorWrites[3].dstBinding = 3;
+	sceneDescriptorWrites[3].pImageInfo = &envLight.irradianceCube.descriptor; // Optional
+
+	sceneDescriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sceneDescriptorWrites[4].pBufferInfo = nullptr;
+	sceneDescriptorWrites[4].dstBinding = 4;
+	sceneDescriptorWrites[4].pImageInfo = &envLight.irradianceCube.descriptor; // Optional
+
+    vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
 
     sceneDescriptorWrites[0].dstSet = skybox.descriptorSetS;
     sceneDescriptorWrites[1].dstSet = skybox.descriptorSetS;
     sceneDescriptorWrites[1].pImageInfo = &skybox.cubeMap.descriptor; // Optional
-
-    vkUpdateDescriptorSets(device, 2, sceneDescriptorWrites.data(), 0, nullptr);
+    vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
 
     layouts[0] = descriptorSetLayoutMa;
     std::array<VkWriteDescriptorSet, 3> descriptorWrites = {};

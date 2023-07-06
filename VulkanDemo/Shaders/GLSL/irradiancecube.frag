@@ -32,11 +32,15 @@ void main()
 		for(float theta = 0.0; theta < HALF_PI; theta += consts.deltaTheta)
 		{
 			// spherical to local cartesian 
-			vec3 local = vec3(sin(theta)*cos(phi), sin(theta)*sin(phi) ,cos(theta));
-			// local to world
-			vec3 sampleVec = local.x * right + local.y * up + local.z * N;
+//			vec3 local = vec3(sin(theta)*cos(phi), sin(theta)*sin(phi) ,cos(theta));
+//			// local to world
+//			vec3 sampleVec = local.x * right + local.y * up + local.z * N;
+//			color += texture(samplerEnv, sampleVec).rgb * cos(theta) * sin(theta);
 
-			color += texture(samplerEnv, sampleVec).rgb * cos(theta) * sin(theta);
+			vec3 tempVec = cos(phi) * right + sin(phi) * up;
+			vec3 sampleVector = cos(theta) * N + sin(theta) * tempVec;
+			color += texture(samplerEnv, sampleVector).rgb * cos(theta) * sin(theta);
+
 			sampleCount ++;
 		}
 	}

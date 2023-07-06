@@ -1,5 +1,7 @@
 #include <stdexcept>
 #include <vulkan/vulkan.h>
+#include <chrono>
+#include <iostream>
 
 #include "PreProcess.h"
 #include "HelloVulkan.h"
@@ -9,6 +11,8 @@
 
 void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMap& cubeMap, TextureCubeMap& irradianceMap)
 {
+	auto tStart = std::chrono::high_resolution_clock::now();
+
 	VkDevice device = vulkan->GetDevice();
 
 	const VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -17,9 +21,8 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 
 	vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, irradianceMap.image, irradianceMap.deviceMemory, numMips, VK_SAMPLE_COUNT_1_BIT, 6, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
-	vulkan->createImageView(irradianceMap.view, irradianceMap.image, format, VK_IMAGE_ASPECT_COLOR_BIT, numMips, VK_IMAGE_VIEW_TYPE_CUBE_ARRAY, 6);
+	vulkan->createImageView(irradianceMap.view, irradianceMap.image, format, VK_IMAGE_ASPECT_COLOR_BIT, numMips, VK_IMAGE_VIEW_TYPE_CUBE, 6);
 	vulkan->createTextureSampler(irradianceMap.sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, numMips, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-	irradianceMap.updateDescriptor();
 
 	VkAttachmentDescription colorAttachment = {};
 	colorAttachment.format = format;
@@ -94,7 +97,7 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 
 	offScreen offscreen;
 	{
-		vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			offscreen.image, offscreen.buffer, 1, VK_SAMPLE_COUNT_1_BIT, 1);
 
 		vulkan->transitionImageLayout(offscreen.image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
@@ -201,10 +204,12 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 
 	PipelineCreateInfo info = vulkan->CreatePipelineCreateInfo();
 
+	info.rasterizer.cullMode = VK_CULL_MODE_NONE;
 	info.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
     info.depthStencil.depthTestEnable = VK_FALSE;
     info.depthStencil.depthWriteEnable = VK_FALSE;
-    info.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    info.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
     std::string vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/filtercube.vert.spv";
     std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/irradiancecube.frag.spv";
@@ -228,7 +233,7 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
     info.dynamicState.pDynamicStates = dynamicStates;
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment.colorWriteMask = 0xf;
     colorBlendAttachment.blendEnable = VK_FALSE;
     colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
     colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
@@ -388,6 +393,9 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 	vulkan->transitionImageLayout(irradianceMap.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subresourceRange, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, cmdBuffer);
 
 	vulkan->endSingleTimeCommands(cmdBuffer);
+	irradianceMap.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	irradianceMap.updateDescriptor();
+	irradianceMap.device = vulkan->GetDevice();
 
     vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
     vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
@@ -401,6 +409,10 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 	vkDestroyPipeline(device, pipeline, nullptr);
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+
+	auto tEnd = std::chrono::high_resolution_clock::now();
+	auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+	std::cout << "Generating irradiance cube with " << numMips << " mip levels took " << tDiff << " ms" << std::endl;
 }
 
 

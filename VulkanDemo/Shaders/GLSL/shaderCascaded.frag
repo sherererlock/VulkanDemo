@@ -25,6 +25,9 @@ uniform uboShared {
 
 //layout(set = 1, binding = 1) uniform sampler2D shadowMapSampler;
 layout(set = 1, binding = 1) uniform sampler2DArray shadowMapSampler;
+layout(set = 1, binding = 2) uniform samplerCube irradianceCubeMapSampler;
+layout(set = 1, binding = 3) uniform samplerCube prefilterCubeMapSampler;
+layout(set = 1, binding = 4) uniform sampler2D BRDFLutSampler;
 
 layout(set = 2, binding = 0) uniform sampler2D colorSampler;
 layout(set = 2, binding = 1) uniform sampler2D normalSampler;
