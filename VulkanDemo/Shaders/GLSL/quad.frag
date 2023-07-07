@@ -11,8 +11,8 @@ layout (binding = 0) uniform UBO
 } ubo;
 
 layout (binding = 1) uniform sampler2D samplerColor;
-
 //layout (binding = 1) uniform sampler2DArray samplerColor;
+//layout (binding = 1) uniform samplerCube samplerEnv;
 
 float LinearizeDepth(float depth)
 {
@@ -24,10 +24,9 @@ float LinearizeDepth(float depth)
 
 void main() 
 {
-	//float depth = texture(samplerColor, vec3(inUV, 0)).r;
+//	float depth = texture(samplerColor, vec3(inUV, 0)).r;
 	float depth = texture(samplerColor, inUV).r;
-	//float depth = texture(samplerColor, vec3(inUV, 1)).r;
-	outFragColor = vec4(vec3(1.0-LinearizeDepth(depth)), 1.0);
-
+//	outFragColor = vec4(vec3(1.0-LinearizeDepth(depth)), 1.0);
 	outFragColor = vec4(depth);
+	
 }

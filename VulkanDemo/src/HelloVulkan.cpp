@@ -53,8 +53,17 @@ void HelloVulkan::endSingleTimeCommands(VkCommandBuffer commandBuffer)
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(graphicsQueue);
+	VkFenceCreateInfo fenceCreateInfo{};
+	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceCreateInfo.flags = 0;
+
+    VkFence fence;
+    vkCreateFence(device, &fenceCreateInfo, nullptr, &fence);
+
+    vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
+
+    vkWaitForFences(device, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT);
+    vkDestroyFence(device, fence, nullptr);
 
     vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
@@ -262,8 +271,9 @@ void HelloVulkan::InitVulkan()
     loadgltfModel(SKYBOX_PATH, skyboxModel);
     loadgltfModel(MODEL_PATH, gltfmodel);
     skybox.cubeMap.loadFromFile(this, TEXTURE_PATH, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-    
+
     PreProcess::generateIrradianceCube(this, skybox.cubeMap, envLight.irradianceCube);
+    PreProcess::prefilterEnvMap(this, skybox.cubeMap, envLight.prefilteredMap);
 
     createDescriptorSet();
 
@@ -274,7 +284,6 @@ void HelloVulkan::InitVulkan()
     createSemaphores();
 
     updateSceneUniformBuffer(0.0f);
-
 }
 
 void HelloVulkan::MainLoop()
@@ -1460,7 +1469,7 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	sceneDescriptorWrites[3].pBufferInfo = nullptr;
 	sceneDescriptorWrites[3].dstBinding = 3;
-	sceneDescriptorWrites[3].pImageInfo = &envLight.irradianceCube.descriptor; // Optional
+	sceneDescriptorWrites[3].pImageInfo = &envLight.prefilteredMap.descriptor; // Optional
 
 	sceneDescriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	sceneDescriptorWrites[4].pBufferInfo = nullptr;

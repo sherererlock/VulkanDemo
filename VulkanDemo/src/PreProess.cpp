@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.h>
 #include <chrono>
 #include <iostream>
+#include <string>
 
 #include "PreProcess.h"
 #include "HelloVulkan.h"
@@ -9,30 +10,45 @@
 
 #define M_PI       3.14159265358979323846   // pi
 
-void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMap& cubeMap, TextureCubeMap& irradianceMap)
+struct TimeStat
 {
-	auto tStart = std::chrono::high_resolution_clock::now();
+public:
+	std::chrono::steady_clock::time_point tStart;
+	std::string title;
+	TimeStat(std::string info) : title(info)
+	{
+		tStart = std::chrono::high_resolution_clock::now();
+	}
 
+	~TimeStat()
+	{
+		auto tEnd = std::chrono::high_resolution_clock::now();
+		auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+
+		//std::cout << "Generating irradiance cube with " << numMips << " mip levels took " << tDiff << " ms" << std::endl;
+
+		std::cout << title << tDiff << " ms" << std::endl;
+	}
+};
+
+void PreProcess::generateMap(HelloVulkan* vulkan, const TextureCubeMap& envCubeMap, TextureCubeMap& cubemap, VkFormat format, uint32_t dim, std::string vertexShaderPath, std::string fragmentShaderPath, uint32_t size, std::function<void* (float, glm::mat4)> getPushConsts)
+{
 	VkDevice device = vulkan->GetDevice();
 
-	const VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
-	const uint32_t dim = 64;
 	const uint32_t numMips = static_cast<uint32_t>(floor(log2(dim))) + 1;
 
 	vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, irradianceMap.image, irradianceMap.deviceMemory, numMips, VK_SAMPLE_COUNT_1_BIT, 6, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
-	vulkan->createImageView(irradianceMap.view, irradianceMap.image, format, VK_IMAGE_ASPECT_COLOR_BIT, numMips, VK_IMAGE_VIEW_TYPE_CUBE, 6);
-	vulkan->createTextureSampler(irradianceMap.sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, numMips, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, cubemap.image, cubemap.deviceMemory, numMips, VK_SAMPLE_COUNT_1_BIT, 6, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
+	vulkan->createImageView(cubemap.view, cubemap.image, format, VK_IMAGE_ASPECT_COLOR_BIT, numMips, VK_IMAGE_VIEW_TYPE_CUBE, 6);
+	vulkan->createTextureSampler(cubemap.sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, numMips, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
 	VkAttachmentDescription colorAttachment = {};
 	colorAttachment.format = format;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // 采样数
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // clear
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // 存储下来
-
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -42,7 +58,6 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 
 	VkSubpassDescription subpass = {};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // 图像渲染的子流程
-
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachmentRef; // fragment shader使用 location = 0 outcolor,输出
 	subpass.pDepthStencilAttachment = nullptr;
@@ -53,11 +68,11 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependencies[0].dstSubpass = 0;
 
-	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;   //  A subpass layout发生转换的阶段
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;   //  A subpass layout发生转换的阶段
 	dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT; // A subpass 中需要完成的操作
 
 	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //  B subpass 等待执行的阶段
-	dependencies[0].dstAccessMask =  VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // b subpass等待执行操作
+	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // b subpass等待执行操作
 
 	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
@@ -135,22 +150,22 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 		throw std::runtime_error("failed to create descriptor set layout!");
 	}
 
-    VkDescriptorPoolSize poolSize = {};
-    poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSize.descriptorCount = 1;
+	VkDescriptorPoolSize poolSize = {};
+	poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	poolSize.descriptorCount = 1;
 
-    VkDescriptorPoolCreateInfo poolInfo = {};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &poolSize;
+	VkDescriptorPoolCreateInfo poolInfo = {};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = &poolSize;
 
-    poolInfo.maxSets = 1;
+	poolInfo.maxSets = 1;
 
 	VkDescriptorPool descriptorPool;
-    if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create descriptor pool!");
-    }
+	if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create descriptor pool!");
+	}
 
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -171,23 +186,15 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descriptorWrite.descriptorCount = 1;
 	descriptorWrite.pBufferInfo = nullptr;
-	descriptorWrite.pImageInfo = &cubeMap.descriptor; // Optional
+	descriptorWrite.pImageInfo = &envCubeMap.descriptor; // Optional
 	descriptorWrite.pTexelBufferView = nullptr; // Optional
 
 	vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
 
-	struct PushConstBlock
-	{
-		glm::mat4 mvp;
-		// Sampling deltas
-		float deltaPhi = (2.0f * float(M_PI)) / 180.0f;
-		float deltaTheta = (0.5f * float(M_PI)) / 64.0f;
-	} pushConstBlock;
-
 	VkPushConstantRange pushConstantRange;
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(pushConstBlock);
+	pushConstantRange.size = size;
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -207,86 +214,83 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 	info.rasterizer.cullMode = VK_CULL_MODE_NONE;
 	info.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-    info.depthStencil.depthTestEnable = VK_FALSE;
-    info.depthStencil.depthWriteEnable = VK_FALSE;
-    info.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	info.depthStencil.depthTestEnable = VK_FALSE;
+	info.depthStencil.depthWriteEnable = VK_FALSE;
+	info.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
-    std::string vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/filtercube.vert.spv";
-    std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/irradiancecube.frag.spv";
+	auto shaderStages = vulkan->CreaterShader(vertexShaderPath, fragmentShaderPath);
 
-    auto shaderStages = vulkan->CreaterShader(vertexFileName, fragmentFileName);
-    
-	auto attributeDescriptoins = Vertex1::getAttributeDescriptions({Vertex1::VertexComponent::Position});
-    auto attributeDescriptionBindings = Vertex1::getBindingDescription();
+	auto attributeDescriptoins = Vertex1::getAttributeDescriptions({ Vertex1::VertexComponent::Position });
+	auto attributeDescriptionBindings = Vertex1::getBindingDescription();
 
-    info.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
-    info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptoins.size());
-    info.vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptoins.data(); // Optional
+	info.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
+	info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptoins.size());
+	info.vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptoins.data(); // Optional
 
-    VkDynamicState dynamicStates[] = {
-        VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_SCISSOR
-    };
+	VkDynamicState dynamicStates[] = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
 
-    info.dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    info.dynamicState.dynamicStateCount = 2;
-    info.dynamicState.pDynamicStates = dynamicStates;
+	info.dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	info.dynamicState.dynamicStateCount = 2;
+	info.dynamicState.pDynamicStates = dynamicStates;
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-    colorBlendAttachment.colorWriteMask = 0xf;
-    colorBlendAttachment.blendEnable = VK_FALSE;
-    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
-    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
-    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
-    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
-    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+	colorBlendAttachment.colorWriteMask = 0xf;
+	colorBlendAttachment.blendEnable = VK_FALSE;
+	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
 
-    info.colorBlending.pAttachments = &colorBlendAttachment;
+	info.colorBlending.pAttachments = &colorBlendAttachment;
 
-    VkGraphicsPipelineCreateInfo pipelineInfo = {};
-    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	VkGraphicsPipelineCreateInfo pipelineInfo = {};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
-    pipelineInfo.stageCount = (uint32_t)shaderStages.size();
-    pipelineInfo.pStages = shaderStages.data();
+	pipelineInfo.stageCount = (uint32_t)shaderStages.size();
+	pipelineInfo.pStages = shaderStages.data();
 
-    pipelineInfo.pVertexInputState = &info.vertexInputInfo; // bindings and attribute
-    pipelineInfo.pInputAssemblyState = &info.inputAssembly; // topology
-    pipelineInfo.pViewportState = &info.viewportState; 
-    pipelineInfo.pRasterizationState = &info.rasterizer;
-    pipelineInfo.pMultisampleState = &info.multisampling;
-    pipelineInfo.pDepthStencilState = &info.depthStencil; // Optional
-    pipelineInfo.pColorBlendState = &info.colorBlending;
-    pipelineInfo.pDynamicState = &info.dynamicState; // Optional
+	pipelineInfo.pVertexInputState = &info.vertexInputInfo; // bindings and attribute
+	pipelineInfo.pInputAssemblyState = &info.inputAssembly; // topology
+	pipelineInfo.pViewportState = &info.viewportState;
+	pipelineInfo.pRasterizationState = &info.rasterizer;
+	pipelineInfo.pMultisampleState = &info.multisampling;
+	pipelineInfo.pDepthStencilState = &info.depthStencil; // Optional
+	pipelineInfo.pColorBlendState = &info.colorBlending;
+	pipelineInfo.pDynamicState = &info.dynamicState; // Optional
 
-    pipelineInfo.layout = pipelineLayout; // uniform变量
+	pipelineInfo.layout = pipelineLayout; // uniform变量
 
-    pipelineInfo.renderPass = renderPass;
-    pipelineInfo.subpass = 0; // 索引
+	pipelineInfo.renderPass = renderPass;
+	pipelineInfo.subpass = 0; // 索引
 
-    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
-    pipelineInfo.basePipelineIndex = -1; // Optional
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+	pipelineInfo.basePipelineIndex = -1; // Optional
 
 	VkPipeline pipeline;
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create graphics pipeline!");
-    }
+	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create graphics pipeline!");
+	}
 
 	VkClearValue clearValue = {};
-    clearValue.color = {0.0f, 0.0f, 0.0f, 0.0f};
+	clearValue.color = { 0.0f, 0.0f, 0.2f, 0.0f };
 
-    VkRenderPassBeginInfo renderPassBeginInfo = {};
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = renderPass;
-    renderPassBeginInfo.framebuffer = offscreen.frameBuffer;
+	VkRenderPassBeginInfo renderPassBeginInfo = {};
+	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassBeginInfo.renderPass = renderPass;
+	renderPassBeginInfo.framebuffer = offscreen.frameBuffer;
 
-    renderPassBeginInfo.renderArea.offset = {0, 0};
-    renderPassBeginInfo.renderArea.extent.width = dim;
+	renderPassBeginInfo.renderArea.offset = { 0, 0 };
+	renderPassBeginInfo.renderArea.extent.width = dim;
 	renderPassBeginInfo.renderArea.extent.height = dim;
 
-    renderPassBeginInfo.clearValueCount = 1;
-    renderPassBeginInfo.pClearValues = &clearValue;
+	renderPassBeginInfo.clearValueCount = 1;
+	renderPassBeginInfo.pClearValues = &clearValue;
 
 	std::vector<glm::mat4> matrices = {
 		// POSITIVE_X
@@ -311,39 +315,42 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 	subresourceRange.levelCount = numMips;
 	subresourceRange.layerCount = 6;
 
-	vulkan->transitionImageLayout(irradianceMap.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, cmdBuffer);
+	vulkan->transitionImageLayout(cmdBuffer, cubemap.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
 
-    VkViewport viewport = {};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
+	VkViewport viewport = {};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
 
-    VkRect2D scissor = {};
-    scissor.offset = {0, 0};
+	VkRect2D scissor = {};
+	scissor.offset = { 0, 0 };
 	scissor.extent.width = dim;
 	scissor.extent.height = dim;
+
+	
+	vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
 	subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	subresourceRange.baseMipLevel = 0;
 	subresourceRange.levelCount = 1;
 	subresourceRange.layerCount = 1;
 
-	for (uint32_t m = 0; m < numMips; m ++)
+	for (uint32_t m = 0; m < numMips; m++)
 	{
-		for (int f = 0; f < 6; f ++)
+		float roughness = (float)m / (float)(numMips - 1);
+		for (int f = 0; f < 6; f++)
 		{
 			float w = static_cast<float>(dim * std::pow(0.5f, m));
 			viewport.width = w;
 			viewport.height = w;
+			vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
 
-			pushConstBlock.mvp = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 512.0f) * matrices[f];
+			void* pushConsts = getPushConsts(roughness, matrices[f]);
 
 			vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
-			vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-			vkCmdPushConstants(cmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstBlock), &pushConstBlock);
+			vkCmdPushConstants(cmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, size, pushConsts);
 			vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 			vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
@@ -351,7 +358,7 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 
 			vkCmdEndRenderPass(cmdBuffer);
 
-			vulkan->transitionImageLayout(offscreen.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, subresourceRange, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, cmdBuffer);
+			vulkan->transitionImageLayout(cmdBuffer, offscreen.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, subresourceRange);
 
 			// Copy region for transfer from framebuffer to cube face
 			VkImageCopy copyRegion = {};
@@ -376,13 +383,13 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 				cmdBuffer,
 				offscreen.image,
 				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				irradianceMap.image,
+				cubemap.image,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				1,
 				&copyRegion);
 
 			// Transform framebuffer color attachment back
-			vulkan->transitionImageLayout( offscreen.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, subresourceRange, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, cmdBuffer);
+			vulkan->transitionImageLayout(cmdBuffer, offscreen.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, subresourceRange);
 		}
 	}
 
@@ -390,15 +397,16 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 	subresourceRange.baseMipLevel = 0;
 	subresourceRange.levelCount = numMips;
 	subresourceRange.layerCount = 6;
-	vulkan->transitionImageLayout(irradianceMap.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subresourceRange, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, cmdBuffer);
+	vulkan->transitionImageLayout(cmdBuffer, cubemap.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subresourceRange);
 
 	vulkan->endSingleTimeCommands(cmdBuffer);
-	irradianceMap.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	irradianceMap.updateDescriptor();
-	irradianceMap.device = vulkan->GetDevice();
 
-    vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
-    vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
+	cubemap.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	cubemap.updateDescriptor();
+	cubemap.device = vulkan->GetDevice();
+
+	vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
+	vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
 
 	vkDestroyRenderPass(device, renderPass, nullptr);
 	vkDestroyFramebuffer(device, offscreen.frameBuffer, nullptr);
@@ -409,10 +417,65 @@ void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMa
 	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 	vkDestroyPipeline(device, pipeline, nullptr);
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+}
 
-	auto tEnd = std::chrono::high_resolution_clock::now();
-	auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-	std::cout << "Generating irradiance cube with " << numMips << " mip levels took " << tDiff << " ms" << std::endl;
+void PreProcess::generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMap& cubeMap, TextureCubeMap& irradianceMap)
+{
+	std::string title = "Generating irradiance cube took ";
+	TimeStat timestat(title);
+
+	const VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
+	const uint32_t dim = 64;
+	const uint32_t numMips = static_cast<uint32_t>(floor(log2(dim))) + 1;
+
+	std::string vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/filtercube.vert.spv";
+	std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/irradiancecube.frag.spv";
+
+	struct PushConstBlock
+	{
+		glm::mat4 mvp;
+		// Sampling deltas
+		float deltaPhi = (2.0f * float(M_PI)) / 180.0f;
+		float deltaTheta = (0.5f * float(M_PI)) / 64.0f;
+	} pushConstBlock;
+
+	auto getConst = [&pushConstBlock](float roughness, glm::mat4 matrix)
+	{
+		pushConstBlock.mvp = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 512.0f) * matrix;
+		return &pushConstBlock;
+	};
+
+	generateMap(vulkan, cubeMap, irradianceMap, format, dim, vertexFileName, fragmentFileName, sizeof(PushConstBlock), getConst);
+}
+
+void PreProcess::prefilterEnvMap(HelloVulkan* vulkan, const TextureCubeMap& cubeMap, TextureCubeMap& prifilterMap)
+{
+	std::string title = "Generating prefilter Env Map cube took ";
+	TimeStat timestat(title);
+
+	const VkFormat format = VK_FORMAT_R16G16B16A16_SFLOAT;
+	const uint32_t dim = 512;
+
+	std::string vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/filtercube.vert.spv";
+	std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/prefilterLight.frag.spv";
+
+	struct PushConstBlock
+	{
+		glm::mat4 mvp;
+		float Roughness = 0.0f;
+		uint32_t numSamples = 32u;
+	}pushConstBlock;
+
+	auto getConst = [&pushConstBlock ](float roughness, glm::mat4 matrix)
+	{
+		pushConstBlock.mvp = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 512.0f) * matrix;
+		pushConstBlock.Roughness = roughness;
+		pushConstBlock.numSamples = 32u;
+
+		return &pushConstBlock;
+	};
+
+	generateMap(vulkan, cubeMap, prifilterMap, format, dim, vertexFileName, fragmentFileName, sizeof(PushConstBlock), getConst);
 }
 
 

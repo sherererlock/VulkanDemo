@@ -16,5 +16,6 @@ glslangValidator.exe -V Shaders\GLSL\skybox.frag -o Shaders\GLSL\spv\skybox.frag
 glslangValidator.exe -V Shaders\GLSL\filtercube.vert -o Shaders\GLSL\spv\filtercube.vert.spv
 
 glslangValidator.exe -V Shaders\GLSL\irradiancecube.frag -o Shaders\GLSL\spv\irradiancecube.frag.spv
+glslangValidator.exe -V Shaders\GLSL\prefilterLight.frag -o Shaders\GLSL\spv\prefilterLight.frag.spv
 
 pause

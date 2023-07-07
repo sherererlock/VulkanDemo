@@ -97,7 +97,7 @@ private:
         inline void Cleanup()
         {
             irradianceCube.destroy();
-            //prefilteredMap.destroy();
+            prefilteredMap.destroy();
             //BRDFLutMap.destroy();
         }
     };
@@ -148,13 +148,13 @@ public:
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t miplevels);
 	void transitionImageLayout(
-		VkImage image,
+		VkCommandBuffer cmdBuffer,
+        VkImage image,
 		VkImageLayout oldImageLayout,
 		VkImageLayout newImageLayout,
 		VkImageSubresourceRange subresourceRange,
-		VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-		VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 
-        VkCommandBuffer cmdBuffer = nullptr);
+		VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 
+        VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
     void updateUniformBuffer(float frameTimer);
     void updateLight(float frameTimer);

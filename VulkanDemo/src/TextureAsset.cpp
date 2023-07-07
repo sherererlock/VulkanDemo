@@ -190,11 +190,11 @@ void TextureCubeMap::loadFromFile(HelloVulkan*	helloVulkan, std::string filename
 
 	VkCommandBuffer commandBuffer = helloVulkan->beginSingleTimeCommands();
 
-	helloVulkan->transitionImageLayout(
+	helloVulkan->transitionImageLayout(commandBuffer,
 		image,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		subresourceRange, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, commandBuffer);
+		subresourceRange);
 
 	vkCmdCopyBufferToImage(
 		commandBuffer,
@@ -204,11 +204,11 @@ void TextureCubeMap::loadFromFile(HelloVulkan*	helloVulkan, std::string filename
 		static_cast<uint32_t>(bufferCopyRegions.size()),
 		bufferCopyRegions.data());
 
-	helloVulkan->transitionImageLayout(
+	helloVulkan->transitionImageLayout(commandBuffer,
 		image,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		imageLayout,
-		subresourceRange, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, commandBuffer);
+		subresourceRange);
 
 	helloVulkan->endSingleTimeCommands(commandBuffer);
 

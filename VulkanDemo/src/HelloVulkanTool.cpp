@@ -448,16 +448,14 @@ void HelloVulkan::transitionImageLayout(VkImage image, VkFormat format, VkImageL
 }
 
 void HelloVulkan::transitionImageLayout(
+	VkCommandBuffer cmdBuffer,
 	VkImage image,
 	VkImageLayout oldImageLayout,
 	VkImageLayout newImageLayout,
 	VkImageSubresourceRange subresourceRange,
 	VkPipelineStageFlags srcStageMask,
-	VkPipelineStageFlags dstStageMask,
-	VkCommandBuffer commandBuffer)
+	VkPipelineStageFlags dstStageMask)
 {
-	if(commandBuffer == nullptr)
-		commandBuffer = beginSingleTimeCommands();
 
 	// Create an image barrier object
 	VkImageMemoryBarrier imageMemoryBarrier = {};
@@ -564,16 +562,13 @@ void HelloVulkan::transitionImageLayout(
 
 	// Put barrier inside setup command buffer
 	vkCmdPipelineBarrier(
-		commandBuffer,
+		cmdBuffer,
 		srcStageMask,
 		dstStageMask,
 		0,
 		0, nullptr,
 		0, nullptr,
 		1, &imageMemoryBarrier);
-
-	if(commandBuffer == nullptr)
-		endSingleTimeCommands(commandBuffer);
 }
 
 void HelloVulkan::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, uint32_t miplevels, VkSampleCountFlagBits numSamples, uint32_t layers, VkImageCreateFlags flag)
@@ -647,7 +642,7 @@ void HelloVulkan::createTextureSampler(VkSampler& sampler, VkFilter magFilter, V
 	samplerInfo.anisotropyEnable = VK_TRUE;
 	samplerInfo.maxAnisotropy = 16;
 
-	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;
 
 	samplerInfo.compareEnable = VK_FALSE;
@@ -655,7 +650,6 @@ void HelloVulkan::createTextureSampler(VkSampler& sampler, VkFilter magFilter, V
 
 	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 	samplerInfo.mipLodBias = 0.0f;
-	//samplerInfo.minLod = static_cast<float>(mipLevels / 2);
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = static_cast<float>(mipLevels);
 

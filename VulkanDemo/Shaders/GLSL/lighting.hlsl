@@ -113,6 +113,7 @@ vec3 pbr()
 		}
 	}
 
+	vec3 specular = texture(prefilterCubeMapSampler, n).rgb;
 	vec3 F = F_SchlickR(ndotv, F0, roughness);
 	vec3 Kd = vec3(1.0) - F;
 	Kd *= 1.0 - metallic;
@@ -121,7 +122,7 @@ vec3 pbr()
 
 	vec3 ambient = Kd * diffuse;
 
-	vec3 color = ambient;
+	vec3 color = specular;
 
 	//vec3 color = Lo * albedo;
     color = pow(color, vec3(1.0/2.2));  
