@@ -7,6 +7,7 @@
 #include <functional>
 
 class TextureCubeMap;
+class Texture2D;
 class HelloVulkan;
 
 class PreProcess
@@ -16,6 +17,6 @@ private:
 public:
 	static void generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMap& cubeMap, TextureCubeMap& irradianceMap);
 	static void prefilterEnvMap(HelloVulkan* vulkan, const TextureCubeMap& cubeMap, TextureCubeMap& prifilterMap);
-
+	static void genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut);
 };
 

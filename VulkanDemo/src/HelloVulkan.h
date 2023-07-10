@@ -98,7 +98,7 @@ private:
         {
             irradianceCube.destroy();
             prefilteredMap.destroy();
-            //BRDFLutMap.destroy();
+            BRDFLutMap.destroy();
         }
     };
 

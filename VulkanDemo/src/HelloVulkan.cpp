@@ -274,6 +274,7 @@ void HelloVulkan::InitVulkan()
 
     PreProcess::generateIrradianceCube(this, skybox.cubeMap, envLight.irradianceCube);
     PreProcess::prefilterEnvMap(this, skybox.cubeMap, envLight.prefilteredMap);
+    PreProcess::genBRDFLut(this, envLight.BRDFLutMap);
 
     createDescriptorSet();
 
@@ -1474,7 +1475,7 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	sceneDescriptorWrites[4].pBufferInfo = nullptr;
 	sceneDescriptorWrites[4].dstBinding = 4;
-	sceneDescriptorWrites[4].pImageInfo = &envLight.irradianceCube.descriptor; // Optional
+	sceneDescriptorWrites[4].pImageInfo = &envLight.BRDFLutMap.descriptor; // Optional
 
     vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
 
