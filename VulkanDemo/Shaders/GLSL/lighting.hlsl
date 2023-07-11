@@ -66,7 +66,18 @@ vec3 blin_phong()
 	return diffuse + specular;
 }
 
-vec3 pbr()
+vec3 prefilteredReflection(vec3 R, float roughness)
+{
+	const float MAX_REFLECTION_LOD = 9.0; // todo: param/const
+	float lod = roughness * MAX_REFLECTION_LOD;
+	float lodf = floor(lod);
+	float lodc = ceil(lod);
+	vec3 a = textureLod(prefilterCubeMapSampler, R, lodf).rgb;
+	vec3 b = textureLod(prefilterCubeMapSampler, R, lodc).rgb;
+	return mix(a, b, lod - lodf);
+}
+
+vec3 pbr(float shadow)
 {
 	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
 	 
@@ -108,24 +119,24 @@ vec3 pbr()
 			kd *= (1 - metallic);
 	
 			Lo += (kd * albedo / PI + specular)* ndotl;
-
-			//Lo += specular * ndotl;
 		}
 	}
 
-	vec3 specular = texture(prefilterCubeMapSampler, n).rgb;
 	vec3 F = F_SchlickR(ndotv, F0, roughness);
 	vec3 Kd = vec3(1.0) - F;
 	Kd *= 1.0 - metallic;
 	vec3 irradiance = texture(irradianceCubeMapSampler, n).rgb;
 	vec3 diffuse = irradiance * albedo;
 
-	vec3 ambient = Kd * diffuse;
+	vec3 R = reflect(-v, n);
+	vec3 prefilterLight = prefilteredReflection(R, roughness);
 
-	vec3 color = specular;
+	vec2 brdflut = texture(BRDFLutSampler, vec2(ndotv, (roughness))).xy;
+	vec3 specular = prefilterLight * (F0 * brdflut.x + brdflut.y);
 
-	//vec3 color = Lo * albedo;
-    color = pow(color, vec3(1.0/2.2));  
+	vec3 ambient = Kd * diffuse + specular;
+
+	vec3 color = Lo * shadow + ambient;
 
 	return color;
 }

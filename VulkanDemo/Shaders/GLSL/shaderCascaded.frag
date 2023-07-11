@@ -260,9 +260,6 @@ void main(){
 	//vec3 color = blin_phong();
 	vec3 color = vec3(1.0);
 
-	if(material.islight == 0)
-		color = pbr();
-
 	int cascadedIndex = 0;
 	for(int i = 0; i < CASCADED_COUNT; i ++)
 	{
@@ -280,8 +277,10 @@ void main(){
 	}
 
 	float shadow = getShadow(coord, cascadedIndex);
-	color *= shadow;
+	if(material.islight == 0)
+		color = pbr(shadow);
 
+	color = pow(color, vec3(1.0/2.2));
 	//outColor = vec4(viewPos.z / (-32.0), 0.0,0.0, 1.0);
 	outColor = vec4(color, 1.0);
 

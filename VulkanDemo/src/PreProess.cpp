@@ -503,7 +503,7 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	VkAttachmentReference colorAttachmentRef = {};
 	colorAttachmentRef.attachment = 0; // 引用的附件在数组中的索引
@@ -610,6 +610,7 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 		throw std::runtime_error("failed to allocate descriptor set!");
 	}
 
+
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = 1; // Optional
@@ -622,6 +623,7 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 	{
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
+
 
 	PipelineCreateInfo info = vulkan->CreatePipelineCreateInfo();
 
@@ -639,9 +641,10 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 	auto attributeDescriptoins = Vertex1::getAttributeDescriptions({ Vertex1::VertexComponent::Position });
 	auto attributeDescriptionBindings = Vertex1::getBindingDescription();
 
-	info.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
-	info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptoins.size());
-	info.vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptoins.data(); // Optional
+	info.vertexInputInfo.vertexBindingDescriptionCount = 0;
+	info.vertexInputInfo.pVertexBindingDescriptions = VK_NULL_HANDLE; // Optional
+	info.vertexInputInfo.vertexAttributeDescriptionCount = 0;
+	info.vertexInputInfo.pVertexAttributeDescriptions = VK_NULL_HANDLE; // Optional
 
 	VkDynamicState dynamicStates[] = {
 		VK_DYNAMIC_STATE_VIEWPORT,
@@ -717,8 +720,6 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 	subresourceRange.baseMipLevel = 0;
 	subresourceRange.levelCount = 1;
 	subresourceRange.layerCount = 1;
-
-	vulkan->transitionImageLayout(cmdBuffer, brdflut.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
 
 	VkViewport viewport = {};
 	viewport.x = 0.0f;
