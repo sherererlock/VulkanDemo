@@ -51,7 +51,7 @@ vec3 calculateNormal()
 
 vec3 blin_phong()
 {
-	vec4 color = texture(colorSampler, fragTexCoord) ;
+	vec3 color = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2));
 
 	//vec3 N = normalize(normal);
 
@@ -80,7 +80,7 @@ vec3 prefilteredReflection(vec3 R, float roughness)
 vec3 pbr(float shadow)
 {
 	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
-	 
+
 	vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
 	float roughness = roughMetalic.x;
 	float metallic = roughMetalic.y;
@@ -140,6 +140,5 @@ vec3 pbr(float shadow)
 
 	return color;
 }
-
 
 #endif

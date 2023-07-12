@@ -49,9 +49,6 @@ layout(location = 0) out vec4 outColor;
 #include"shadow.hlsl"
 
 void main(){
-	//vec3 color = blin_phong();
-	vec3 color = vec3(1.0);
-
 	vec3 coord = shadowCoord.xyz;
 	if(shadowCoord.w > 0.0)
 	{
@@ -61,6 +58,7 @@ void main(){
 
 	float shadow = getShadow(coord);
 
+	vec3 color = vec3(1.0);
 	if(material.islight == 0)
 		color = pbr(shadow);
 

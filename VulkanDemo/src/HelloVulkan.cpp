@@ -163,7 +163,7 @@ Node* HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vert
     node->matrix = glm::translate(node->matrix, glm::vec3(lightPos.x, lightPos.y, lightPos.z));
 	node->mesh.primitives.push_back(primitive);
 
-    //gltfmodel.nodes.push_back(node);
+    gltfmodel.nodes.push_back(node);
 
     return node;
 }
@@ -177,14 +177,14 @@ HelloVulkan::HelloVulkan()
 	lightPos = { 0.0f, 4.f, 4.0f, 1.0f };
 
 	zNear = 1.f;
-	zFar = 96.0f;
+	zFar = 96.0;
 
 	camera.type = Camera::CameraType::firstperson;
 	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
 	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
 	camera.movementSpeed = 4.0f;
     camera.flipY = true;
-	camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 256.0f);
+	camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 500.0f);
 	camera.rotationSpeed = 0.25f;
     viewUpdated = true;
 
@@ -1083,7 +1083,7 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
 
     ubo.view = camera.matrices.view;
     ubo.proj = camera.matrices.perspective;
-    ubo.viewPos = glm::vec4(camera.position * -1.0f, 1.0);
+    ubo.viewPos = camera.viewPos;
 
     glm::vec3 pos = {lightPos.x, lightPos.y, lightPos.z};
     glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -1141,7 +1141,7 @@ void HelloVulkan::updateLight(float frameTimer)
     constexpr float speed = glm::radians(35.0f);
     rotation = glm::rotate(rotation, speed * frameTimer, yaxis);
 
-    //lightPos = rotation * lightPos;
+    lightPos = rotation * lightPos;
 }
 
 void HelloVulkan::updateSceneUniformBuffer(float frameTimer)

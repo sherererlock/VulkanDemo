@@ -208,7 +208,7 @@ private:
 	static HelloVulkan* helloVulkan;
 
 	float zNear = 1.0f;
-	float zFar = 96.0f;
+	float zFar = 200.0f;
 	int width = 1280;
 	int height = 720;
     GLFWwindow* window;

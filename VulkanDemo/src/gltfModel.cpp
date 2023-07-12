@@ -238,6 +238,9 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 			nodeMatrix = currentParent->matrix * nodeMatrix;
 			currentParent = currentParent->parent;
 		}
+
+		//translation = glm::mat4(1.0f);
+		//translation = glm::translate(translation, glm::vec3(0.0f, 0.0f, 5.0f));
 		//nodeMatrix = translation * nodeMatrix;
 
 		for (Primitive& primitive : node->mesh.primitives) {
