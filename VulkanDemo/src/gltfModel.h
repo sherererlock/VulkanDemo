@@ -145,11 +145,33 @@ struct Node {
 
 // A glTF material stores information in e.g. the texture that is attached to it and colors
 struct Material {
-	glm::vec4 baseColorFactor = glm::vec4(1.0f);
+	struct MaterialData
+	{
+		glm::vec4 baseColorFactor = glm::vec4(1.0f);
+		glm::vec3 emissiveFactor = glm::vec3(1.0f);
+	} Data;
+
 	uint32_t baseColorTextureIndex;
 	uint32_t normalTextureIndex;
 	uint32_t roughnessTextureIndex;
+	uint32_t emissiveTextureIndex;
 	VkDescriptorSet descriptorSet;
+	VkBuffer materialBuffer;
+	VkDeviceMemory materialBufferMemory;
+
+	void UpdateMaterialBuffer(VkDevice device)
+	{
+		void* data;
+		vkMapMemory(device, materialBufferMemory, 0, sizeof(MaterialData), 0, &data);
+		memcpy(data, &Data, sizeof(MaterialData));
+		vkUnmapMemory(device, materialBufferMemory);
+	}
+
+	void Cleanup(VkDevice device)
+	{
+		vkDestroyBuffer(device, materialBuffer, nullptr);
+		vkFreeMemory(device, materialBufferMemory, nullptr);
+	}
 };
 
 // Contains the texture for a single glTF image
@@ -215,16 +237,21 @@ public:
 			tinygltf::Material glTFMaterial = input.materials[i];
 			// Get the base color factor
 			if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
-				materials[i].baseColorFactor = glm::make_vec4(glTFMaterial.values["baseColorFactor"].ColorFactor().data());
+				materials[i].Data.baseColorFactor = glm::make_vec4(glTFMaterial.values["baseColorFactor"].ColorFactor().data());
 			}
 			// Get base color texture index
 			if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) {
 				materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
 			}
 
+			if (glTFMaterial.emissiveFactor.size() == 3)
+			{
+				materials[i].Data.emissiveFactor = glm::make_vec3(glTFMaterial.emissiveFactor.data());
+			}
+
 			materials[i].normalTextureIndex = glTFMaterial.normalTexture.index;
 			materials[i].roughnessTextureIndex = glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index;
-
+			materials[i].emissiveTextureIndex = glTFMaterial.emissiveTexture.index;
 		}
 	}
 

@@ -18,10 +18,12 @@ void gltfModel::Cleanup()
 	vkDestroyBuffer(logicalDevice, indices.buffer, nullptr);
 	vkFreeMemory(logicalDevice, indices.memory, nullptr);
 	for (Image& image : images) {
-		vkDestroyImageView(logicalDevice, image.texture.view, nullptr);
-		vkDestroyImage(logicalDevice, image.texture.image, nullptr);
-		vkDestroySampler(logicalDevice, image.texture.sampler, nullptr);
-		vkFreeMemory(logicalDevice, image.texture.deviceMemory, nullptr);
+		image.texture.destroy();
+	}
+
+	for (Material& ma: materials)
+	{
+		ma.Cleanup(logicalDevice);
 	}
 }
 

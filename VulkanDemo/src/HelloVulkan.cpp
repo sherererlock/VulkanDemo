@@ -257,6 +257,7 @@ void HelloVulkan::InitVulkan()
     createCommandPool();
     createColorResources();
     createDepthResources();
+    createEmptyTexture();
     shadow->CreateShadowMap();
 
     createFrameBuffer();
@@ -359,9 +360,9 @@ void HelloVulkan::Cleanup()
     skyboxModel.Cleanup();
     envLight.Cleanup();
 
-
     shadow->Cleanup();
     debug.Cleanup(instance);
+    emptyTexture.destroy();
     vkDestroyDevice(device, nullptr);
 
     vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -1306,15 +1307,22 @@ void HelloVulkan::createColorResources() {
     transitionImageLayout(colorImage, colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
 }
 
+void HelloVulkan::createEmptyTexture()
+{
+    float color = 0.0f;
+	VkFormat colorFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+    emptyTexture.fromBuffer(this, &color, 4, VK_FORMAT_R8G8B8A8_UNORM, 1, 1, VK_FILTER_LINEAR, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+}
+
 void HelloVulkan::createDescriptorPool()
 {
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = 6;
+    poolSizes[0].descriptorCount = 9;
 
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = 20;
+    poolSizes[1].descriptorCount = 23;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1370,7 +1378,7 @@ void HelloVulkan::createDescriptorSetLayout()
         throw std::runtime_error("failed to create descriptor set layout!");
     }
 
-    std::array<VkDescriptorSetLayoutBinding, 3> bindings = {};
+    std::array<VkDescriptorSetLayoutBinding, 5> bindings = {};
 
     bindings[0].binding = 0;
     bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1383,6 +1391,15 @@ void HelloVulkan::createDescriptorSetLayout()
 
     bindings[2] = bindings[0];
     bindings[2].binding = 2;
+
+	bindings[3] = bindings[0];
+	bindings[3].binding = 3;
+
+	bindings[4].binding = 4;
+	bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	bindings[4].descriptorCount = 1;
+	bindings[4].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	bindings[4].pImmutableSamplers = nullptr; // Optional
 
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
     layoutInfo.pBindings = bindings.data();
@@ -1484,8 +1501,9 @@ void HelloVulkan::createDescriptorSet()
     sceneDescriptorWrites[1].pImageInfo = &skybox.cubeMap.descriptor; // Optional
     vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
 
+    // TODO: deal with situation when no texture
     layouts[0] = descriptorSetLayoutMa;
-    std::array<VkWriteDescriptorSet, 3> descriptorWrites = {};
+    std::array<VkWriteDescriptorSet, 5> descriptorWrites = {};
     for (int i = 0; i < gltfmodel.materials.size(); i++)
     {
         Material& material = gltfmodel.materials[i];
@@ -1494,8 +1512,12 @@ void HelloVulkan::createDescriptorSet()
             throw std::runtime_error("failed to allocate descriptor set!");
         }
 
-        uint32_t indices[3] = {material.baseColorTextureIndex, material.normalTextureIndex,  material.roughnessTextureIndex };
-        for (int j = 0; j < 3; j++)
+		VkDeviceSize bufferSize = sizeof(Material::MaterialData);
+		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, material.materialBuffer, material.materialBufferMemory);
+        material.UpdateMaterialBuffer(device);
+
+        uint32_t indices[4] = {material.baseColorTextureIndex, material.normalTextureIndex,  material.roughnessTextureIndex, material.emissiveTextureIndex };
+        for (int j = 0; j < 4; j++)
         {
             descriptorWrites[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[j].dstSet = material.descriptorSet;
@@ -1504,9 +1526,26 @@ void HelloVulkan::createDescriptorSet()
             descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descriptorWrites[j].descriptorCount = 1;
             descriptorWrites[j].pBufferInfo = nullptr;
-            descriptorWrites[j].pImageInfo =  &gltfmodel.images[indices[j]].texture.descriptor; // Optional
+			if (indices[j] != -1)
+                descriptorWrites[j].pImageInfo =  &gltfmodel.images[indices[j]].texture.descriptor; // Optional
+            else
+                descriptorWrites[j].pImageInfo = &emptyTexture.descriptor; // Optional
             descriptorWrites[j].pTexelBufferView = nullptr; // Optional
         }
+
+		bufferInfo.buffer = material.materialBuffer;
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(Material::MaterialData);
+
+		descriptorWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[4].dstSet = material.descriptorSet;
+		descriptorWrites[4].dstBinding = 4;
+		descriptorWrites[4].dstArrayElement = 0;
+		descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[4].descriptorCount = 1;
+		descriptorWrites[4].pBufferInfo = &bufferInfo;
+		descriptorWrites[4].pImageInfo = nullptr; // Optional
+		descriptorWrites[4].pTexelBufferView = nullptr; // Optional
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }

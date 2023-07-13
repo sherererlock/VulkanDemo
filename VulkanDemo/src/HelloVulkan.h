@@ -165,6 +165,7 @@ public:
     void cleanupSwapChain();
     void createDepthResources();
     void createColorResources();
+    void createEmptyTexture();
 
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
@@ -261,6 +262,8 @@ private:
     VkImage colorImage;
     VkDeviceMemory colorImageMemory;
     VkImageView colorImageView;
+
+    Texture2D emptyTexture;
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 

@@ -136,7 +136,9 @@ vec3 pbr(float shadow)
 
 	vec3 ambient = Kd * diffuse + specular;
 
-	vec3 color = Lo * shadow + ambient;
+	vec3 emissive = texture(emissiveSampler, fragTexCoord).rgb * materialData.emissiveFactor;
+
+	vec3 color = Lo * shadow + ambient + emissive;
 
 	return color;
 }
