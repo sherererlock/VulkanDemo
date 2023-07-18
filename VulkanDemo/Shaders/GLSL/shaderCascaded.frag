@@ -10,6 +10,12 @@ layout(set = 1, binding = 1) uniform sampler2DArray shadowMapSampler;
 
 layout(location = 5) in vec3 viewPos;
 
+vec2 GetRoughnessAndMetallic()
+{
+    vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
+	return roughMetalic;
+}
+
 #include "lighting.hlsl"
 
 layout(location = 0) out vec4 outColor;
@@ -244,7 +250,7 @@ void main(){
 
 	float shadow = getShadow(coord, cascadedIndex);
 	if(material.islight == 0)
-		color = pbr(shadow);
+		color = Lighting(shadow);
 
 	color = pow(color, vec3(1.0/2.2));
 	//outColor = vec4(viewPos.z / (-32.0), 0.0,0.0, 1.0);

@@ -77,30 +77,17 @@ vec3 prefilteredReflection(vec3 R, float roughness)
 	return mix(a, b, lod - lodf);
 }
 
-vec3 pbr(float shadow)
+vec3 DirectLighting(vec3 n, vec3 v, vec3 albedo, vec3 F0, float roughness, float metallic)
 {
-	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
-
-	vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
-	float roughness = roughMetalic.x;
-	float metallic = roughMetalic.y;
-
-	vec3 F0 = vec3(0.04);
-	F0 = mix(F0, albedo, metallic);
-
-	vec3 texnormal = calculateNormal();
-
-	vec3 n = texnormal;
-	vec3 v = normalize(ubo.viewPos.xyz - worldPos);
 	float ndotv = clamp(dot(n, v), 0.0, 1.0);
 	vec3 f = fresnelSchlick(ndotv, F0);
 
 	vec3 Lo = vec3(0.0);
-	for(int i = 0; i < 1; i ++)
+	for (int i = 0; i < 1; i++)
 	{
 		vec3 l = normalize(uboParam.lights[i].xyz - worldPos);
 		float ndotl = dot(n, l);
-		if(ndotl > 0.0)
+		if (ndotl > 0.0)
 		{
 			ndotl = clamp(ndotl, 0.0, 1.0);
 			vec3 h = normalize(v + l);
@@ -115,13 +102,19 @@ vec3 pbr(float shadow)
 			vec3 specular = nom / denom;
 
 			vec3 ks = f;
-			vec3 kd = (vec3(1.0)-f);
+			vec3 kd = (vec3(1.0) - f);
 			kd *= (1 - metallic);
-	
-			Lo += (kd * albedo / PI + specular)* ndotl;
+
+			Lo += (kd * albedo / PI + specular) * ndotl;
 		}
 	}
 
+	return Lo;
+}
+
+vec3 IBLIndirectLighting(vec3 n, vec3 v, vec3 albedo, vec3 F0, float roughness, float metallic)
+{
+	float ndotv = clamp(dot(n, v), 0.0, 1.0);
 	vec3 F = F_SchlickR(ndotv, F0, roughness);
 	vec3 Kd = vec3(1.0) - F;
 	Kd *= 1.0 - metallic;
@@ -136,6 +129,25 @@ vec3 pbr(float shadow)
 
 	vec3 ambient = Kd * diffuse + specular;
 
+	return ambient;
+}
+
+vec3 Lighting(float shadow)
+{
+	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
+
+	vec2 roughMetalic = GetRoughnessAndMetallic();
+	float roughness = roughMetalic.x;
+	float metallic = roughMetalic.y;
+
+	vec3 F0 = vec3(0.04);
+	F0 = mix(F0, albedo, metallic);
+
+	vec3 n = calculateNormal();
+	vec3 v = normalize(ubo.viewPos.xyz - worldPos);
+
+	vec3 Lo = DirectLighting(n, v, albedo, F0, roughness, metallic);
+	vec3 ambient = IBLIndirectLighting(n, v, albedo, F0, roughness, metallic);
 	vec3 emissive = texture(emissiveSampler, fragTexCoord).rgb * materialData.emissiveFactor;
 
 	vec3 color = Lo * shadow + ambient + emissive;
