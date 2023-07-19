@@ -4,7 +4,6 @@
 #include <fstream>
 #include <chrono>
 #include <unordered_map>
-
 #include "HelloVulkan.h"
 
 VkFormat HelloVulkan::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
@@ -86,6 +85,7 @@ SwapChainSupportDetails HelloVulkan::querySwapChainSupport(VkPhysicalDevice devi
 
 	return details;
 }
+
 
 VkSurfaceFormatKHR HelloVulkan::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {

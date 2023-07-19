@@ -1,9 +1,10 @@
 
+
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
-#define TINYGLTF_NO_STB_IMAGE
-#define TINYGLTF_NO_EXTERNAL_IMAGE
+//#define TINYGLTF_NO_STB_IMAGE
+//#define TINYGLTF_NO_EXTERNAL_IMAGE
 
 #include "gltfModel.h"
 #include "HelloVulkan.h"
@@ -75,6 +76,42 @@ void gltfModel::loadImages(std::string path, tinygltf::Model& input)
 	for (size_t i = 0; i < input.images.size(); i++) {
 		tinygltf::Image& glTFImage = input.images[i];
 		images[i].texture.loadFromFile(HelloVulkan::GetHelloVulkan(), path + "/" + glTFImage.uri, VK_FORMAT_R8G8B8A8_UNORM);
+	}
+}
+
+void gltfModel::loadMaterials(tinygltf::Model& input)
+{
+	materials.resize(input.materials.size());
+	for (size_t i = 0; i < input.materials.size(); i++) {
+		// We only read the most basic properties required for our sample
+		tinygltf::Material glTFMaterial = input.materials[i];
+		// Get the base color factor
+		if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
+			materials[i].Data.baseColorFactor = glm::make_vec4(glTFMaterial.values["baseColorFactor"].ColorFactor().data());
+		}
+		// Get base color texture index
+		if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) {
+			materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
+		}
+
+		if (glTFMaterial.emissiveFactor.size() == 3)
+		{
+			materials[i].Data.emissiveFactor = glm::make_vec3(glTFMaterial.emissiveFactor.data());
+		}
+
+		if (glTFMaterial.additionalValues.find("normalTexture") != glTFMaterial.additionalValues.end()) {
+			materials[i].normalTextureIndex = glTFMaterial.additionalValues["normalTexture"].TextureIndex();
+		}
+
+		materials[i].normalTextureIndex = glTFMaterial.normalTexture.index;
+		materials[i].roughnessTextureIndex = glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index;
+		materials[i].emissiveTextureIndex = glTFMaterial.emissiveTexture.index;
+
+		if (textures.size() > materials[i].baseColorTextureIndex && textures.size() > materials[i].normalTextureIndex)
+		{
+			materials[i].baseColorTextureIndex = textures[materials[i].baseColorTextureIndex].imageIndex;
+			materials[i].normalTextureIndex = textures[materials[i].normalTextureIndex].imageIndex;
+		}
 	}
 }
 

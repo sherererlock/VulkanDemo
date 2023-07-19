@@ -6,13 +6,14 @@
 #include <algorithm>
 #include <unordered_map>
 
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+//#define TINYGLTF_NO_STB_IMAGE
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm/glm.hpp>
 #include <glm/glm/gtc/matrix_transform.hpp>
 
-#define TINYGLTF_NO_STB_IMAGE
-#define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "HelloVulkan.h"
 #include "Mesh.h"
 #include "CommonShadow.h"
@@ -94,9 +95,9 @@ void HelloVulkan::loadgltfModel(std::string filename, gltfModel& model)
 
 	if (fileLoaded) {
         model.logicalDevice = device;
-		model.loadImages(path, glTFInput);
-		model.loadMaterials(glTFInput);
+        model.loadImages(glTFInput);
 		model.loadTextures(glTFInput);
+		model.loadMaterials(glTFInput);
 		const tinygltf::Scene& scene = glTFInput.scenes[0];
 		for (size_t i = 0; i < scene.nodes.size(); i++) {
 			const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
@@ -182,7 +183,8 @@ HelloVulkan::HelloVulkan()
 
     isOrth = true;
 
-	lightPos = { 0.0f, 4.f, 4.0f, 1.0f };
+	//lightPos = { 0.0f, 4.f, -4.0f, 1.0f };
+    lightPos = glm::vec4(0.0f, 20.0f, 10.0f, 1.0f);
 
 	zNear = 0.1f;
 	zFar = 1000.0;
@@ -191,7 +193,7 @@ HelloVulkan::HelloVulkan()
 	height = 720;
 
 	camera.type = Camera::CameraType::firstperson;
-	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
+	camera.setPosition(glm::vec3(0.0f, 20.0f, -2.1f));
 	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
 	camera.movementSpeed = 4.0f;
     camera.flipY = true;
@@ -915,7 +917,7 @@ void HelloVulkan::buildCommandBuffers()
         vkBeginCommandBuffer(commandBuffers[i], &beginInfo);
 
         {
-            //shadow->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+            shadow->BuildCommandBuffer(commandBuffers[i], gltfmodel);
         }
 
         {
@@ -1153,7 +1155,7 @@ void HelloVulkan::updateLight(float frameTimer)
     constexpr float speed = glm::radians(35.0f);
     rotation = glm::rotate(rotation, speed * frameTimer, yaxis);
 
-    //lightPos = rotation * lightPos;
+    lightPos = rotation * lightPos;
 }
 
 void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
@@ -1333,14 +1335,14 @@ void HelloVulkan::createDescriptorPool()
     poolSizes[0].descriptorCount = gltfmodel.materials.size() + 9;
 
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = gltfmodel.materials.size() *4 + 30;
+    poolSizes[1].descriptorCount = gltfmodel.materials.size() * 4 + 30;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
 
-    poolInfo.maxSets = gltfmodel.materials.size()*2;
+    poolInfo.maxSets = gltfmodel.materials.size()*3 + 9;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {

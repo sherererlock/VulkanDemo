@@ -3,6 +3,7 @@
 #include "glm/glm/glm.hpp"
 #include <glm/glm/gtc/type_ptr.hpp>
 #include <vulkan/vulkan.h>
+
 #include "tinygltf/tiny_gltf.h"
 #include "Texture.h"
 
@@ -228,31 +229,7 @@ public:
 		}
 	}
 
-	void loadMaterials(tinygltf::Model& input)
-	{
-		materials.resize(input.materials.size());
-		for (size_t i = 0; i < input.materials.size(); i++) {
-			// We only read the most basic properties required for our sample
-			tinygltf::Material glTFMaterial = input.materials[i];
-			// Get the base color factor
-			if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
-				materials[i].Data.baseColorFactor = glm::make_vec4(glTFMaterial.values["baseColorFactor"].ColorFactor().data());
-			}
-			// Get base color texture index
-			if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) {
-				materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
-			}
-
-			if (glTFMaterial.emissiveFactor.size() == 3)
-			{
-				materials[i].Data.emissiveFactor = glm::make_vec3(glTFMaterial.emissiveFactor.data());
-			}
-
-			materials[i].normalTextureIndex = glTFMaterial.normalTexture.index;
-			materials[i].roughnessTextureIndex = glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index;
-			materials[i].emissiveTextureIndex = glTFMaterial.emissiveTexture.index;
-		}
-	}
+	void loadMaterials(tinygltf::Model& input);
 
 	void loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, Node* parent, std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
 

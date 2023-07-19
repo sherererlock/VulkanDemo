@@ -11,6 +11,8 @@ layout(location = 5) in vec4 shadowCoord;
 vec2 GetRoughnessAndMetallic()
 {
     vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
+	roughMetalic.x = 0.8;
+	roughMetalic.y = 0.1;
 	return roughMetalic;
 }
 
@@ -26,12 +28,12 @@ void main(){
 		coord.xy = coord.xy * 0.5 + 0.5;
 	}
 
-//	float shadow = getShadow(coord);
+	float shadow = getShadow(coord);
 
-	vec3 color = blin_phong();
-//	if(material.islight == 0)
-//		color = Lighting(shadow);
-//
+	vec3 color = vec3(1.0);
+	if(material.islight == 0)
+		color = Lighting(shadow);
+
 	color = pow(color, vec3(1.0/2.2));
 
 	outColor = vec4(color, 1.0);

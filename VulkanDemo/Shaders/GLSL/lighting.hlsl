@@ -134,7 +134,8 @@ vec3 IBLIndirectLighting(vec3 n, vec3 v, vec3 albedo, vec3 F0, float roughness, 
 
 vec3 Lighting(float shadow)
 {
-	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
+	//vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
+    vec3 albedo = texture(colorSampler, fragTexCoord).rgb; 
 
 	vec2 roughMetalic = GetRoughnessAndMetallic();
 	float roughness = roughMetalic.x;
@@ -147,10 +148,10 @@ vec3 Lighting(float shadow)
 	vec3 v = normalize(ubo.viewPos.xyz - worldPos);
 
 	vec3 Lo = DirectLighting(n, v, albedo, F0, roughness, metallic);
-	vec3 ambient = IBLIndirectLighting(n, v, albedo, F0, roughness, metallic);
-	vec3 emissive = texture(emissiveSampler, fragTexCoord).rgb * materialData.emissiveFactor;
+	//vec3 ambient = IBLIndirectLighting(n, v, albedo, F0, roughness, metallic);
+	//vec3 emissive = texture(emissiveSampler, fragTexCoord).rgb * materialData.emissiveFactor;
 
-	vec3 color = Lo * shadow + ambient + emissive;
+	vec3 color = Lo;
 
 	return color;
 }
