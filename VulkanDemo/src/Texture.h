@@ -32,8 +32,7 @@ public:
 		HelloVulkan*	   helloVulkan,
 	    std::string        filename,
 	    VkFormat           format,
-	    VkQueue            copyQueue,
-	    VkImageUsageFlags  imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
+	    VkImageUsageFlags  imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 	    VkImageLayout      imageLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 	    bool               forceLinear     = false);
 

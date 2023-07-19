@@ -1,23 +1,11 @@
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-
-#include "HelloVulkan.h"
 #include <stdexcept>
 #include <iostream>
 #include <set>
 #include <fstream>
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm/glm.hpp>
-#include <glm/glm/gtc/matrix_transform.hpp>
-#include <stb/stb_image.h>
-
 #include <chrono>
-
 #include <unordered_map>
 
-#include "Mesh.h"
-#include "CommonShadow.h"
-#include "CascadedShadow.h"
+#include "HelloVulkan.h"
 
 VkFormat HelloVulkan::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 {

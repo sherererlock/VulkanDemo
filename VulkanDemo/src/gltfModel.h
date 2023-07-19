@@ -1,10 +1,9 @@
 #pragma once
 
-#include "tinygltf/tiny_gltf.h"
 #include "glm/glm/glm.hpp"
 #include <glm/glm/gtc/type_ptr.hpp>
 #include <vulkan/vulkan.h>
-
+#include "tinygltf/tiny_gltf.h"
 #include "Texture.h"
 
 struct Vertex1 {
@@ -127,8 +126,6 @@ struct Mesh {
 	std::vector<Primitive> primitives;
 };
 
-struct Node;
-
 	// A node represents an object in the glTF scene graph
 struct Node {
 	Node* parent;
@@ -219,6 +216,8 @@ public:
 	void Cleanup();
 
 	void loadImages(tinygltf::Model& input);
+
+	void loadImages(std::string path, tinygltf::Model& input);
 
 	// for what?
 	void loadTextures(tinygltf::Model& input)

@@ -1,6 +1,10 @@
+
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
+#define TINYGLTF_NO_STB_IMAGE
+#define TINYGLTF_NO_EXTERNAL_IMAGE
+
 #include "gltfModel.h"
 #include "HelloVulkan.h"
 #include <glm/glm/gtc/matrix_transform.hpp>
@@ -61,6 +65,16 @@ void gltfModel::loadImages(tinygltf::Model& input)
 		if (deleteBuffer) {
 			delete[] buffer;
 		}
+	}
+}
+
+void gltfModel::loadImages(std::string path, tinygltf::Model& input)
+{
+	// POI: The textures for the glTF file used in this sample are stored as external ktx files, so we can directly load them from disk without the need for conversion
+	images.resize(input.images.size());
+	for (size_t i = 0; i < input.images.size(); i++) {
+		tinygltf::Image& glTFImage = input.images[i];
+		images[i].texture.loadFromFile(HelloVulkan::GetHelloVulkan(), path + "/" + glTFImage.uri, VK_FORMAT_R8G8B8A8_UNORM);
 	}
 }
 

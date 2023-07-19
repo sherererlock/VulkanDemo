@@ -21,7 +21,7 @@ ktxResult Texture::loadKTXFile(std::string filename, ktxTexture **target)
 	return result;
 }
 
-void Texture2D::loadFromFile(HelloVulkan* helloVulkan,std::string filename, VkFormat format, VkQueue copyQueue, VkImageUsageFlags imageUsageFlags, VkImageLayout imageLayout, bool forceLinear)
+void Texture2D::loadFromFile(HelloVulkan* helloVulkan,std::string filename, VkFormat format, VkImageUsageFlags imageUsageFlags, VkImageLayout imageLayout, bool forceLinear)
 {
 	device = helloVulkan->GetDevice();
 

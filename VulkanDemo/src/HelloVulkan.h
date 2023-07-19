@@ -1,4 +1,9 @@
 #pragma once
+
+#include<vector>
+#include <array>
+#include <string>
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -6,16 +11,13 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm/gtx/hash.hpp>
 
-#include<vector>
-#include <array>
-#include <string>
 #include "gltfModel.h"
 #include "camera.hpp"
-#include "CommonShadow.h"
 #include "Debug.h"
 #include "Input.h"
 #include "macros.h"
 
+class Shadow;
 struct QueueFamilyIndices
 {
     int graphicsFamily = -1;
@@ -208,8 +210,8 @@ public:
 private:
 	static HelloVulkan* helloVulkan;
 
-	float zNear = 1.0f;
-	float zFar = 200.0f;
+	float zNear = 0.0f;
+	float zFar = 500.0f;
 	int width = 1280;
 	int height = 720;
     GLFWwindow* window;
@@ -297,10 +299,6 @@ private:
 	const bool enableValidationLayers = true;
 #endif
 
-	const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
-	const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
-	//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
-	const std::string TEXTURE_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/hdr/gcanyon_cube.ktx";
 	const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 	const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 };

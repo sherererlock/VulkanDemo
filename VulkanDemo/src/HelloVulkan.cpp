@@ -1,5 +1,3 @@
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-
 #include <stdexcept>
 #include <iostream>
 #include <set>
@@ -12,13 +10,20 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm/glm.hpp>
 #include <glm/glm/gtc/matrix_transform.hpp>
-#include <stb/stb_image.h>
 
+#define TINYGLTF_NO_STB_IMAGE
+#define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "HelloVulkan.h"
 #include "Mesh.h"
 #include "CommonShadow.h"
 #include "CascadedShadow.h"
 #include "PreProcess.h"
+
+//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
+const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
+//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
+const std::string TEXTURE_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/hdr/gcanyon_cube.ktx";
 
 #define SHADOWMAP_SIZE 2048
 
@@ -84,9 +89,12 @@ void HelloVulkan::loadgltfModel(std::string filename, gltfModel& model)
 	std::vector<uint32_t> indexBuffer;
 	std::vector<Vertex1> vertexBuffer;
 
+	size_t pos = filename.find_last_of('/');
+	std::string path = filename.substr(0, pos);
+
 	if (fileLoaded) {
         model.logicalDevice = device;
-		model.loadImages(glTFInput);
+		model.loadImages(path, glTFInput);
 		model.loadMaterials(glTFInput);
 		model.loadTextures(glTFInput);
 		const tinygltf::Scene& scene = glTFInput.scenes[0];
@@ -176,15 +184,18 @@ HelloVulkan::HelloVulkan()
 
 	lightPos = { 0.0f, 4.f, 4.0f, 1.0f };
 
-	zNear = 1.f;
-	zFar = 96.0;
+	zNear = 0.1f;
+	zFar = 1000.0;
+
+	width = 1280;
+	height = 720;
 
 	camera.type = Camera::CameraType::firstperson;
 	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
 	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
 	camera.movementSpeed = 4.0f;
     camera.flipY = true;
-	camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 500.0f);
+	camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 1000.0f);
 	camera.rotationSpeed = 0.25f;
     viewUpdated = true;
 
@@ -250,8 +261,6 @@ void HelloVulkan::InitVulkan()
     shadow->CreateDescriptSetLayout();
     debug.CreateDescriptSetLayout();
 
-    createDescriptorPool();
-
     createGraphicsPipeline();
 
     createCommandPool();
@@ -277,6 +286,7 @@ void HelloVulkan::InitVulkan()
     PreProcess::prefilterEnvMap(this, skybox.cubeMap, envLight.prefilteredMap);
     PreProcess::genBRDFLut(this, envLight.BRDFLutMap);
 
+	createDescriptorPool();
     createDescriptorSet();
 
     shadow->SetupDescriptSet(descriptorPool);
@@ -905,7 +915,7 @@ void HelloVulkan::buildCommandBuffers()
         vkBeginCommandBuffer(commandBuffers[i], &beginInfo);
 
         {
-            shadow->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+            //shadow->BuildCommandBuffer(commandBuffers[i], gltfmodel);
         }
 
         {
@@ -1126,6 +1136,7 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     vkUnmapMemory(device, uniformBufferMemory);
 
     ubo.view = glm::mat4(glm::mat3(camera.matrices.view));
+    ubo.view = glm::scale(ubo.view, glm::vec3(5.0f));
 	vkMapMemory(device, skybox.uniformBufferMemory, 0, sizeof(UniformBufferObject), 0, &data);
 	memcpy(data, &ubo, sizeof(UniformBufferObject));
 	vkUnmapMemory(device, skybox.uniformBufferMemory);
@@ -1142,7 +1153,7 @@ void HelloVulkan::updateLight(float frameTimer)
     constexpr float speed = glm::radians(35.0f);
     rotation = glm::rotate(rotation, speed * frameTimer, yaxis);
 
-    lightPos = rotation * lightPos;
+    //lightPos = rotation * lightPos;
 }
 
 void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
@@ -1319,17 +1330,17 @@ void HelloVulkan::createDescriptorPool()
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = 9;
+    poolSizes[0].descriptorCount = gltfmodel.materials.size() + 9;
 
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = 23;
+    poolSizes[1].descriptorCount = gltfmodel.materials.size() *4 + 30;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
 
-    poolInfo.maxSets = 9;
+    poolInfo.maxSets = gltfmodel.materials.size()*2;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {
@@ -1575,7 +1586,6 @@ void HelloVulkan::updateDescriptorSet(int colorIdx, int normalIdx, int roughness
     bufferInfo.range = sizeof(UniformBufferObject);
 
     SetUpWrites(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &bufferInfo, nullptr);
-
     SetUpWrites(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, nullptr, &gltfmodel.images[colorIdx].texture.descriptor);
     SetUpWrites(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, nullptr, &gltfmodel.images[normalIdx].texture.descriptor);
     SetUpWrites(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, nullptr, &gltfmodel.images[roughnessIdx].texture.descriptor);

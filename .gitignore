@@ -40,5 +40,7 @@
 bin
 VulkanDemo/Shaders/GLSL/compile.bat
 VulkanDemo/VulkanDemo.vcxproj
+VulkanDemo/Models/sponza
+
 *.vcxproj
 *.spv
