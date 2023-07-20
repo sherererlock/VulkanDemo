@@ -24,15 +24,12 @@ layout(set = 2, binding = 0) uniform sampler2D colorSampler;
 layout(set = 2, binding = 1) uniform sampler2D normalSampler;
 layout(set = 2, binding = 2) uniform sampler2D roughnessSampler;
 layout(set = 2, binding = 3) uniform sampler2D emissiveSampler;
+
 layout(set = 2, binding = 4)
 uniform MaterialData{
 	vec4 baseColorFactor;
 	vec3 emissiveFactor;
 } materialData;
-
-layout(push_constant) uniform PushConsts{
-	layout(offset = 64) float islight;
-} material;
 
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec3 normal;

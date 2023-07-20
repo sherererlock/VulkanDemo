@@ -249,8 +249,7 @@ void main(){
 	}
 
 	float shadow = getShadow(coord, cascadedIndex);
-	if(material.islight == 0)
-		color = Lighting(shadow);
+	color = Lighting(shadow);
 
 	color = pow(color, vec3(1.0/2.2));
 	//outColor = vec4(viewPos.z / (-32.0), 0.0,0.0, 1.0);

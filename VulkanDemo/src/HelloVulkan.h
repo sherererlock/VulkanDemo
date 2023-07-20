@@ -246,7 +246,6 @@ private:
     VkDescriptorSet descriptorSetS;
     VkPipeline graphicsPipeline;
 
-    bool ibllighting = false;
     Skybox skybox;
     IBLEnviromentLight envLight;
 

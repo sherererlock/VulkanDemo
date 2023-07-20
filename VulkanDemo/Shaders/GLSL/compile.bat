@@ -22,4 +22,8 @@ glslangValidator.exe -V Shaders\GLSL\prefilterLight.frag -o Shaders\GLSL\spv\pre
 glslangValidator.exe -V Shaders\GLSL\genBRDFLut.vert -o Shaders\GLSL\spv\genBRDFLut.vert.spv
 glslangValidator.exe -V Shaders\GLSL\genBRDFLut.frag -o Shaders\GLSL\spv\genBRDFLut.frag.spv
 
+glslangValidator.exe -V Shaders\GLSL\rsmgbuffer.vert -o Shaders\GLSL\spv\rsmgbuffer.vert.spv
+glslangValidator.exe -V Shaders\GLSL\rsmgbuffer.frag -o Shaders\GLSL\spv\rsmgbuffer.frag.spv
+
+
 pause

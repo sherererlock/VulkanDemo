@@ -120,7 +120,6 @@ struct Primitive {
 	uint32_t firstIndex;
 	uint32_t indexCount;
 	int32_t materialIndex;
-	float islight = 0.0;
 };
 
 struct Mesh {
@@ -153,6 +152,7 @@ struct Material {
 	uint32_t normalTextureIndex;
 	uint32_t roughnessTextureIndex;
 	uint32_t emissiveTextureIndex;
+
 	VkDescriptorSet descriptorSet;
 	VkBuffer materialBuffer;
 	VkDeviceMemory materialBufferMemory;

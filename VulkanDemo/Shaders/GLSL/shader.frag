@@ -33,9 +33,7 @@ void main(){
 
 	float shadow = getShadow(coord);
 
-	vec3 color = vec3(1.0);
-	if(material.islight == 0)
-		color = Lighting(shadow);
+	vec3 color = Lighting(shadow);
 
 	color = pow(color, vec3(1.0/2.2));
 

@@ -20,7 +20,9 @@
 #include "CascadedShadow.h"
 #include "PreProcess.h"
 
-//#define  IBLLIGHTING
+//#define IBLLIGHTING
+
+#define SHADOW
 
 #ifdef IBLLIGHTING
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
@@ -172,7 +174,6 @@ Node* HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vert
 	primitive.firstIndex = firstIndex;
 	primitive.indexCount = indexCount;
 	primitive.materialIndex = 0;
-    primitive.islight = 1.0f;
 
 	Node* node = new Node{};
     node->matrix = glm::translate(node->matrix, glm::vec3(lightPos.x, lightPos.y, lightPos.z));
@@ -199,8 +200,14 @@ HelloVulkan::HelloVulkan()
 	height = 720;
 
 	camera.type = Camera::CameraType::firstperson;
-	camera.setPosition(glm::vec3(0.0f, 20.0f, -2.1f));
+
+#ifdef IBLLIGHTING
+	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
 	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
+#else
+	camera.setPosition(glm::vec3(0.0f, 1.0f, 0.0f));
+	camera.setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
+#endif
 	camera.movementSpeed = 4.0f;
     camera.flipY = true;
 	camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 1000.0f);
@@ -214,12 +221,6 @@ HelloVulkan::HelloVulkan()
 
     filterSize = 1;
     shadowIndex = 4;
-
-#ifdef IBLLIGHTING
-    ibllighting = true;
-#else
-    ibllighting = false;
-#endif
 }
 
 void HelloVulkan::Init()
@@ -292,8 +293,9 @@ void HelloVulkan::InitVulkan()
     shadow->CreateUniformBuffer();
     debug.CreateUniformBuffer();
 
-    loadgltfModel(SKYBOX_PATH, skyboxModel);
     loadgltfModel(MODEL_PATH, gltfmodel);
+
+	loadgltfModel(SKYBOX_PATH, skyboxModel);
     skybox.cubeMap.loadFromFile(this, TEXTURE_PATH, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 #ifdef IBLLIGHTING
@@ -1177,7 +1179,7 @@ void HelloVulkan::updateLight(float frameTimer)
     constexpr float speed = glm::radians(35.0f);
     rotation = glm::rotate(rotation, speed * frameTimer, yaxis);
 
-    lightPos = rotation * lightPos;
+    //lightPos = rotation * lightPos;
 }
 
 void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
@@ -1353,18 +1355,22 @@ void HelloVulkan::createDescriptorPool()
 {
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 
+    // TODO: create layout for sky box
+    //6: model, scene, skybox(2), shadow, debug
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = gltfmodel.materials.size() + 9;
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) + 6;
 
+    // ma * 4 + (s * 4) + (s * 4)
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = gltfmodel.materials.size() * 4 + 30;
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) * 4 + static_cast<uint32_t>(skyboxModel.materials.size()) * 4 + 8;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
 
-    poolInfo.maxSets = gltfmodel.materials.size()*3 + 9;
+    // skybox:2 helloVulkan:2 shadow: 1 debug 1
+    poolInfo.maxSets = static_cast<uint32_t>(gltfmodel.materials.size()) + 6;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {
