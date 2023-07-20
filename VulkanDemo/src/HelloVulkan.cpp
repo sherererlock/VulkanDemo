@@ -20,8 +20,14 @@
 #include "CascadedShadow.h"
 #include "PreProcess.h"
 
-//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+//#define  IBLLIGHTING
+
+#ifdef IBLLIGHTING
+const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+#else
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
+#endif
+
 const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
 const std::string TEXTURE_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/hdr/gcanyon_cube.ktx";
@@ -208,6 +214,12 @@ HelloVulkan::HelloVulkan()
 
     filterSize = 1;
     shadowIndex = 4;
+
+#ifdef IBLLIGHTING
+    ibllighting = true;
+#else
+    ibllighting = false;
+#endif
 }
 
 void HelloVulkan::Init()
@@ -279,14 +291,16 @@ void HelloVulkan::InitVulkan()
 
     shadow->CreateUniformBuffer();
     debug.CreateUniformBuffer();
- 
+
     loadgltfModel(SKYBOX_PATH, skyboxModel);
     loadgltfModel(MODEL_PATH, gltfmodel);
     skybox.cubeMap.loadFromFile(this, TEXTURE_PATH, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
-    PreProcess::generateIrradianceCube(this, skybox.cubeMap, envLight.irradianceCube);
-    PreProcess::prefilterEnvMap(this, skybox.cubeMap, envLight.prefilteredMap);
-    PreProcess::genBRDFLut(this, envLight.BRDFLutMap);
+#ifdef IBLLIGHTING
+	PreProcess::generateIrradianceCube(this, skybox.cubeMap, envLight.irradianceCube);
+	PreProcess::prefilterEnvMap(this, skybox.cubeMap, envLight.prefilteredMap);
+	PreProcess::genBRDFLut(this, envLight.BRDFLutMap);
+#endif
 
 	createDescriptorPool();
     createDescriptorSet();
@@ -370,7 +384,10 @@ void HelloVulkan::Cleanup()
     skybox.Cleanup(device);
     gltfmodel.Cleanup();
     skyboxModel.Cleanup();
+
+#ifdef IBLLIGHTING
     envLight.Cleanup();
+#endif
 
     shadow->Cleanup();
     debug.Cleanup(instance);
@@ -741,7 +758,12 @@ void HelloVulkan::createGraphicsPipeline()
     }
 
     std::string vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.vert.spv";
+
+#ifdef IBLLIGHTING
     std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.frag.spv";
+#else
+    std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader_rsm.frag.spv";
+#endif // IBLLIGHTING
 
     if (CASCADED_COUNT > 1)
     {
@@ -1492,6 +1514,8 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[1].pImageInfo = &imageInfo; // Optional
 	sceneDescriptorWrites[1].pTexelBufferView = nullptr; // Optional
 
+#ifdef IBLLIGHTING
+
     sceneDescriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     sceneDescriptorWrites[2].pBufferInfo = nullptr;
 	sceneDescriptorWrites[2].dstBinding = 2;
@@ -1508,6 +1532,9 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[4].pImageInfo = &envLight.BRDFLutMap.descriptor; // Optional
 
     vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
+#else
+    vkUpdateDescriptorSets(device, 2, sceneDescriptorWrites.data(), 0, nullptr);
+#endif // IBLLIGHTING
 
     sceneDescriptorWrites[0].dstSet = skybox.descriptorSetS;
     sceneDescriptorWrites[1].dstSet = skybox.descriptorSetS;

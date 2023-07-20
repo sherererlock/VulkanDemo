@@ -66,17 +66,6 @@ vec3 blin_phong()
 	return diffuse + specular;
 }
 
-vec3 prefilteredReflection(vec3 R, float roughness)
-{
-	const float MAX_REFLECTION_LOD = 9.0; // todo: param/const
-	float lod = roughness * MAX_REFLECTION_LOD;
-	float lodf = floor(lod);
-	float lodc = ceil(lod);
-	vec3 a = textureLod(prefilterCubeMapSampler, R, lodf).rgb;
-	vec3 b = textureLod(prefilterCubeMapSampler, R, lodc).rgb;
-	return mix(a, b, lod - lodf);
-}
-
 vec3 DirectLighting(vec3 n, vec3 v, vec3 albedo, vec3 F0, float roughness, float metallic)
 {
 	float ndotv = clamp(dot(n, v), 0.0, 1.0);
@@ -112,6 +101,19 @@ vec3 DirectLighting(vec3 n, vec3 v, vec3 albedo, vec3 F0, float roughness, float
 	return Lo;
 }
 
+#ifdef IBLLIGHTING
+
+vec3 prefilteredReflection(vec3 R, float roughness)
+{
+	const float MAX_REFLECTION_LOD = 9.0; // todo: param/const
+	float lod = roughness * MAX_REFLECTION_LOD;
+	float lodf = floor(lod);
+	float lodc = ceil(lod);
+	vec3 a = textureLod(prefilterCubeMapSampler, R, lodf).rgb;
+	vec3 b = textureLod(prefilterCubeMapSampler, R, lodc).rgb;
+	return mix(a, b, lod - lodf);
+}
+
 vec3 IBLIndirectLighting(vec3 n, vec3 v, vec3 albedo, vec3 F0, float roughness, float metallic)
 {
 	float ndotv = clamp(dot(n, v), 0.0, 1.0);
@@ -132,6 +134,8 @@ vec3 IBLIndirectLighting(vec3 n, vec3 v, vec3 albedo, vec3 F0, float roughness, 
 	return ambient;
 }
 
+#endif
+
 vec3 Lighting(float shadow)
 {
 	//vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
@@ -148,10 +152,14 @@ vec3 Lighting(float shadow)
 	vec3 v = normalize(ubo.viewPos.xyz - worldPos);
 
 	vec3 Lo = DirectLighting(n, v, albedo, F0, roughness, metallic);
-	//vec3 ambient = IBLIndirectLighting(n, v, albedo, F0, roughness, metallic);
-	//vec3 emissive = texture(emissiveSampler, fragTexCoord).rgb * materialData.emissiveFactor;
+	vec3 ambient = vec3(0.0);
+	vec3 emissive = texture(emissiveSampler, fragTexCoord).rgb * materialData.emissiveFactor;
 
-	vec3 color = Lo;
+	#ifdef IBLLIGHTING
+	ambient = IBLIndirectLighting(n, v, albedo, F0, roughness, metallic);
+	#endif
+
+	vec3 color = Lo * shadow + ambient + emissive;
 
 	return color;
 }

@@ -91,7 +91,7 @@ private:
 		}
 	};
 
-    struct EnviromentLight
+    struct IBLEnviromentLight
     {
         TextureCubeMap irradianceCube;
         TextureCubeMap prefilteredMap;
@@ -246,8 +246,9 @@ private:
     VkDescriptorSet descriptorSetS;
     VkPipeline graphicsPipeline;
 
+    bool ibllighting = false;
     Skybox skybox;
-    EnviromentLight envLight;
+    IBLEnviromentLight envLight;
 
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
