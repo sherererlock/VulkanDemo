@@ -278,7 +278,7 @@ void PrintMatrix(glm::mat4 mat)
 	std::cout << "----------------" << std::endl;
 }
 
-void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node, uint32_t flag) const
+void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node, uint32_t flag, uint32_t offset) const
 {
 	if (node->mesh.primitives.size() > 0) 
 	{
@@ -317,7 +317,7 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 				else if(flag == 0)
 				{
 					vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
-					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 2, 1, &materials[primitive.materialIndex].descriptorSet, 0, nullptr);
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, offset, 1, &materials[primitive.materialIndex].descriptorSet, 0, nullptr);
 				}
 
 				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
@@ -325,11 +325,11 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 		}
 	}
 	for (auto& child : node->children) {
-		drawNode(commandBuffer, pipelineLayout, child, flag);
+		drawNode(commandBuffer, pipelineLayout, child, flag, offset);
 	}
 }
 
-void gltfModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t flag) const
+void gltfModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t flag, uint32_t offset) const
 {
 	// All vertices and indices are stored in single buffers, so we only need to bind once
 	VkDeviceSize offsets[1] = { 0 };
@@ -337,11 +337,11 @@ void gltfModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLay
 	vkCmdBindIndexBuffer(commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 	// Render all nodes at top-level
 	for (auto& node : nodes) {
-		drawNode(commandBuffer, pipelineLayout, node, flag);
+		drawNode(commandBuffer, pipelineLayout, node, flag, offset);
 	}
 }
 
-void gltfModel::drawWithOffset(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t flag) const
+void gltfModel::drawWithOffset(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, uint32_t flag, uint32_t offset) const
 {
 	glm::vec3 yaxis(0.0f, 1.0f, 0.0f);
 	float speed = glm::radians(0.0f);
@@ -349,23 +349,23 @@ void gltfModel::drawWithOffset(VkCommandBuffer commandBuffer, VkPipelineLayout p
 	translation = glm::mat4(1.0f);
 	translation = glm::translate(translation, glm::vec3(0.0f, 0.0f, -0.0f));
 	translation = glm::rotate(translation, speed, yaxis);
-	draw(commandBuffer, pipelineLayout, flag);
+	draw(commandBuffer, pipelineLayout, flag, offset);
 
 	translation = glm::mat4(1.0f);
 	translation = glm::translate(translation, glm::vec3(0.0f, 0.0f, -20.0f));
 	speed = glm::radians(45.0f);
 	translation = glm::rotate(translation, speed, yaxis);
-	draw(commandBuffer, pipelineLayout, flag);
+	draw(commandBuffer, pipelineLayout, flag, offset);
 
 	translation = glm::mat4(1.0f);
 	translation = glm::translate(translation, glm::vec3(0.0f, 0.0f, -33.0f));
 	speed = glm::radians(90.0f);
 	translation = glm::rotate(translation, speed, yaxis);
-	draw(commandBuffer, pipelineLayout, flag);
+	draw(commandBuffer, pipelineLayout, flag, offset);
 
 	translation = glm::mat4(1.0f);
 	translation = glm::translate(translation, glm::vec3(0.0f, 0.0f, -45.0f));
 	speed = glm::radians(135.0f);
 	translation = glm::rotate(translation, speed, yaxis);
-	draw(commandBuffer, pipelineLayout, flag);
+	draw(commandBuffer, pipelineLayout, flag, offset);
 }

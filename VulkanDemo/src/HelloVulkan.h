@@ -18,6 +18,8 @@
 #include "macros.h"
 
 class Shadow;
+class ReflectiveShadowMap;
+
 struct QueueFamilyIndices
 {
     int graphicsFamily = -1;
@@ -207,6 +209,8 @@ public:
     inline Input& GetInput() { return input; }
     inline void ViewUpdated() { viewUpdated = true; }
     inline gltfModel& GetSkybox() { return skyboxModel; }
+    inline VkDescriptorSetLayout GetMaterialDescriptorSetLayout() const { return descriptorSetLayoutMa; }
+
 private:
 	static HelloVulkan* helloVulkan;
 
@@ -292,6 +296,8 @@ private:
     Shadow* shadow;
     Debug debug;
     Input input;
+
+    ReflectiveShadowMap* rsm; 
 
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;

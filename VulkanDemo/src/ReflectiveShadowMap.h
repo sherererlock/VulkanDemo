@@ -35,12 +35,24 @@ private:
 		}
 	};
 
+	struct UniformBufferObject
+	{
+		float nearPlane;
+		float farPlane;
+		glm::vec3 lightPos;
+		glm::vec3 lightColor;
+		glm::mat4 depthVP;
+	};
+
+
 private:
 	VkFramebuffer framebuffer;
 	VkPipeline pipeline;
 	VkRenderPass renderPass;
 
 	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorSetLayout descriptorSetLayoutMa;
+
 	VkDescriptorSet descriptorSet;
 	VkPipelineLayout pipelineLayout;
 
@@ -69,7 +81,7 @@ public:
 	void CreateUniformBuffer();
 	void CreateFrameBuffer();
 	void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel);
-	void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos);
+	void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar);
 
 	void Cleanup();
 

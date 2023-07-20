@@ -19,8 +19,11 @@
 #include "CommonShadow.h"
 #include "CascadedShadow.h"
 #include "PreProcess.h"
+#include "ReflectiveShadowMap.h"
 
 //#define IBLLIGHTING
+
+#define RSMLIGHTING
 
 #define SHADOW
 
@@ -221,6 +224,10 @@ HelloVulkan::HelloVulkan()
 
     filterSize = 1;
     shadowIndex = 4;
+
+    #ifdef RSMLIGHTING
+    rsm = new ReflectiveShadowMap();
+    #endif
 }
 
 void HelloVulkan::Init()
@@ -265,6 +272,10 @@ void HelloVulkan::InitVulkan()
     shadow->Init(this, device, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
     debug.Init(device, this, zNear, zFar);
 
+    #ifdef RSMLIGHTING
+    rsm->Init(this, device, width, height);
+    #endif
+
     createSwapChain();
     createImageViews();
 
@@ -272,9 +283,19 @@ void HelloVulkan::InitVulkan()
 
     shadow->CreateShadowPass();
 
+    #ifdef RSMLIGHTING
+    rsm->CreateGBuffer();
+    rsm->CreatePass();
+    #endif
+
+
     createDescriptorSetLayout();
     shadow->CreateDescriptSetLayout();
     debug.CreateDescriptSetLayout();
+
+    #ifdef RSMLIGHTING
+    rsm->CreateDescriptSetLayout();
+    #endif
 
     createGraphicsPipeline();
 
@@ -288,10 +309,18 @@ void HelloVulkan::InitVulkan()
 
     shadow->CreateFrameBuffer();
 
+    #ifdef RSMLIGHTING
+    rsm->CreateFrameBuffer();
+    #endif
+
     createUniformBuffer();
 
     shadow->CreateUniformBuffer();
     debug.CreateUniformBuffer();
+
+    #ifdef RSMLIGHTING
+    rsm->CreateUniformBuffer();
+    #endif
 
     loadgltfModel(MODEL_PATH, gltfmodel);
 
@@ -308,6 +337,10 @@ void HelloVulkan::InitVulkan()
     createDescriptorSet();
 
     shadow->SetupDescriptSet(descriptorPool);
+
+    #ifdef RSMLIGHTING
+    rsm->SetupDescriptSet(descriptorPool);
+    #endif
 
     createCommandBuffers();
 
@@ -394,6 +427,11 @@ void HelloVulkan::Cleanup()
     shadow->Cleanup();
     debug.Cleanup(instance);
     emptyTexture.destroy();
+
+    #ifdef RSMLIGHTING
+    rsm->Cleanup();
+    #endif
+
     vkDestroyDevice(device, nullptr);
 
     vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -403,6 +441,9 @@ void HelloVulkan::Cleanup()
     glfwDestroyWindow(window);
 
     glfwTerminate();
+
+    delete shadow;
+    delete rsm;
 }
 
 void HelloVulkan::CreateInstance()
@@ -858,6 +899,10 @@ void HelloVulkan::createGraphicsPipeline()
 
     debug.CreateDebugPipeline(info, pipelineInfo);
     shadow->CreateShadowPipeline(info, pipelineInfo);
+
+    #ifdef RSMLIGHTING
+    rsm->CreatePipeline(info, pipelineInfo);
+    #endif
 }
 
 void HelloVulkan::createFrameBuffer()
@@ -945,6 +990,12 @@ void HelloVulkan::buildCommandBuffers()
         }
 
         {
+            #ifdef RSMLIGHTING
+            rsm->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+            #endif
+        }
+
+        {
             VkRenderPassBeginInfo renderPassInfo = {};
             renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             renderPassInfo.renderPass = renderPass;
@@ -985,7 +1036,7 @@ void HelloVulkan::buildCommandBuffers()
                 vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &skybox.descriptorSetM, 0, nullptr);
                 vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &skybox.descriptorSetS, 0, nullptr);
                 vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipeline);
-                skyboxModel.draw(commandBuffers[i], pipelineLayout, 2);
+                skyboxModel.draw(commandBuffers[i], pipelineLayout, 2, 2);
 
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetM, 0, nullptr);
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptorSetS, 0, nullptr);
@@ -993,11 +1044,11 @@ void HelloVulkan::buildCommandBuffers()
 
                 if (CASCADED_COUNT == 1)
                 {
-                    gltfmodel.draw(commandBuffers[i], pipelineLayout, 0);
+                    gltfmodel.draw(commandBuffers[i], pipelineLayout, 0, 2);
                 }
                 else
                 {
-                    gltfmodel.drawWithOffset(commandBuffers[i], pipelineLayout, 0);
+                    gltfmodel.drawWithOffset(commandBuffers[i], pipelineLayout, 0, 2);
                 }
             }
 
@@ -1136,11 +1187,20 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     {
         ubo.depthVP[0] = ortho * view;
         shadow->UpateLightMVP(view, ortho, lightPos);
+
+        #ifdef RSMLIGHTING
+        rsm->UpateLightMVP(view, ortho, lightPos, zNear, zFar);
+        #endif
+
     }
     else
     {
         ubo.depthVP[0] = pers * view;
         shadow->UpateLightMVP(view, pers, lightPos);
+
+        #ifdef RSMLIGHTING
+        rsm->UpateLightMVP(view, pers, lightPos, zNear, zFar);
+        #endif
     }
 
     ubo.shadowIndex = shadowIndex;
@@ -1356,11 +1416,11 @@ void HelloVulkan::createDescriptorPool()
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 
     // TODO: create layout for sky box
-    //6: model, scene, skybox(2), shadow, debug
+    //7: model, scene, skybox(2), shadow, debug rsm
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) + 6;
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) + 7;
 
-    // ma * 4 + (s * 4) + (s * 4)
+    // ma * 4 + (s * 4) + (s * 4) 
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     poolSizes[1].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) * 4 + static_cast<uint32_t>(skyboxModel.materials.size()) * 4 + 8;
 
@@ -1369,8 +1429,8 @@ void HelloVulkan::createDescriptorPool()
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
 
-    // skybox:2 helloVulkan:2 shadow: 1 debug 1
-    poolInfo.maxSets = static_cast<uint32_t>(gltfmodel.materials.size()) + 6;
+    // skybox:2 helloVulkan:2 shadow: 1 debug 1 rsm:1
+    poolInfo.maxSets = static_cast<uint32_t>(gltfmodel.materials.size()) + 7;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {

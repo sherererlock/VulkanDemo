@@ -57,7 +57,7 @@ void CommonShadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfM
     renderPassInfo.framebuffer = frameBuffer;
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline);
-	gltfmodel.draw(commandBuffer, pipelineLayout, 1);
+	gltfmodel.draw(commandBuffer, pipelineLayout, 1, 2);
 	vkCmdEndRenderPass(commandBuffer);
 }
 

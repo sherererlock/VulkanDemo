@@ -118,7 +118,7 @@ void CascadedShadow::BuildCommandBuffer(VkCommandBuffer commandBuffer, const glt
 
         gltfmodel.cascadedIndex = i;
         //gltfmodel.draw(commandBuffer, pipelineLayout, 1);
-        gltfmodel.drawWithOffset(commandBuffer, pipelineLayout, 1);
+        gltfmodel.drawWithOffset(commandBuffer, pipelineLayout, 1, 2);
 
 		vkCmdEndRenderPass(commandBuffer);
     }

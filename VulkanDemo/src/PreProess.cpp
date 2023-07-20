@@ -353,7 +353,7 @@ void PreProcess::generateMap(HelloVulkan* vulkan, const TextureCubeMap& envCubeM
 			vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 			vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-			vulkan->GetSkybox().draw(cmdBuffer, pipelineLayout, 2);
+			vulkan->GetSkybox().draw(cmdBuffer, pipelineLayout, 2, 2);
 
 			vkCmdEndRenderPass(cmdBuffer);
 
