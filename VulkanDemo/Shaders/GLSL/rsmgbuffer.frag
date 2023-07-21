@@ -4,15 +4,14 @@
 layout(set = 0, binding = 0) 
 uniform UniformBufferObject
 {
-	float nearPlane;
-	float farPlane;
-	vec3 lightPos;
-	vec3 lightColor;
+	vec4 clipPlane;
+	vec4 lightPos;
+	vec4 lightColor;
 	mat4 depthVP;
 } ubo;
 
-layout(set = 1, binding = 1) uniform sampler2D colorSampler;
-layout(set = 1, binding = 2) uniform sampler2D normalSampler;
+layout(set = 1, binding = 0) uniform sampler2D colorSampler;
+layout(set = 1, binding = 1) uniform sampler2D normalSampler;
 
 layout(location = 0) in vec3 worldPos;
 layout(location = 1) in vec3 normal;
@@ -37,7 +36,7 @@ vec3 calculateNormal()
 float linearDepth(float depth)
 {
 	float z = depth * 2.0f - 1.0f; 
-	return (2.0f * ubo.nearPlane * ubo.farPlane) / (ubo.farPlane + ubo.nearPlane - z * (ubo.farPlane - ubo.nearPlane));	
+	return (2.0f * ubo.clipPlane.x * ubo.clipPlane.y) / (ubo.clipPlane.y + ubo.clipPlane.x - z * (ubo.clipPlane.y - ubo.clipPlane.x));	
 }
 
 void main() 
@@ -48,9 +47,9 @@ void main()
 	outNormal = vec4(N, 1.0);
 
 	// point light
-	vec3 wi = worldPos - ubo.lightPos;
-	outFlux = vec4(albedo * dot(N, wi) / (wi * wi) * ubo.lightColor, 1.0);
+	vec3 wi = worldPos - ubo.lightPos.xyz;
+	outFlux = vec4(albedo * dot(N, wi) / (wi * wi) * ubo.lightColor.rgb, 1.0);
 
 	// directional light
-	outFlux = vec4(albedo * ubo.lightColor, 1.0);
+	outFlux = vec4(albedo * ubo.lightColor.rgb, 1.0);
 }

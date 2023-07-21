@@ -37,10 +37,9 @@ private:
 
 	struct UniformBufferObject
 	{
-		float nearPlane;
-		float farPlane;
-		glm::vec3 lightPos;
-		glm::vec3 lightColor;
+		glm::vec4 clipPlane;
+		glm::vec4 lightPos;
+		glm::vec4 lightColor;
 		glm::mat4 depthVP;
 	};
 

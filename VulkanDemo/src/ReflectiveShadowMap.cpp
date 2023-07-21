@@ -339,11 +339,11 @@ void ReflectiveShadowMap::BuildCommandBuffer(VkCommandBuffer commandBuffer, cons
 void ReflectiveShadowMap::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar)
 {
 	UniformBufferObject ubo;
-	ubo.depthVP = proj * view;
+	ubo.clipPlane.x = zNear;
+	ubo.clipPlane.y = zFar;
 	ubo.lightPos = lightPos;
-	ubo.nearPlane = zNear;
-	ubo.farPlane = zFar;
-	ubo.lightColor = glm::vec3(1.0f);
+	ubo.lightColor = glm::vec4(1.0f);
+	ubo.depthVP = proj * view;
 
 	void* data;
 	vkMapMemory(device, uniformMemory, 0, sizeof(UniformBufferObject), 0, &data);

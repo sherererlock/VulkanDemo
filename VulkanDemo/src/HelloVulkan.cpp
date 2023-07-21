@@ -197,7 +197,7 @@ HelloVulkan::HelloVulkan()
     lightPos = glm::vec4(0.0f, 20.0f, 10.0f, 1.0f);
 
 	zNear = 0.1f;
-	zFar = 1000.0;
+	zFar = 400.0f;
 
 	width = 1280;
 	height = 720;
@@ -213,7 +213,7 @@ HelloVulkan::HelloVulkan()
 #endif
 	camera.movementSpeed = 4.0f;
     camera.flipY = true;
-	camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 1000.0f);
+	camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 250.0f);
 	camera.rotationSpeed = 0.25f;
     viewUpdated = true;
 
@@ -273,7 +273,7 @@ void HelloVulkan::InitVulkan()
     debug.Init(device, this, zNear, zFar);
 
     #ifdef RSMLIGHTING
-    rsm->Init(this, device, width, height);
+    rsm->Init(this, device, 1024, 1024);
     #endif
 
     createSwapChain();

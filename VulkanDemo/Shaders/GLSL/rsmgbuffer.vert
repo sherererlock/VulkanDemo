@@ -4,10 +4,9 @@
 layout(set = 0, binding = 0) 
 uniform UniformBufferObject
 {
-	float nearPlane;
-	float farPlane;
-	vec3 lightPos;
-	vec3 lightColor;
+    vec4 clipPlane;
+	vec4 lightPos;
+	vec4 lightColor;
 	mat4 depthVP;
 } ubo;
 
