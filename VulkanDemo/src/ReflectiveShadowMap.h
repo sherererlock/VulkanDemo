@@ -66,6 +66,10 @@ private:
 	FrameBufferAttachment normal;
 	FrameBufferAttachment flux;
 	FrameBufferAttachment depth;
+
+	float depthBiasConstant = 1.25f;
+	// Slope depth bias factor, applied depending on polygon's slope
+	float depthBiasSlope = 1.75f;
 public:
 
 	void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
@@ -85,6 +89,8 @@ public:
 	void Cleanup();
 
 public:
+
+	inline VkDescriptorImageInfo GetDepthDescriptorImageInfo() const { return depth.descriptor; }
 };
 
 

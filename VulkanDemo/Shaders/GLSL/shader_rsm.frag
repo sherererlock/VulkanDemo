@@ -42,7 +42,7 @@ void main(){
 	vec3 n = calculateNormal();
 	vec3 v = normalize(ubo.viewPos.xyz - worldPos);
 
-	vec3 color = DirectLighting(n, v, albedo, F0, roughness, metallic);
+	vec3 color = DirectLighting(n, v, albedo, F0, roughness, metallic) * shadow;
 
 	color = pow(color, vec3(1.0/2.2));
 

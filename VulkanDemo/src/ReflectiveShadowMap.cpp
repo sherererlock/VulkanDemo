@@ -110,7 +110,7 @@ void ReflectiveShadowMap::CreatePass()
 	depthAttachment.format = VK_FORMAT_D32_SFLOAT;
 	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -139,7 +139,6 @@ void ReflectiveShadowMap::CreatePass()
 	subpass.colorAttachmentCount = (uint32_t)colorAttachmentRefs.size();
 	subpass.pColorAttachments = colorAttachmentRefs.data(); // fragment shader π”√ location = 0 outcolor, ‰≥ˆ
 	subpass.pDepthStencilAttachment = &depthAttachmentRef;
-	subpass.pResolveAttachments = nullptr;
 
 	std::array<VkSubpassDependency, 2> dependencies;
 
@@ -238,6 +237,7 @@ void ReflectiveShadowMap::CreateGBuffer()
 	CreateAttachment(&normal, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 	CreateAttachment(&flux, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 	CreateAttachment(&depth, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	depth.descriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 }
 
 void ReflectiveShadowMap::CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlagBits usage)
@@ -328,6 +328,11 @@ void ReflectiveShadowMap::BuildCommandBuffer(VkCommandBuffer commandBuffer, cons
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+	vkCmdSetDepthBias(
+		commandBuffer,
+		depthBiasConstant,
+		0.0f,
+		depthBiasSlope);
 
     renderPassInfo.framebuffer = framebuffer;
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);

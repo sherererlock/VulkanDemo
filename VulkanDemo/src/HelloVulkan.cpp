@@ -30,7 +30,8 @@
 #ifdef IBLLIGHTING
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 #else
-const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
+//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
+const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 #endif
 
 const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
@@ -217,16 +218,19 @@ HelloVulkan::HelloVulkan()
 	camera.rotationSpeed = 0.25f;
     viewUpdated = true;
 
-    if(CASCADED_COUNT > 1)
-        shadow = new CascadedShadow();
-    else
-        shadow = new CommonShadow();
-
     filterSize = 1;
     shadowIndex = 4;
 
     #ifdef RSMLIGHTING
     rsm = new ReflectiveShadowMap();
+
+    #else
+
+	if (CASCADED_COUNT > 1)
+		shadow = new CascadedShadow();
+	else
+		shadow = new CommonShadow();
+
     #endif
 }
 
@@ -269,11 +273,12 @@ void HelloVulkan::InitVulkan()
     pickPhysicalDevice();
     CreateDevice();
 
-    shadow->Init(this, device, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
     debug.Init(device, this, zNear, zFar);
 
     #ifdef RSMLIGHTING
-    rsm->Init(this, device, 1024, 1024);
+    rsm->Init(this, device, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
+    #else
+	shadow->Init(this, device, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
     #endif
 
     createSwapChain();
@@ -281,20 +286,22 @@ void HelloVulkan::InitVulkan()
 
     createRenderPass();
 
-    shadow->CreateShadowPass();
-
     #ifdef RSMLIGHTING
     rsm->CreateGBuffer();
     rsm->CreatePass();
+    #else
+    shadow->CreateShadowMap();
+    shadow->CreateShadowPass();
     #endif
 
-
     createDescriptorSetLayout();
-    shadow->CreateDescriptSetLayout();
+
     debug.CreateDescriptSetLayout();
 
     #ifdef RSMLIGHTING
     rsm->CreateDescriptSetLayout();
+    #else
+    shadow->CreateDescriptSetLayout();
     #endif
 
     createGraphicsPipeline();
@@ -303,23 +310,23 @@ void HelloVulkan::InitVulkan()
     createColorResources();
     createDepthResources();
     createEmptyTexture();
-    shadow->CreateShadowMap();
 
     createFrameBuffer();
 
-    shadow->CreateFrameBuffer();
-
     #ifdef RSMLIGHTING
     rsm->CreateFrameBuffer();
+    #else
+    shadow->CreateFrameBuffer();
     #endif
 
     createUniformBuffer();
 
-    shadow->CreateUniformBuffer();
     debug.CreateUniformBuffer();
 
     #ifdef RSMLIGHTING
     rsm->CreateUniformBuffer();
+    #else
+    shadow->CreateUniformBuffer();
     #endif
 
     loadgltfModel(MODEL_PATH, gltfmodel);
@@ -336,10 +343,10 @@ void HelloVulkan::InitVulkan()
 	createDescriptorPool();
     createDescriptorSet();
 
-    shadow->SetupDescriptSet(descriptorPool);
-
     #ifdef RSMLIGHTING
     rsm->SetupDescriptSet(descriptorPool);
+    #else
+    shadow->SetupDescriptSet(descriptorPool);
     #endif
 
     createCommandBuffers();
@@ -424,12 +431,14 @@ void HelloVulkan::Cleanup()
     envLight.Cleanup();
 #endif
 
-    shadow->Cleanup();
+
     debug.Cleanup(instance);
     emptyTexture.destroy();
 
     #ifdef RSMLIGHTING
     rsm->Cleanup();
+    #else
+    shadow->Cleanup();
     #endif
 
     vkDestroyDevice(device, nullptr);
@@ -898,10 +907,11 @@ void HelloVulkan::createGraphicsPipeline()
 	vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
 
     debug.CreateDebugPipeline(info, pipelineInfo);
-    shadow->CreateShadowPipeline(info, pipelineInfo);
 
     #ifdef RSMLIGHTING
     rsm->CreatePipeline(info, pipelineInfo);
+    #else
+    shadow->CreateShadowPipeline(info, pipelineInfo);
     #endif
 }
 
@@ -986,12 +996,10 @@ void HelloVulkan::buildCommandBuffers()
         vkBeginCommandBuffer(commandBuffers[i], &beginInfo);
 
         {
-            shadow->BuildCommandBuffer(commandBuffers[i], gltfmodel);
-        }
-
-        {
             #ifdef RSMLIGHTING
             rsm->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+            #else
+            shadow->BuildCommandBuffer(commandBuffers[i], gltfmodel);
             #endif
         }
 
@@ -1183,38 +1191,27 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     pers[1][1] *= -1; // flip Y
     ortho[1][1] *= -1; // flip Y
 
-    if (isOrth)
-    {
-        ubo.depthVP[0] = ortho * view;
-        shadow->UpateLightMVP(view, ortho, lightPos);
+    glm::mat4 proj = isOrth ? ortho : pers;
 
-        #ifdef RSMLIGHTING
-        rsm->UpateLightMVP(view, ortho, lightPos, zNear, zFar);
-        #endif
+	ubo.depthVP[0] = proj * view;
 
-    }
-    else
-    {
-        ubo.depthVP[0] = pers * view;
-        shadow->UpateLightMVP(view, pers, lightPos);
-
-        #ifdef RSMLIGHTING
-        rsm->UpateLightMVP(view, pers, lightPos, zNear, zFar);
-        #endif
-    }
+#ifdef RSMLIGHTING
+	rsm->UpateLightMVP(view, ortho, lightPos, zNear, zFar);
+#else
+    shadow->UpateLightMVP(view, proj, lightPos);
+	if (CASCADED_COUNT > 1)
+	{
+		float split[CASCADED_COUNT];
+		((CascadedShadow*)shadow)->GetCascadedInfo(ubo.depthVP, split);
+		ubo.splitDepth.x = split[0];
+		ubo.splitDepth.y = split[1];
+		ubo.splitDepth.z = split[2];
+		ubo.splitDepth.w = split[3];
+	}
+#endif
 
     ubo.shadowIndex = shadowIndex;
     ubo.filterSize = (float)filterSize;
-
-    if (CASCADED_COUNT > 1)
-    {
-        float split[CASCADED_COUNT];
-        ((CascadedShadow*)shadow)->GetCascadedInfo(ubo.depthVP, split);
-        ubo.splitDepth.x = split[0];
-        ubo.splitDepth.y = split[1];
-        ubo.splitDepth.z = split[2];
-        ubo.splitDepth.w = split[3];
-    }
 
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(UniformBufferObject), 0, &data);
@@ -1572,7 +1569,12 @@ void HelloVulkan::createDescriptorSet()
 
     std::array<VkWriteDescriptorSet, 5> sceneDescriptorWrites = { descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite };
 
+#ifdef RSMLIGHTING
+    VkDescriptorImageInfo imageInfo = rsm->GetDepthDescriptorImageInfo();
+#else
     VkDescriptorImageInfo imageInfo = shadow->GetDescriptorImageInfo();
+#endif
+
 	sceneDescriptorWrites[1].dstBinding = 1;
 	sceneDescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	sceneDescriptorWrites[1].descriptorCount = 1;
