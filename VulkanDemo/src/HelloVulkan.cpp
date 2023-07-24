@@ -30,8 +30,8 @@
 #ifdef IBLLIGHTING
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 #else
-//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
-const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
+//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 #endif
 
 const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
@@ -185,6 +185,8 @@ Node* HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vert
 
     gltfmodel.nodes.push_back(node);
 
+    node->matrix = glm::scale(node->matrix, glm::vec3(0.01f));
+
     return node;
 }
 
@@ -193,12 +195,11 @@ HelloVulkan::HelloVulkan()
     helloVulkan = this;
 
     isOrth = true;
-
-	//lightPos = { 0.0f, 4.f, -4.0f, 1.0f };
+	lightPos = { 0.0f, 10.f, -4.0f, 1.0f };
     lightPos = glm::vec4(0.0f, 20.0f, 10.0f, 1.0f);
 
 	zNear = 0.1f;
-	zFar = 400.0f;
+	zFar = 800.0f;
 
 	width = 1280;
 	height = 720;
@@ -212,6 +213,10 @@ HelloVulkan::HelloVulkan()
 	camera.setPosition(glm::vec3(0.0f, 1.0f, 0.0f));
 	camera.setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
 #endif
+
+	//camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
+	//camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
+
 	camera.movementSpeed = 4.0f;
     camera.flipY = true;
 	camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 250.0f);
@@ -223,7 +228,6 @@ HelloVulkan::HelloVulkan()
 
     #ifdef RSMLIGHTING
     rsm = new ReflectiveShadowMap();
-
     #else
 
 	if (CASCADED_COUNT > 1)
@@ -290,7 +294,6 @@ void HelloVulkan::InitVulkan()
     rsm->CreateGBuffer();
     rsm->CreatePass();
     #else
-    shadow->CreateShadowMap();
     shadow->CreateShadowPass();
     #endif
 
@@ -316,6 +319,7 @@ void HelloVulkan::InitVulkan()
     #ifdef RSMLIGHTING
     rsm->CreateFrameBuffer();
     #else
+	shadow->CreateShadowMap();
     shadow->CreateFrameBuffer();
     #endif
 
@@ -812,10 +816,14 @@ void HelloVulkan::createGraphicsPipeline()
     std::string vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.vert.spv";
 
 #ifdef IBLLIGHTING
-    std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.frag.spv";
-#else
+    std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader_ibl.frag.spv";
+#endif
+
+#ifdef RSMLIGHTING
     std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader_rsm.frag.spv";
-#endif // IBLLIGHTING
+#else
+    std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.frag.spv";
+#endif
 
     if (CASCADED_COUNT > 1)
     {
@@ -1041,10 +1049,10 @@ void HelloVulkan::buildCommandBuffers()
             }
             else
             {
-                vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &skybox.descriptorSetM, 0, nullptr);
-                vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &skybox.descriptorSetS, 0, nullptr);
-                vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipeline);
-                skyboxModel.draw(commandBuffers[i], pipelineLayout, 2, 2);
+                //vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &skybox.descriptorSetM, 0, nullptr);
+                //vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &skybox.descriptorSetS, 0, nullptr);
+                //vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipeline);
+                //skyboxModel.draw(commandBuffers[i], pipelineLayout, 2, 2);
 
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetM, 0, nullptr);
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptorSetS, 0, nullptr);
@@ -1196,7 +1204,7 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
 	ubo.depthVP[0] = proj * view;
 
 #ifdef RSMLIGHTING
-	rsm->UpateLightMVP(view, ortho, lightPos, zNear, zFar);
+	rsm->UpateLightMVP(view, proj, lightPos, zNear, zFar);
 #else
     shadow->UpateLightMVP(view, proj, lightPos);
 	if (CASCADED_COUNT > 1)
@@ -1219,14 +1227,14 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     vkUnmapMemory(device, uniformBufferMemory);
 
     ubo.view = glm::mat4(glm::mat3(camera.matrices.view));
-    ubo.view = glm::scale(ubo.view, glm::vec3(5.0f));
+    ubo.view = glm::scale(ubo.view, glm::vec3(10.0f));
 	vkMapMemory(device, skybox.uniformBufferMemory, 0, sizeof(UniformBufferObject), 0, &data);
 	memcpy(data, &ubo, sizeof(UniformBufferObject));
 	vkUnmapMemory(device, skybox.uniformBufferMemory);
 
     glm::mat4 cameratoworld = glm::inverse(view);
     lightNode->matrix = cameratoworld;
-    lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.1f));
+    lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.01f));
 }
 
 void HelloVulkan::updateLight(float frameTimer)
@@ -1413,9 +1421,9 @@ void HelloVulkan::createDescriptorPool()
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 
     // TODO: create layout for sky box
-    //7: model, scene, skybox(2), shadow, debug rsm
+    //7: model, scene, skybox(2), shadow, debug rsm(2)
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) + 7;
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) + 8;
 
     // ma * 4 + (s * 4) + (s * 4) 
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1464,7 +1472,13 @@ void HelloVulkan::createDescriptorSetLayout()
     imageLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     int binding = 0;
-    std::array<VkDescriptorSetLayoutBinding, 5> scenebindings = {uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding };
+
+#ifdef RSMLIGHTING
+    std::array<VkDescriptorSetLayoutBinding, 6> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, uniformLayoutBinding };
+#else
+    std::array<VkDescriptorSetLayoutBinding, 5> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding };
+#endif // RSMLIGHTING
+
 	std::for_each(scenebindings.begin(), scenebindings.end(), [&binding](VkDescriptorSetLayoutBinding& imageLayoutBinding) {
         imageLayoutBinding.binding = binding++;
 	});
@@ -1567,11 +1581,11 @@ void HelloVulkan::createDescriptorSet()
 
     descriptorWrite.dstSet = descriptorSetS;
 
-    std::array<VkWriteDescriptorSet, 5> sceneDescriptorWrites = { descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite };
-
 #ifdef RSMLIGHTING
+    std::array<VkWriteDescriptorSet, 6> sceneDescriptorWrites = { descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite };
     VkDescriptorImageInfo imageInfo = rsm->GetDepthDescriptorImageInfo();
 #else
+    std::array<VkWriteDescriptorSet, 5> sceneDescriptorWrites = { descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite };
     VkDescriptorImageInfo imageInfo = shadow->GetDescriptorImageInfo();
 #endif
 
@@ -1600,9 +1614,41 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[4].pImageInfo = &envLight.BRDFLutMap.descriptor; // Optional
 
     vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
+
+#endif
+
+#ifdef RSMLIGHTING
+
+    rsm->InitRandomBuffer();
+	sceneDescriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sceneDescriptorWrites[2].pBufferInfo = nullptr;
+	sceneDescriptorWrites[2].dstBinding = 2;
+	sceneDescriptorWrites[2].pImageInfo = &rsm->GetPositionDescriptorImageInfo(); // Optional
+
+	sceneDescriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sceneDescriptorWrites[3].pBufferInfo = nullptr;
+	sceneDescriptorWrites[3].dstBinding = 3;
+	sceneDescriptorWrites[3].pImageInfo = &rsm->GetNormalDescriptorImageInfo(); // Optional
+
+	sceneDescriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sceneDescriptorWrites[4].pBufferInfo = nullptr;
+	sceneDescriptorWrites[4].dstBinding = 4;
+	sceneDescriptorWrites[4].pImageInfo = &rsm->GetFluxDescriptorImageInfo(); // Optional
+
+	sceneDescriptorWrites[5].dstBinding = 5;
+	sceneDescriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	sceneDescriptorWrites[5].descriptorCount = 1;
+
+    VkDescriptorBufferInfo info = rsm->GetBufferInfo();
+	sceneDescriptorWrites[5].pBufferInfo = &info;
+	sceneDescriptorWrites[5].pImageInfo = nullptr; // Optional
+	sceneDescriptorWrites[5].pTexelBufferView = nullptr; // Optional
+
+	vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
+
 #else
     vkUpdateDescriptorSets(device, 2, sceneDescriptorWrites.data(), 0, nullptr);
-#endif // IBLLIGHTING
+#endif 
 
     sceneDescriptorWrites[0].dstSet = skybox.descriptorSetS;
     sceneDescriptorWrites[1].dstSet = skybox.descriptorSetS;

@@ -10,6 +10,7 @@ struct PipelineCreateInfo;
 class ReflectiveShadowMap
 {
 private:
+
 	struct FrameBufferAttachment
 	{
 		VkImage image;
@@ -43,6 +44,12 @@ private:
 		glm::mat4 depthVP;
 	};
 
+	const static int sampleCount = 64;
+	float radius = 500.0f;
+	struct RandomUniformBufferObject
+	{
+		glm::vec4 xi[sampleCount];
+	} rubo;
 
 private:
 	VkFramebuffer framebuffer;
@@ -58,6 +65,9 @@ private:
 	VkBuffer uniformBuffer;
 	VkDeviceMemory uniformMemory;
 
+	VkBuffer runiformBuffer;
+	VkDeviceMemory runiformMemory;
+
 	VkDevice device;
 	uint32_t width, height;
 	HelloVulkan* vulkanAPP;
@@ -70,9 +80,12 @@ private:
 	float depthBiasConstant = 1.25f;
 	// Slope depth bias factor, applied depending on polygon's slope
 	float depthBiasSlope = 1.75f;
+
 public:
 
 	void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
+	void InitRandomBuffer();
+	VkDescriptorBufferInfo GetBufferInfo() const;
 
 	void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
 	void CreatePass();
@@ -90,7 +103,11 @@ public:
 
 public:
 
-	inline VkDescriptorImageInfo GetDepthDescriptorImageInfo() const { return depth.descriptor; }
+	inline const VkDescriptorImageInfo& GetDepthDescriptorImageInfo() const { return depth.descriptor; }
+	inline const VkDescriptorImageInfo& GetPositionDescriptorImageInfo() const { return position.descriptor; }
+	inline const VkDescriptorImageInfo& GetNormalDescriptorImageInfo() const { return normal.descriptor; }
+	inline const VkDescriptorImageInfo& GetFluxDescriptorImageInfo() const { return flux.descriptor; }
+
 };
 
 

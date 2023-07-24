@@ -1,10 +1,39 @@
 
 #include <algorithm>
 #include <iostream>
+#include <random>
 
 #include "HelloVulkan.h"
 #include "ReflectiveShadowMap.h"
 
+void ReflectiveShadowMap::InitRandomBuffer()
+{
+	std::default_random_engine e;
+	std::uniform_real_distribution<float> u(0, 1);
+
+	for (int i = 0; i < sampleCount; i++)
+	{
+		rubo.xi[i].x = u(e);
+		rubo.xi[i].y = u(e);
+		rubo.xi[i].z = radius / width;
+	}
+
+	void* data;
+	vkMapMemory(device, runiformMemory, 0, sizeof(RandomUniformBufferObject), 0, &data);
+	memcpy(data, &rubo, sizeof(RandomUniformBufferObject));
+	vkUnmapMemory(device, runiformMemory);
+}
+
+VkDescriptorBufferInfo ReflectiveShadowMap::GetBufferInfo() const
+{
+	VkDescriptorBufferInfo bufferInfo = {};
+
+	bufferInfo.buffer = runiformBuffer;
+	bufferInfo.offset = 0;
+	bufferInfo.range = sizeof(RandomUniformBufferObject);
+
+	return bufferInfo;
+}
 
 void ReflectiveShadowMap::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
 {
@@ -12,6 +41,7 @@ void ReflectiveShadowMap::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, 
 	height = h;
 	device = vkdevice;
 	vulkanAPP = app;
+
 }
 
 void ReflectiveShadowMap::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipelineCreateInfo& creatInfo)
@@ -41,8 +71,8 @@ void ReflectiveShadowMap::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo,
 	pipelineCreateInfo.colorBlending.attachmentCount = (uint32_t)colorBlendAttachments.size();
 
 	// Disable culling, so all faces contribute to shadows
-	pipelineCreateInfo.rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
-	pipelineCreateInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	pipelineCreateInfo.rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	pipelineCreateInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
 
 	// Enable depth bias
 	pipelineCreateInfo.rasterizer.depthBiasEnable = true;
@@ -266,7 +296,10 @@ void ReflectiveShadowMap::CreateAttachment(FrameBufferAttachment* attachment, Vk
 void ReflectiveShadowMap::CreateUniformBuffer()
 {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-    vulkanAPP->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffer, uniformMemory);
+	vulkanAPP->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffer, uniformMemory);
+
+	bufferSize = sizeof(RandomUniformBufferObject);
+	vulkanAPP->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, runiformBuffer, runiformMemory);
 }
 
 void ReflectiveShadowMap::CreateFrameBuffer()
@@ -367,6 +400,9 @@ void ReflectiveShadowMap::Cleanup()
 
 	vkDestroyBuffer(device, uniformBuffer, nullptr);
 	vkFreeMemory(device, uniformMemory, nullptr);
+
+	vkDestroyBuffer(device, runiformBuffer, nullptr);
+	vkFreeMemory(device, runiformMemory, nullptr);
 
 	vkDestroyPipeline(device, pipeline, nullptr);
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);

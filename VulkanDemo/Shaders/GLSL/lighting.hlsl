@@ -136,10 +136,44 @@ vec3 IBLIndirectLighting(vec3 n, vec3 v, vec3 albedo, vec3 F0, float roughness, 
 
 #endif
 
+#ifdef RSMLIGHTING
+
+vec3 RSMLighting(vec3 worldPos, vec3 N, vec3 albedo)
+{
+	vec3 coords = shadowCoord.xyz;
+	coords.xyz /= shadowCoord.w;
+	vec2 uv = coords.xy * 0.5 + 0.5;
+
+	float radius = random.xi[0].z;
+	vec3 E = vec3(0.0);
+	for (int i = 0; i < RSM_SAMPLE_COUNT; i++)
+	{
+		vec2 r = random.xi[i].xy;
+		vec2 offset = vec2(radius * r.x * sin(PI2 * r.y), radius * r.x * cos(PI2 * r.y));
+		vec2 sampleCoords = uv + offset;
+
+		vec3 pos = texture(vPosSampler, sampleCoords).xyz;
+		vec3 normal = texture(vNormalSampler, sampleCoords).xyz;
+		vec3 flux = texture(vFluxSampler, sampleCoords).xyz;
+
+		normal = normalize(normal);
+
+		vec3 wi = normalize(pos - worldPos);
+		vec3 wo = normalize(worldPos - pos);
+
+		E += flux * max(dot(normal, wo), 0.0) * max(dot(N, wi), 0.0) * r.x * r.x;
+	}
+
+	E /= RSM_SAMPLE_COUNT;
+	return E * albedo / PI;
+}
+
+#endif
+
 vec3 Lighting(float shadow)
 {
-	//vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
-    vec3 albedo = texture(colorSampler, fragTexCoord).rgb; 
+	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
+    //vec3 albedo = texture(colorSampler, fragTexCoord).rgb; 
 
 	vec2 roughMetalic = GetRoughnessAndMetallic();
 	float roughness = roughMetalic.x;

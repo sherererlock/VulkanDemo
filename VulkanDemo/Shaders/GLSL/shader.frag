@@ -2,11 +2,8 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#define IBLLIGHTING
-
 #include"macros.hlsl"
 #include"FragmentInput.hlsl"
-#include"IBLInput.hlsl"
 
 layout(set = 1, binding = 1) uniform sampler2D shadowMapSampler;
 layout(location = 5) in vec4 shadowCoord;

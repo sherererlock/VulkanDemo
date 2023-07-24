@@ -2,20 +2,18 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#define RSMLIGHTING
+#define IBLLIGHTING
 
 #include"macros.hlsl"
 #include"FragmentInput.hlsl"
-
+#include"IBLInput.hlsl"
 
 layout(set = 1, binding = 1) uniform sampler2D shadowMapSampler;
 layout(location = 5) in vec4 shadowCoord;
 
-#include"RSMInput.hlsl"
-
 vec2 GetRoughnessAndMetallic()
 {
-    vec2 roughMetalic;
+    vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
 	roughMetalic.x = 0.8;
 	roughMetalic.y = 0.1;
 	return roughMetalic;
@@ -35,22 +33,7 @@ void main(){
 
 	float shadow = getShadow(coord);
 
-	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2));
-
-	vec2 roughMetalic = GetRoughnessAndMetallic();
-	float roughness = roughMetalic.x;
-	float metallic = roughMetalic.y;
-
-	vec3 F0 = vec3(0.04);
-	F0 = mix(F0, albedo, metallic);
-
-	vec3 n = calculateNormal();
-	vec3 v = normalize(ubo.viewPos.xyz - worldPos);
-
-	vec3 color = DirectLighting(n, v, albedo, F0, roughness, metallic);
-
-	vec3 rsmIndirectLighting = RSMLighting(worldPos, n, albedo);
-	color = rsmIndirectLighting;
+	vec3 color = Lighting(shadow);
 
 	color = pow(color, vec3(1.0/2.2));
 
