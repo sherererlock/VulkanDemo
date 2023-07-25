@@ -193,6 +193,7 @@
     <ClCompile Include="..\include\ktx\lib\memstream.c" />
     <ClCompile Include="..\include\ktx\lib\swap.c" />
     <ClCompile Include="..\include\ktx\lib\texture.c" />
+    <ClCompile Include="src\GBufferRenderer.cpp" />
     <ClCompile Include="src\ReflectiveShadowMap.cpp" />
     <ClCompile Include="src\PreProess.cpp" />
     <ClCompile Include="src\CommonShadow.cpp" />
@@ -208,6 +209,7 @@
     <ClCompile Include="src\TextureAsset.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\GBufferRenderer.h" />
     <ClInclude Include="src\ReflectiveShadowMap.h" />
     <ClInclude Include="src\PreProcess.h" />
     <ClInclude Include="src\CommonShadow.h" />

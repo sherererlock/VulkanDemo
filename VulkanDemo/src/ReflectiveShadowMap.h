@@ -3,39 +3,10 @@
 #include <glm/glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
-class HelloVulkan;
-class gltfModel;
-struct PipelineCreateInfo;
+#include "GBufferRenderer.h"
 
-class ReflectiveShadowMap
+class ReflectiveShadowMap : public GBufferRenderer
 {
-private:
-
-	struct FrameBufferAttachment
-	{
-		VkImage image;
-		VkDeviceMemory mem;
-		VkImageView view;
-		VkFormat format;
-		VkSampler sampler;
-		VkDescriptorImageInfo descriptor;
-
-		void Cleanup(VkDevice device)
-		{
-			vkDestroyImage(device, image, nullptr);
-			vkDestroyImageView(device, view, nullptr);
-			vkFreeMemory(device, mem, nullptr);
-			vkDestroySampler(device, sampler, nullptr);
-		}
-
-		void UpdateDescriptor()
-		{
-			descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			descriptor.imageView = view;
-			descriptor.sampler = sampler;
-		}
-	};
-
 	struct UniformBufferObject
 	{
 		glm::vec4 clipPlane;
@@ -52,25 +23,10 @@ private:
 	} rubo;
 
 private:
-	VkFramebuffer framebuffer;
-	VkPipeline pipeline;
-	VkRenderPass renderPass;
-
-	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorSetLayout descriptorSetLayoutMa;
-
-	VkDescriptorSet descriptorSet;
-	VkPipelineLayout pipelineLayout;
-
-	VkBuffer uniformBuffer;
-	VkDeviceMemory uniformMemory;
 
 	VkBuffer runiformBuffer;
 	VkDeviceMemory runiformMemory;
-
-	VkDevice device;
-	uint32_t width, height;
-	HelloVulkan* vulkanAPP;
 
 	FrameBufferAttachment position;
 	FrameBufferAttachment normal;
@@ -83,26 +39,23 @@ private:
 
 public:
 
-	void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
-	void InitRandomBuffer();
-	VkDescriptorBufferInfo GetBufferInfo() const;
+	virtual void InitRandomBuffer() override;
+	VkDescriptorBufferInfo GetBufferInfo() const override;
 
-	void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
-	void CreatePass();
-	void CreateDescriptSetLayout();
-	void SetupDescriptSet(VkDescriptorPool pool);
+	void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo) override;
+	void CreatePass() override;
+	void CreateDescriptSetLayout() override;
+	void SetupDescriptSet(VkDescriptorPool pool) override;
 
-	void CreateGBuffer();
-	void CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlagBits usage);
-	void CreateUniformBuffer();
-	void CreateFrameBuffer();
-	void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel);
-	void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar);
+	void CreateGBuffer() override;
+	void CreateUniformBuffer() override;
+	void CreateFrameBuffer() override;
+	void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel) override;
+	void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar) override;
 
-	void Cleanup();
+	void Cleanup() override;
 
 public:
-
 	inline const VkDescriptorImageInfo& GetDepthDescriptorImageInfo() const { return depth.descriptor; }
 	inline const VkDescriptorImageInfo& GetPositionDescriptorImageInfo() const { return position.descriptor; }
 	inline const VkDescriptorImageInfo& GetNormalDescriptorImageInfo() const { return normal.descriptor; }

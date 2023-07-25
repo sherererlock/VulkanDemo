@@ -50,7 +50,7 @@ void main(){
 	vec3 color = DirectLighting(n, v, albedo, F0, roughness, metallic);
 
 	vec3 rsmIndirectLighting = RSMLighting(worldPos, n, albedo);
-	color = rsmIndirectLighting;
+	color += rsmIndirectLighting;
 
 	color = pow(color, vec3(1.0/2.2));
 
