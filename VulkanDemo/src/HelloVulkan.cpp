@@ -30,6 +30,7 @@
 
 #define SHADOW
 
+
 #ifdef IBLLIGHTING
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 #endif
@@ -38,7 +39,6 @@ const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_dro
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
 #endif
 
-//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
 const std::string TEXTURE_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/hdr/gcanyon_cube.ktx";
@@ -851,16 +851,16 @@ void HelloVulkan::createGraphicsPipeline()
     }
 
     std::string vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.vert.spv";
+    std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.frag.spv";
 
 #ifdef IBLLIGHTING
-    std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader_ibl.frag.spv";
+    fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader_ibl.frag.spv";
 #endif
 
 #ifdef RSMLIGHTING
-    std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader_rsm.frag.spv";
+    fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader_rsm.frag.spv";
 #endif
 
-    //std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.frag.spv";
 
     if (CASCADED_COUNT > 1)
     {
@@ -1263,6 +1263,10 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
 		ubo.splitDepth.z = split[2];
 		ubo.splitDepth.w = split[3];
 	}
+#endif
+
+#ifdef SCREENSPACEAO
+    ssao->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, camera.viewPos, camera.getNearClip(), camera.getFarClip());
 #endif
 
     ubo.shadowIndex = shadowIndex;

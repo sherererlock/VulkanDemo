@@ -308,8 +308,9 @@ void GBufferRenderer::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gl
 	std::vector<VkClearValue> clearValues(4);
 	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 	clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-	clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-	clearValues[3].depthStencil = { 1.0f, 0 };
+	clearValues[2].depthStencil = { 1.0f, 0 };
+	clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+
 
 	renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
 	renderPassInfo.pClearValues = clearValues.data();
