@@ -42,7 +42,6 @@ protected:
 	VkPipeline pipeline;
 	VkRenderPass renderPass;
 
-	VkDescriptorSetLayout descriptorSetLayoutMa;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorSet descriptorSet;
 	VkPipelineLayout pipelineLayout;

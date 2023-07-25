@@ -19,6 +19,7 @@
 
 class Shadow;
 class ReflectiveShadowMap;
+class SSAO;
 
 struct QueueFamilyIndices
 {
@@ -297,7 +298,8 @@ private:
     Debug debug;
     Input input;
 
-    ReflectiveShadowMap* rsm; 
+    ReflectiveShadowMap* rsm;
+    SSAO* ssao;
 
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;

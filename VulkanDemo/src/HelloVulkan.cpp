@@ -20,10 +20,13 @@
 #include "CascadedShadow.h"
 #include "PreProcess.h"
 #include "ReflectiveShadowMap.h"
+#include "SSAO.h"
 
 #define IBLLIGHTING
 
 //#define RSMLIGHTING
+
+#define SCREENSPACEAO
 
 #define SHADOW
 
@@ -236,8 +239,11 @@ HelloVulkan::HelloVulkan()
 		shadow = new CascadedShadow();
 	else
 		shadow = new CommonShadow();
-
     #endif
+
+#ifdef SCREENSPACEAO
+    ssao = new SSAO();
+#endif
 }
 
 void HelloVulkan::Init()
@@ -287,6 +293,10 @@ void HelloVulkan::InitVulkan()
 	shadow->Init(this, device, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
     #endif
 
+#ifdef SCREENSPACEAO
+    ssao->Init(this, device, width, height);
+#endif
+
     createSwapChain();
     createImageViews();
 
@@ -299,6 +309,11 @@ void HelloVulkan::InitVulkan()
     shadow->CreateShadowPass();
     #endif
 
+#ifdef SCREENSPACEAO
+    ssao->CreateGBuffer();
+    ssao->CreatePass();
+#endif
+
     createDescriptorSetLayout();
 
     debug.CreateDescriptSetLayout();
@@ -308,6 +323,10 @@ void HelloVulkan::InitVulkan()
     #else
     shadow->CreateDescriptSetLayout();
     #endif
+
+#ifdef SCREENSPACEAO
+    ssao->CreateDescriptSetLayout();
+#endif
 
     createGraphicsPipeline();
 
@@ -325,6 +344,10 @@ void HelloVulkan::InitVulkan()
     shadow->CreateFrameBuffer();
     #endif
 
+#ifdef SCREENSPACEAO
+	ssao->CreateFrameBuffer();
+#endif
+
     createUniformBuffer();
 
     debug.CreateUniformBuffer();
@@ -334,6 +357,10 @@ void HelloVulkan::InitVulkan()
     #else
     shadow->CreateUniformBuffer();
     #endif
+
+#ifdef SCREENSPACEAO
+	ssao->CreateUniformBuffer();
+#endif
 
     loadgltfModel(MODEL_PATH, gltfmodel);
 
@@ -354,6 +381,10 @@ void HelloVulkan::InitVulkan()
     #else
     shadow->SetupDescriptSet(descriptorPool);
     #endif
+
+#ifdef SCREENSPACEAO
+	ssao->SetupDescriptSet(descriptorPool);
+#endif
 
     createCommandBuffers();
 
@@ -446,6 +477,10 @@ void HelloVulkan::Cleanup()
     #else
     shadow->Cleanup();
     #endif
+
+#ifdef SCREENSPACEAO
+    ssao->Cleanup();
+#endif
 
     vkDestroyDevice(device, nullptr);
 
@@ -923,6 +958,10 @@ void HelloVulkan::createGraphicsPipeline()
     #else
     shadow->CreateShadowPipeline(info, pipelineInfo);
     #endif
+
+#ifdef SCREENSPACEAO
+	ssao->CreatePipeline(info, pipelineInfo);
+#endif
 }
 
 void HelloVulkan::createFrameBuffer()
@@ -1010,6 +1049,12 @@ void HelloVulkan::buildCommandBuffers()
             rsm->BuildCommandBuffer(commandBuffers[i], gltfmodel);
             #else
             shadow->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+            #endif
+        }
+
+        {
+            #ifdef SCREENSPACEAO
+            ssao->BuildCommandBuffer(commandBuffers[i], gltfmodel);
             #endif
         }
 

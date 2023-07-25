@@ -12,5 +12,6 @@ int main()
 
     vulkanapp.Cleanup();
 
+    getchar();
     return 0;
 }

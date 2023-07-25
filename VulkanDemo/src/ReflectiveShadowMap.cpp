@@ -135,54 +135,6 @@ void ReflectiveShadowMap::CreateUniformBuffer()
 	vulkanAPP->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, runiformBuffer, runiformMemory);
 }
 
-void ReflectiveShadowMap::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel)
-{
-    VkRenderPassBeginInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent.width = width;
-    renderPassInfo.renderArea.extent.height = height;
-
-	std::vector<VkClearValue> clearValues(4);
-	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-	clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-	clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-	clearValues[3].depthStencil = { 1.0f, 0 };
-
-    renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
-    renderPassInfo.pClearValues = clearValues.data();
-
-    VkViewport viewport = {};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float) width;
-    viewport.height = (float) height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-
-    VkRect2D scissor = {};
-    scissor.offset = {0, 0};
-    scissor.extent.width = width;
-    scissor.extent.height = height;
-
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-	vkCmdSetDepthBias(
-		commandBuffer,
-		depthBiasConstant,
-		0.0f,
-		depthBiasSlope);
-
-    renderPassInfo.framebuffer = framebuffer;
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-	gltfmodel.draw(commandBuffer, pipelineLayout, 0, 1);
-	vkCmdEndRenderPass(commandBuffer);
-}
-
 void ReflectiveShadowMap::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar)
 {
 	UniformBufferObject ubo;

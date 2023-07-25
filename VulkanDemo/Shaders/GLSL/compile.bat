@@ -1,6 +1,6 @@
-glslangValidator.exe -V Shaders\GLSL\shader.vert	-o Shaders\GLSL\spv\shader.vert.spv
+@REM glslangValidator.exe -V Shaders\GLSL\shader.vert	-o Shaders\GLSL\spv\shader.vert.spv
 glslangValidator.exe -V Shaders\GLSL\shader.frag -o Shaders\GLSL\spv\shader.frag.spv
-glslangValidator.exe -V Shaders\GLSL\shader_rsm.frag -o Shaders\GLSL\spv\shader_rsm.frag.spv
+@REM glslangValidator.exe -V Shaders\GLSL\shader_rsm.frag -o Shaders\GLSL\spv\shader_rsm.frag.spv
 glslangValidator.exe -V Shaders\GLSL\shader_ibl.frag -o Shaders\GLSL\spv\shader_ibl.frag.spv
 
 @REM glslangValidator.exe -V Shaders\GLSL\shaderCascaded.vert	-o Shaders\GLSL\spv\shaderCascaded.vert.spv
@@ -23,8 +23,10 @@ glslangValidator.exe -V Shaders\GLSL\shader_ibl.frag -o Shaders\GLSL\spv\shader_
 @REM glslangValidator.exe -V Shaders\GLSL\genBRDFLut.vert -o Shaders\GLSL\spv\genBRDFLut.vert.spv
 @REM glslangValidator.exe -V Shaders\GLSL\genBRDFLut.frag -o Shaders\GLSL\spv\genBRDFLut.frag.spv
 
-glslangValidator.exe -V Shaders\GLSL\rsmgbuffer.vert -o Shaders\GLSL\spv\rsmgbuffer.vert.spv
-glslangValidator.exe -V Shaders\GLSL\rsmgbuffer.frag -o Shaders\GLSL\spv\rsmgbuffer.frag.spv
+@REM glslangValidator.exe -V Shaders\GLSL\rsmgbuffer.vert -o Shaders\GLSL\spv\rsmgbuffer.vert.spv
+@REM glslangValidator.exe -V Shaders\GLSL\rsmgbuffer.frag -o Shaders\GLSL\spv\rsmgbuffer.frag.spv
 
+glslangValidator.exe -V Shaders\GLSL\ssaogbuffer.vert -o Shaders\GLSL\spv\ssaogbuffer.vert.spv
+glslangValidator.exe -V Shaders\GLSL\ssaogbuffer.frag -o Shaders\GLSL\spv\ssaogbuffer.frag.spv
 
 pause

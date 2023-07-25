@@ -207,6 +207,7 @@
     <ClCompile Include="src\HelloVulkan.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\TextureAsset.cpp" />
+    <ClCompile Include="src\SSAO.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\GBufferRenderer.h" />
@@ -224,6 +225,7 @@
     <ClInclude Include="src\HelloVulkan.h" />
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Texture.h" />
+    <ClInclude Include="src\SSAO.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
