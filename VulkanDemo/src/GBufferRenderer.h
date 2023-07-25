@@ -1,4 +1,6 @@
 #pragma once
+#include <vector>
+#include <string>
 
 #include <glm/glm/glm.hpp>
 #include <vulkan/vulkan.h>
@@ -40,6 +42,7 @@ protected:
 	VkPipeline pipeline;
 	VkRenderPass renderPass;
 
+	VkDescriptorSetLayout descriptorSetLayoutMa;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorSet descriptorSet;
 	VkPipelineLayout pipelineLayout;
@@ -51,8 +54,25 @@ protected:
 	uint32_t width, height;
 	HelloVulkan* vulkanAPP;
 
+	FrameBufferAttachment position;
+	FrameBufferAttachment normal;
+	FrameBufferAttachment depth;
+
+	float depthBiasConstant = 1.25f;
+	// Slope depth bias factor, applied depending on polygon's slope
+	float depthBiasSlope = 1.75f;
+
+	std::string vertexShader;
+	std::string fragmentShader;
+
 public:
 	void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
+	void CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlagBits usage);
+
+	virtual std::vector<VkAttachmentDescription> GetAttachmentDescriptions() const;
+	virtual std::vector<VkAttachmentReference> GetAttachmentRefs() const;
+	virtual std::vector<VkImageView> GetImageViews() const;
+
 	virtual void InitRandomBuffer();
 	virtual VkDescriptorBufferInfo GetBufferInfo() const;
 
@@ -70,7 +90,6 @@ public:
 
 	virtual void Cleanup();
 
-	void CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlagBits usage);
 };
 
 

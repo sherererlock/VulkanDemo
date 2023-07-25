@@ -23,33 +23,26 @@ class ReflectiveShadowMap : public GBufferRenderer
 	} rubo;
 
 private:
-	VkDescriptorSetLayout descriptorSetLayoutMa;
 
 	VkBuffer runiformBuffer;
 	VkDeviceMemory runiformMemory;
 
-	FrameBufferAttachment position;
-	FrameBufferAttachment normal;
 	FrameBufferAttachment flux;
-	FrameBufferAttachment depth;
-
-	float depthBiasConstant = 1.25f;
-	// Slope depth bias factor, applied depending on polygon's slope
-	float depthBiasSlope = 1.75f;
 
 public:
+
+	virtual std::vector<VkAttachmentDescription> GetAttachmentDescriptions() const override;
+	virtual std::vector<VkAttachmentReference> GetAttachmentRefs() const override;
+	virtual std::vector<VkImageView> GetImageViews() const override;
 
 	virtual void InitRandomBuffer() override;
 	VkDescriptorBufferInfo GetBufferInfo() const override;
 
-	void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo) override;
-	void CreatePass() override;
-	void CreateDescriptSetLayout() override;
 	void SetupDescriptSet(VkDescriptorPool pool) override;
 
+	virtual void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo) override;
 	void CreateGBuffer() override;
 	void CreateUniformBuffer() override;
-	void CreateFrameBuffer() override;
 	void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel) override;
 	void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar) override;
 

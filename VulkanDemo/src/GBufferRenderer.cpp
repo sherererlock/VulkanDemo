@@ -25,6 +25,57 @@ void GBufferRenderer::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint
 	vulkanAPP = app;
 }
 
+std::vector<VkAttachmentDescription> GBufferRenderer::GetAttachmentDescriptions() const
+{
+	VkAttachmentDescription colorAttachment = {};
+	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // 采样数
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // clear
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // 存储下来
+	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	VkAttachmentDescription depthAttachment = {};
+	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+
+	std::vector<VkAttachmentDescription> colorAttachments = { colorAttachment, colorAttachment, depthAttachment };
+	colorAttachments[0].format = position.format;
+	colorAttachments[1].format = normal.format;
+	colorAttachments[2].format = depth.format;
+
+	return colorAttachments;
+}
+
+std::vector<VkAttachmentReference> GBufferRenderer::GetAttachmentRefs() const
+{
+	VkAttachmentReference colorAttachmentRef = {};
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	std::vector<VkAttachmentReference> colorAttachmentRefs = { colorAttachmentRef, colorAttachmentRef };
+	colorAttachmentRefs[0].attachment = 0;
+	colorAttachmentRefs[1].attachment = 1;
+
+	return colorAttachmentRefs;
+}
+
+std::vector<VkImageView> GBufferRenderer::GetImageViews() const
+{
+	std::vector<VkImageView> imageviews = {
+		position.view,
+		normal.view,
+		depth.view
+	};
+
+	return imageviews;
+}
+
 void GBufferRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipelineCreateInfo& creatInfo)
 {
 	auto attributeDescriptoins = Vertex1::getAttributeDescriptions({ Vertex1::VertexComponent::Position, Vertex1::VertexComponent::Normal, Vertex1::VertexComponent::UV, Vertex1::VertexComponent::Tangent });
@@ -46,7 +97,10 @@ void GBufferRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkG
 	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
 
-	std::array<VkPipelineColorBlendAttachmentState, 3> colorBlendAttachments = { colorBlendAttachment, colorBlendAttachment, colorBlendAttachment };
+	auto colorAttachmentRefs = GetAttachmentRefs();
+	std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+	for (auto colorAttachmentRef : colorAttachmentRefs)
+		colorBlendAttachments.push_back(colorBlendAttachment);
 
 	pipelineCreateInfo.colorBlending.pAttachments = colorBlendAttachments.data();
 	pipelineCreateInfo.colorBlending.attachmentCount = (uint32_t)colorBlendAttachments.size();
@@ -70,7 +124,7 @@ void GBufferRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkG
 	pipelineCreateInfo.dynamicState.dynamicStateCount = 3;
 	pipelineCreateInfo.dynamicState.pDynamicStates = dynamicStates;
 
-	auto shaderStages = vulkanAPP->CreaterShader("D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/rsmgbuffer.vert.spv", "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/rsmgbuffer.frag.spv");
+	auto shaderStages = vulkanAPP->CreaterShader(vertexShader, fragmentShader);
 	creatInfo.stageCount = 2;
 	creatInfo.pStages = shaderStages.data();
 
@@ -108,11 +162,79 @@ void GBufferRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkG
 
 void GBufferRenderer::CreatePass()
 {
+	std::vector<VkAttachmentDescription> colorAttachments = GetAttachmentDescriptions();
 
+	VkAttachmentReference colorAttachmentRef = {};
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	std::vector<VkAttachmentReference> colorAttachmentRefs = GetAttachmentRefs();
+
+	VkAttachmentReference depthAttachmentRef = {};
+	depthAttachmentRef.attachment = 2;
+	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass = {};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // 图像渲染的子流程
+	subpass.colorAttachmentCount = (uint32_t)colorAttachmentRefs.size();
+	subpass.pColorAttachments = colorAttachmentRefs.data(); // fragment shader使用 location = 0 outcolor,输出
+	subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+	std::array<VkSubpassDependency, 2> dependencies;
+
+	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass = 0;
+
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;   //  A subpass layout发生转换的阶段
+	dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT; // A subpass 中需要完成的操作
+
+	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //  B subpass 等待执行的阶段
+	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // b subpass等待执行操作
+
+	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+	dependencies[1].srcSubpass = 0;
+	dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
+	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+	VkRenderPassCreateInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = (uint32_t)colorAttachments.size();
+	renderPassInfo.pAttachments = colorAttachments.data();
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+
+	renderPassInfo.dependencyCount = (uint32_t)dependencies.size();
+	renderPassInfo.pDependencies = dependencies.data();
+
+	if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create render pass!");
+	}
 }
 
 void GBufferRenderer::CreateDescriptSetLayout()
 {
+	VkDescriptorSetLayoutBinding layoutBinding;
+	layoutBinding.binding = 0;
+	layoutBinding.descriptorCount = 1;
+	layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	layoutBinding.pImmutableSamplers = nullptr;
+	layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &layoutBinding;
+
+	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create shadow descriptor set layout!");
+	}
 }
 
 void GBufferRenderer::SetupDescriptSet(VkDescriptorPool pool)
@@ -121,6 +243,10 @@ void GBufferRenderer::SetupDescriptSet(VkDescriptorPool pool)
 
 void GBufferRenderer::CreateGBuffer()
 {
+	CreateAttachment(&position, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	CreateAttachment(&normal, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	CreateAttachment(&depth, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	depth.descriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 }
 
 void GBufferRenderer::CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlagBits usage)
@@ -152,10 +278,69 @@ void GBufferRenderer::CreateUniformBuffer()
 
 void GBufferRenderer::CreateFrameBuffer()
 {
+	std::vector<VkImageView> attachments = GetImageViews();
+
+	VkFramebufferCreateInfo framebufferInfo = {};
+	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	framebufferInfo.renderPass = renderPass;
+	framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+	framebufferInfo.pAttachments = attachments.data();
+	framebufferInfo.width = width;
+	framebufferInfo.height = height;
+	framebufferInfo.layers = 1;
+
+	if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffer) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create framebuffer!");
+	}
 }
 
 void GBufferRenderer::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel)
 {
+	VkRenderPassBeginInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = renderPass;
+
+	renderPassInfo.renderArea.offset = { 0, 0 };
+	renderPassInfo.renderArea.extent.width = width;
+	renderPassInfo.renderArea.extent.height = height;
+
+	std::vector<VkClearValue> clearValues(4);
+	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+	clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+	clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+	clearValues[3].depthStencil = { 1.0f, 0 };
+
+	renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
+	renderPassInfo.pClearValues = clearValues.data();
+
+	VkViewport viewport = {};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = (float)width;
+	viewport.height = (float)height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	VkRect2D scissor = {};
+	scissor.offset = { 0, 0 };
+	scissor.extent.width = width;
+	scissor.extent.height = height;
+
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+	vkCmdSetDepthBias(
+		commandBuffer,
+		depthBiasConstant,
+		0.0f,
+		depthBiasSlope);
+
+	renderPassInfo.framebuffer = framebuffer;
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	gltfmodel.draw(commandBuffer, pipelineLayout, 0, 1);
+	vkCmdEndRenderPass(commandBuffer);
 }
 
 void GBufferRenderer::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar)
@@ -165,6 +350,10 @@ void GBufferRenderer::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 li
 
 void GBufferRenderer::Cleanup()
 {
+	position.Cleanup(device);
+	normal.Cleanup(device);
+	depth.Cleanup(device);
+
 	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
 	vkDestroyBuffer(device, uniformBuffer, nullptr);

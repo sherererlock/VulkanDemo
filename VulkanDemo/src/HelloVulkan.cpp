@@ -21,19 +21,21 @@
 #include "PreProcess.h"
 #include "ReflectiveShadowMap.h"
 
-//#define IBLLIGHTING
+#define IBLLIGHTING
 
-#define RSMLIGHTING
+//#define RSMLIGHTING
 
 #define SHADOW
 
 #ifdef IBLLIGHTING
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
-#else
-const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
-//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 #endif
 
+#ifdef RSMLIGHTING
+const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
+#endif
+
+//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
 const std::string TEXTURE_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/hdr/gcanyon_cube.ktx";
@@ -214,8 +216,8 @@ HelloVulkan::HelloVulkan()
 	camera.setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
 #endif
 
-	//camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
-	//camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
+	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
+	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
 
 	camera.movementSpeed = 4.0f;
     camera.flipY = true;
@@ -821,9 +823,9 @@ void HelloVulkan::createGraphicsPipeline()
 
 #ifdef RSMLIGHTING
     std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader_rsm.frag.spv";
-#else
-    std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.frag.spv";
 #endif
+
+    //std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.frag.spv";
 
     if (CASCADED_COUNT > 1)
     {
