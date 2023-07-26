@@ -110,7 +110,8 @@ void GBufferRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkG
 	pipelineCreateInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
 
 	// Enable depth bias
-	pipelineCreateInfo.rasterizer.depthBiasEnable = true;
+	pipelineCreateInfo.rasterizer.depthBiasEnable = VK_FALSE;
+	pipelineCreateInfo.rasterizer.depthBiasClamp = VK_FALSE;
 
 	pipelineCreateInfo.rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 
@@ -119,9 +120,8 @@ void GBufferRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkG
 	VkDynamicState dynamicStates[] = {
 		VK_DYNAMIC_STATE_VIEWPORT,
 		VK_DYNAMIC_STATE_SCISSOR,
-		VK_DYNAMIC_STATE_DEPTH_BIAS
 	};
-	pipelineCreateInfo.dynamicState.dynamicStateCount = 3;
+	pipelineCreateInfo.dynamicState.dynamicStateCount = 2;
 	pipelineCreateInfo.dynamicState.pDynamicStates = dynamicStates;
 
 	auto shaderStages = vulkanAPP->CreaterShader(vertexShader, fragmentShader);
@@ -163,9 +163,6 @@ void GBufferRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkG
 void GBufferRenderer::CreatePass()
 {
 	std::vector<VkAttachmentDescription> colorAttachments = GetAttachmentDescriptions();
-
-	VkAttachmentReference colorAttachmentRef = {};
-	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	std::vector<VkAttachmentReference> colorAttachmentRefs = GetAttachmentRefs();
 
@@ -245,7 +242,7 @@ void GBufferRenderer::CreateGBuffer()
 {
 	CreateAttachment(&position, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 	CreateAttachment(&normal, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-	CreateAttachment(&depth, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	CreateAttachment(&depth, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	depth.descriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 }
 
@@ -267,7 +264,7 @@ void GBufferRenderer::CreateAttachment(FrameBufferAttachment* attachment, VkForm
 
 	vulkanAPP->createImage(width, height, format, VK_IMAGE_TILING_OPTIMAL, usage | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment->image, attachment->mem, 1, VK_SAMPLE_COUNT_1_BIT);
 	vulkanAPP->createImageView(attachment->view, attachment->image, format, aspectMask, 1);
-	vulkanAPP->createTextureSampler(attachment->sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, 1);
+	vulkanAPP->createTextureSampler(attachment->sampler, VK_FILTER_NEAREST, VK_FILTER_NEAREST, 1, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
 	attachment->UpdateDescriptor();
 }
@@ -331,11 +328,6 @@ void GBufferRenderer::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gl
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-	vkCmdSetDepthBias(
-		commandBuffer,
-		depthBiasConstant,
-		0.0f,
-		depthBiasSlope);
 
 	renderPassInfo.framebuffer = framebuffer;
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
