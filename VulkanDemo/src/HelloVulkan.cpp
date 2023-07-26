@@ -28,18 +28,23 @@
 
 #define SCREENSPACEAO
 
+#ifdef SCREENSPACEAO
+#define IBLLIGHTING
+#endif
+
 #define SHADOW
 
 
 #ifdef IBLLIGHTING
-const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
 #endif
 
 #ifdef RSMLIGHTING
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
 #endif
 
-const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
 const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
@@ -221,8 +226,10 @@ HelloVulkan::HelloVulkan()
 	camera.setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
 #endif
 
-	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
-	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
+	camera.setPosition(glm::vec3(0.0f, 1.0f, 0.0f));
+	camera.setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
+	//camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
+	//camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
 
 	camera.movementSpeed = 4.0f;
     camera.flipY = true;
@@ -860,6 +867,10 @@ void HelloVulkan::createGraphicsPipeline()
 
 #ifdef RSMLIGHTING
     fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader_rsm.frag.spv";
+#endif
+
+#ifdef SCREENSPACEAO
+    fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader_ssao.frag.spv";
 #endif
 
     if (CASCADED_COUNT > 1)
@@ -1527,7 +1538,13 @@ void HelloVulkan::createDescriptorSetLayout()
 #ifdef RSMLIGHTING
     std::array<VkDescriptorSetLayoutBinding, 6> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, uniformLayoutBinding };
 #else
+
+#ifdef SCREENSPACEAO
+    std::array<VkDescriptorSetLayoutBinding, 6> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, imageLayoutBinding };
+#else
     std::array<VkDescriptorSetLayoutBinding, 5> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding };
+#endif
+
 #endif // RSMLIGHTING
 
 	std::for_each(scenebindings.begin(), scenebindings.end(), [&binding](VkDescriptorSetLayoutBinding& imageLayoutBinding) {
@@ -1632,11 +1649,11 @@ void HelloVulkan::createDescriptorSet()
 
     descriptorWrite.dstSet = descriptorSetS;
 
+	std::array<VkWriteDescriptorSet, 6> sceneDescriptorWrites = { descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite };
+
 #ifdef RSMLIGHTING
-    std::array<VkWriteDescriptorSet, 6> sceneDescriptorWrites = { descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite };
     VkDescriptorImageInfo imageInfo = rsm->GetDepthDescriptorImageInfo();
 #else
-    std::array<VkWriteDescriptorSet, 5> sceneDescriptorWrites = { descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite };
     VkDescriptorImageInfo imageInfo = shadow->GetDescriptorImageInfo();
 #endif
 
@@ -1664,8 +1681,13 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[4].dstBinding = 4;
 	sceneDescriptorWrites[4].pImageInfo = &envLight.BRDFLutMap.descriptor; // Optional
 
+#ifdef SCREENSPACEAO
+	sceneDescriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sceneDescriptorWrites[5].pBufferInfo = nullptr;
+	sceneDescriptorWrites[5].dstBinding = 5;
+	sceneDescriptorWrites[5].pImageInfo = &ssao->GetSSAODescriptorImageInfo(); // Optional
+#endif
     vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
-
 #endif
 
 #ifdef RSMLIGHTING
@@ -1755,7 +1777,10 @@ void HelloVulkan::createDescriptorSet()
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
-    imageInfo = ssao->GetSSAODescriptorImageInfo();
+#ifdef SCREENSPACEAO
+	imageInfo = ssao->GetSSAODescriptorImageInfo();
+#endif // SCREENSPACEAO
+
     debug.SetupDescriptSet(descriptorPool, imageInfo);
 }
 

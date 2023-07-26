@@ -193,8 +193,14 @@ vec3 Lighting(float shadow)
 	ambient = IBLIndirectLighting(n, v, albedo, F0, roughness, metallic);
 	#endif
 
+	#ifdef SSAO
+	float ao = texture(ssaoSampler, gl_FragCoord.xy).r;
+	
+	ambient *= ao;
+	#endif
+
 	//vec3 color = Lo * shadow + ambient + emissive;
-	vec3 color = Lo + ambient + emissive;
+	vec3 color = vec3(ao, 0, 0);
 
 	return color;
 }

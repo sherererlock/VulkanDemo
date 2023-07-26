@@ -1,5 +1,5 @@
 @REM glslangValidator.exe -V Shaders\GLSL\shader.vert	-o Shaders\GLSL\spv\shader.vert.spv
-glslangValidator.exe -V Shaders\GLSL\shader.frag -o Shaders\GLSL\spv\shader.frag.spv
+@REM glslangValidator.exe -V Shaders\GLSL\shader.frag -o Shaders\GLSL\spv\shader.frag.spv
 @REM glslangValidator.exe -V Shaders\GLSL\shader_rsm.frag -o Shaders\GLSL\spv\shader_rsm.frag.spv
 @REM glslangValidator.exe -V Shaders\GLSL\shader_ibl.frag -o Shaders\GLSL\spv\shader_ibl.frag.spv
 
@@ -29,5 +29,6 @@ glslangValidator.exe -V Shaders\GLSL\shader.frag -o Shaders\GLSL\spv\shader.frag
 glslangValidator.exe -V Shaders\GLSL\ssaogbuffer.vert -o Shaders\GLSL\spv\ssaogbuffer.vert.spv
 glslangValidator.exe -V Shaders\GLSL\ssaogbuffer.frag -o Shaders\GLSL\spv\ssaogbuffer.frag.spv
 glslangValidator.exe -V Shaders\GLSL\ssao.frag -o Shaders\GLSL\spv\ssao.frag.spv
+glslangValidator.exe -V Shaders\GLSL\shader_ssao.frag -o Shaders\GLSL\spv\shader_ssao.frag.spv
 
 pause
