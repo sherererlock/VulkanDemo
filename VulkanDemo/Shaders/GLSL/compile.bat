@@ -28,5 +28,6 @@ glslangValidator.exe -V Shaders\GLSL\shader_ibl.frag -o Shaders\GLSL\spv\shader_
 
 glslangValidator.exe -V Shaders\GLSL\ssaogbuffer.vert -o Shaders\GLSL\spv\ssaogbuffer.vert.spv
 glslangValidator.exe -V Shaders\GLSL\ssaogbuffer.frag -o Shaders\GLSL\spv\ssaogbuffer.frag.spv
+glslangValidator.exe -V Shaders\GLSL\ssao.frag -o Shaders\GLSL\spv\ssao.frag.spv
 
 pause

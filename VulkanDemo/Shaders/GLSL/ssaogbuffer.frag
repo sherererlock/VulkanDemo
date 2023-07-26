@@ -40,5 +40,6 @@ void main()
 {
 	vec3 N = calculateNormal();
 	outPos = vec4(viewPos, linearDepth(gl_FragCoord.z));
+	N = normalize(N * 0.5 + 0.5);
 	outNormal = vec4(N, 1.0);
 }
