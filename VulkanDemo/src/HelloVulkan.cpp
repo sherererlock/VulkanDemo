@@ -1651,6 +1651,8 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[1].pImageInfo = &imageInfo; // Optional
 	sceneDescriptorWrites[1].pTexelBufferView = nullptr; // Optional
 
+    int sceneDescriptorsCount = 2;
+
 #ifdef IBLLIGHTING
 
     sceneDescriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1707,10 +1709,11 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[2].pBufferInfo = nullptr;
 	sceneDescriptorWrites[2].dstBinding = 2;
 	sceneDescriptorWrites[2].pImageInfo = &ssao->GetSSAODescriptorImageInfo(); // Optional
+
+    sceneDescriptorsCount = 3;
 #endif
 
-    vkUpdateDescriptorSets(device, 2, sceneDescriptorWrites.data(), 0, nullptr);
-
+    vkUpdateDescriptorSets(device, sceneDescriptorsCount, sceneDescriptorWrites.data(), 0, nullptr);
 
     sceneDescriptorWrites[0].dstSet = skybox.descriptorSetS;
     sceneDescriptorWrites[1].dstSet = skybox.descriptorSetS;
