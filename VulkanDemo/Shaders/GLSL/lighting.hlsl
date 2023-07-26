@@ -193,7 +193,8 @@ vec3 Lighting(float shadow)
 	ambient = IBLIndirectLighting(n, v, albedo, F0, roughness, metallic);
 	#endif
 
-	vec3 color = Lo * shadow + ambient + emissive;
+	//vec3 color = Lo * shadow + ambient + emissive;
+	vec3 color = Lo + ambient + emissive;
 
 	return color;
 }

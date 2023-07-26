@@ -17,18 +17,18 @@ layout(set = 0, binding = 3) uniform sampler2D noiseSampler;
 
 layout(location = 0) in vec2 inUV;
 
-layout(location = 0) out vec4 outAO;
+layout(location = 0) out float outAO;
 
 void main() 
 {
-	vec3 viewPos = texture(positionSampler, inUV);
-	vec3 viewNormal = normalize(texture(normalSampler, inUV) * 2.0 - 1.0);
+	vec3 viewPos = texture(positionSampler, inUV).xyz;
+	vec3 viewNormal = normalize(texture(normalSampler, inUV).xyz * 2.0 - 1.0);
 
 	ivec2 texDim = textureSize(positionSampler, 0);
 	ivec2 noiseDim = textureSize(noiseSampler, 0);
 	const vec2 uvScale = vec2(float(texDim.x) / float(noiseDim.x),float(texDim.y) / float(noiseDim.y));
 	const vec2 noiseUV = uvScale * inUV;
-	vec3 randomVec = texture(noiseSampler, noiseUV) * 2.0 - 1.0;
+	vec3 randomVec = texture(noiseSampler, noiseUV).xyz * 2.0 - 1.0;
 
 	vec3 tangent = normalize(randomVec - dot(randomVec, viewNormal) * viewNormal);
 	vec3 bitangent = normalize(cross(tangent, viewNormal));
@@ -45,12 +45,15 @@ void main()
 		offset = ubo.proj * offset;
 		offset.xyz /= offset.w;
 		offset.xy = offset.xy * 0.5 + 0.5;
-
+		// viewPos.z 是<-zFar, -zNear>之间的值
+		// viewPos.w 是<zNear, zFar>之间的值
+		// sampleDepth比samplePos.z大，说明深度贴图上的点比sample point离相机越近，则这个点被遮挡，记录进AO中
+		// rangeCheck 在离当前着色点半径为SSAO_RADIUS的区域内，权重越大，超出这个区域权重变小
 		float sampleDepth = -texture(positionSampler, offset.xy).w;
 		float rangeCheck = smoothstep(0.0, 1.0, SSAO_RADIUS / abs(viewPos.z - sampleDepth));
 		occlusion += (sampleDepth >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;
 	}
-
+	// 记录直接可以乘以间接光的值
 	occlusion = 1.0 - (occlusion /float(SSAO_KERNEL_SIZE));
 
 	outAO = occlusion;

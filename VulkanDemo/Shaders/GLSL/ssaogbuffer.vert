@@ -5,7 +5,7 @@ layout(set = 0, binding = 0)
 uniform UniformBufferObject
 {
 	mat4 view;
-    mat4 vp;
+    mat4 projection;
     vec4 clipPlane;
 } ubo;
 
@@ -13,7 +13,7 @@ layout(push_constant) uniform PushConsts{
     mat4 model;
 }primitive;
 
-layout(location = 0) in vec3 inPosition;
+layout(location = 0) in vec4 inPosition;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inTexCoord;
 layout(location = 3) in vec3 inTangent;
@@ -28,9 +28,8 @@ out gl_PerVertex {
 };
 
 void main() {
-    vec4 position = primitive.model * vec4(inPosition, 1.0);
-    gl_Position = ubo.vp * position;
-    viewPos = position.xyz;
+    gl_Position = ubo.projection * ubo.view * primitive.model * inPosition;
+    viewPos = vec3(ubo.view * primitive.model * inPosition);
     mat3 normalMatrix = transpose(inverse(mat3(ubo.view * primitive.model)));
     viewNormal = normalMatrix * inNormal;
     viewTangent = normalMatrix * inTangent;

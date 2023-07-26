@@ -22,7 +22,7 @@
 #include "ReflectiveShadowMap.h"
 #include "SSAO.h"
 
-#define IBLLIGHTING
+//#define IBLLIGHTING
 
 //#define RSMLIGHTING
 
@@ -39,6 +39,8 @@ const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_dro
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
 #endif
 
+const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
 const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
 const std::string TEXTURE_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/hdr/gcanyon_cube.ktx";
@@ -204,7 +206,7 @@ HelloVulkan::HelloVulkan()
     lightPos = glm::vec4(0.0f, 20.0f, 10.0f, 1.0f);
 
 	zNear = 0.1f;
-	zFar = 800.0f;
+	zFar = 250.0f;
 
 	width = 1280;
 	height = 720;
@@ -224,7 +226,7 @@ HelloVulkan::HelloVulkan()
 
 	camera.movementSpeed = 4.0f;
     camera.flipY = true;
-	camera.setPerspective(60.0f, (float)width / (float)height, 0.1f, 250.0f);
+	camera.setPerspective(60.0f, (float)width / (float)height, zNear, zFar);
 	camera.rotationSpeed = 0.25f;
     viewUpdated = true;
 
@@ -467,7 +469,6 @@ void HelloVulkan::Cleanup()
 #ifdef IBLLIGHTING
     envLight.Cleanup();
 #endif
-
 
     debug.Cleanup(instance);
     emptyTexture.destroy();
@@ -860,7 +861,6 @@ void HelloVulkan::createGraphicsPipeline()
 #ifdef RSMLIGHTING
     fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader_rsm.frag.spv";
 #endif
-
 
     if (CASCADED_COUNT > 1)
     {
@@ -1472,21 +1472,21 @@ void HelloVulkan::createDescriptorPool()
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 
     // TODO: create layout for sky box
-    //7: model, scene, skybox(2), shadow, debug rsm(2)
+    //7: model, scene, skybox(2), shadow, debug rsm(2) ssao(3)
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) + 8;
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) + 11;
 
-    // ma * 4 + (s * 4) + (s * 4) 
+    // ma * 4 + (s * 4) + (s * 4)  + ssao(4)
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) * 4 + static_cast<uint32_t>(skyboxModel.materials.size()) * 4 + 8;
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) * 4 + static_cast<uint32_t>(skyboxModel.materials.size()) * 4 + 12;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
 
-    // skybox:2 helloVulkan:2 shadow: 1 debug 1 rsm:1
-    poolInfo.maxSets = static_cast<uint32_t>(gltfmodel.materials.size()) + 7;
+    // skybox:2 helloVulkan:2 shadow: 1 debug 1 rsm:1 ssao:3
+    poolInfo.maxSets = static_cast<uint32_t>(gltfmodel.materials.size()) + 10;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {

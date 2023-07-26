@@ -5,7 +5,7 @@ layout(set = 0, binding = 0)
 uniform UniformBufferObject
 {
 	mat4 view;
-    mat4 vp;
+    mat4 projection;
     vec4 clipPlane;
 } ubo;
 
@@ -30,6 +30,7 @@ vec3 calculateNormal()
 	return normalize(TBN * tangentNormal);
 }
 
+//将深度值转换到相机空间下，是线性的。
 float linearDepth(float depth)
 {
 	float z = depth * 2.0f - 1.0f; 
