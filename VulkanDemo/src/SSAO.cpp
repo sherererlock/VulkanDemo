@@ -76,6 +76,7 @@ void SSAO::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipe
 	pipelineCreateInfo.colorBlending.pAttachments = &colorBlendAttachment;
 	pipelineCreateInfo.colorBlending.attachmentCount = 1;
 
+	pipelineCreateInfo.rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
 	pipelineCreateInfo.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
 	VkDynamicState dynamicStates[] = {

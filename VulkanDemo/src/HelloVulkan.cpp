@@ -1755,6 +1755,7 @@ void HelloVulkan::createDescriptorSet()
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
+    imageInfo = ssao->GetSSAODescriptorImageInfo();
     debug.SetupDescriptSet(descriptorPool, imageInfo);
 }
 

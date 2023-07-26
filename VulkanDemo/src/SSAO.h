@@ -96,5 +96,6 @@ public:
 	inline const VkDescriptorImageInfo& GetDepthDescriptorImageInfo() const { return depth.descriptor; }
 	inline const VkDescriptorImageInfo& GetPositionDescriptorImageInfo() const { return position.descriptor; }
 	inline const VkDescriptorImageInfo& GetNormalDescriptorImageInfo() const { return normal.descriptor; }
+	inline const VkDescriptorImageInfo& GetSSAODescriptorImageInfo() const { return ssaoFrameBuffer.color.descriptor; }
 };
 

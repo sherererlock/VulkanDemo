@@ -28,8 +28,9 @@ out gl_PerVertex {
 };
 
 void main() {
-    gl_Position = ubo.projection * ubo.view * primitive.model * inPosition;
-    viewPos = vec3(ubo.view * primitive.model * inPosition);
+    vec4 position = primitive.model * inPosition;
+    gl_Position = ubo.projection * ubo.view * position;
+    viewPos = vec3(ubo.view * position);
     mat3 normalMatrix = transpose(inverse(mat3(ubo.view * primitive.model)));
     viewNormal = normalMatrix * inNormal;
     viewTangent = normalMatrix * inTangent;
