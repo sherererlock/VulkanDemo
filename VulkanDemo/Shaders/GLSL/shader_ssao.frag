@@ -2,17 +2,13 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#define IBLLIGHTING
 #define SSAO
 
 #include"macros.hlsl"
 #include"FragmentInput.hlsl"
-#include"IBLInput.hlsl"
 
 layout(set = 1, binding = 1) uniform sampler2D shadowMapSampler;
-layout(set = 1, binding = 5) uniform sampler2D ssaoSampler;
-
-layout(location = 5) in vec4 shadowCoord;
+layout(set = 1, binding = 2) uniform sampler2D ssaoSampler;
 
 vec2 GetRoughnessAndMetallic()
 {
@@ -23,22 +19,13 @@ vec2 GetRoughnessAndMetallic()
 }
 
 #include"lighting.hlsl"
-#include"shadow.hlsl"
 
 layout(location = 0) out vec4 outColor;
 void main(){
-	vec3 coord = shadowCoord.xyz;
-	if(shadowCoord.w > 0.0)
-	{
-		coord = coord / shadowCoord.w;
-		coord.xy = coord.xy * 0.5 + 0.5;
-	}
 
-	float shadow = getShadow(coord);
+	vec3 color = Lighting(1.0);
 
-	vec3 color = Lighting(shadow);
-
-//	color = pow(color, vec3(1.0/2.2));
+	color = pow(color, vec3(1.0/2.2));
 
 	outColor = vec4(color, 1.0);
 }

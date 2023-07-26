@@ -194,14 +194,17 @@ vec3 Lighting(float shadow)
 	#endif
 
 	#ifdef SSAO
-	float ao = texture(ssaoSampler, gl_FragCoord.xy).r;
 	
-	ambient *= ao;
+	ivec2 screenSize = textureSize(ssaoSampler, 0);
+	vec2 uv = vec2(gl_FragCoord.x / float(screenSize.x), gl_FragCoord.y / float(screenSize.y));
+	float ao = texture(ssaoSampler, uv).r;
+
 	#endif
 
-	//vec3 color = Lo * shadow + ambient + emissive;
-	vec3 color = vec3(ao, 0, 0);
+    vec3 color = Lo * shadow + ambient + emissive;
 
+    color *= ao;
+	
 	return color;
 }
 

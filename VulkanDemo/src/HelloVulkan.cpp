@@ -28,26 +28,13 @@
 
 #define SCREENSPACEAO
 
-#ifdef SCREENSPACEAO
-#define IBLLIGHTING
-#endif
-
 #define SHADOW
 
-
-#ifdef IBLLIGHTING
-//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
-#endif
-
-#ifdef RSMLIGHTING
-const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
-#endif
-
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
-//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
-const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
+
+const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
 const std::string TEXTURE_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/hdr/gcanyon_cube.ktx";
 
 #define SHADOWMAP_SIZE 2048
@@ -1681,12 +1668,6 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[4].dstBinding = 4;
 	sceneDescriptorWrites[4].pImageInfo = &envLight.BRDFLutMap.descriptor; // Optional
 
-#ifdef SCREENSPACEAO
-	sceneDescriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	sceneDescriptorWrites[5].pBufferInfo = nullptr;
-	sceneDescriptorWrites[5].dstBinding = 5;
-	sceneDescriptorWrites[5].pImageInfo = &ssao->GetSSAODescriptorImageInfo(); // Optional
-#endif
     vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
 #endif
 
@@ -1719,9 +1700,17 @@ void HelloVulkan::createDescriptorSet()
 
 	vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
 
-#else
+#endif
+
+#ifdef SCREENSPACEAO
+	sceneDescriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sceneDescriptorWrites[2].pBufferInfo = nullptr;
+	sceneDescriptorWrites[2].dstBinding = 2;
+	sceneDescriptorWrites[2].pImageInfo = &ssao->GetSSAODescriptorImageInfo(); // Optional
+#endif
+
     vkUpdateDescriptorSets(device, 2, sceneDescriptorWrites.data(), 0, nullptr);
-#endif 
+
 
     sceneDescriptorWrites[0].dstSet = skybox.descriptorSetS;
     sceneDescriptorWrites[1].dstSet = skybox.descriptorSetS;
