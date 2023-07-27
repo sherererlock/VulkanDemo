@@ -486,6 +486,7 @@ void HelloVulkan::Cleanup()
 
     delete shadow;
     delete rsm;
+    delete ssao;
 }
 
 void HelloVulkan::CreateInstance()
@@ -1584,7 +1585,6 @@ void HelloVulkan::createDescriptorSet()
 	{
 		throw std::runtime_error("failed to allocate descriptor set!");
 	}
-
 
     VkDescriptorBufferInfo bufferInfo = {};
     bufferInfo.buffer = uniformBuffer;

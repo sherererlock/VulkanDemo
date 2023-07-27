@@ -46,7 +46,6 @@ struct UniformBufferObject {
 
 struct UBOParams {
 	glm::vec4 lights[4];
-
 	float exposure = 4.5f;
 	float gamma = 2.2f;
 };
