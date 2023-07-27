@@ -23,7 +23,7 @@
 #include "ReflectiveShadowMap.h"
 #include "SSAO.h"
 
-//#define IBLLIGHTING
+#define IBLLIGHTING
 
 //#define RSMLIGHTING
 
@@ -382,8 +382,8 @@ void HelloVulkan::InitVulkan()
     loadgltfModel(MODEL_PATH, gltfmodel);
 
 #ifdef IBLLIGHTING
-	PreProcess::generateIrradianceCube(this, SkyboxRenderer->GetCubemap(), envLight.irradianceCube);
-	PreProcess::prefilterEnvMap(this, SkyboxRenderer->GetCubemap(), envLight.prefilteredMap);
+	PreProcess::generateIrradianceCube(this, skyboxRenderer->GetCubemap(), envLight.irradianceCube);
+	PreProcess::prefilterEnvMap(this, skyboxRenderer->GetCubemap(), envLight.prefilteredMap);
 	PreProcess::genBRDFLut(this, envLight.BRDFLutMap);
 #endif
 
@@ -1515,7 +1515,7 @@ void HelloVulkan::createDescriptorSetLayout()
 
     int binding = 0;
     int bindingcount = 2;
-    std::array<VkDescriptorSetLayoutBinding, 2> scenebindings = { uniformLayoutBinding, imageLayoutBinding };
+    //std::array<VkDescriptorSetLayoutBinding, 2> scenebindings = { uniformLayoutBinding, imageLayoutBinding };
 #ifdef RSMLIGHTING
     std::array<VkDescriptorSetLayoutBinding, 6> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, uniformLayoutBinding };
     bindingcount = 6;

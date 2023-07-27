@@ -12,9 +12,7 @@ layout(set = 0, binding = 1)
 uniform ShadowBufferObject{
     mat4 depthVP;
     vec4 splitDepth;
-    int shadowIndex;
-    float filterSize;
-	int colorCascades;
+    vec4 params;
 }shadowUbo;
 
 layout(push_constant) uniform PushConsts{
