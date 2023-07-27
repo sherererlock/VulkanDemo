@@ -9,7 +9,6 @@ class HelloVulkan;
 class gltfModel;
 struct PipelineCreateInfo;
 
-
 class SinglePipeline
 {
 protected:

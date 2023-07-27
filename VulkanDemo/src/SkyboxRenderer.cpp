@@ -4,11 +4,21 @@
 #include "HelloVulkan.h"
 #include "SkyboxRenderer.h"
 
+const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
+const std::string TEXTURE_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/hdr/gcanyon_cube.ktx";
+
+void SkyboxRenderer::LoadSkyBox()
+{
+	vulkanAPP->loadgltfModel(SKYBOX_PATH, skyboxModel);
+	cubeMap.loadFromFile(vulkanAPP, TEXTURE_PATH, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+}
+
 void SkyboxRenderer::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
 {
 	__super::Init(app, vkdevice, w, h);
 	vertexShader = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/skybox.vert.spv";
 	fragmentShader = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/skybox.frag.spv";
+	bufferSize = sizeof(UniformBufferObject);
 }
 
 void SkyboxRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipelineCreateInfo& creatInfo)
@@ -44,7 +54,7 @@ void SkyboxRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGr
 
 	pipelineCreateInfo.multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	pipelineCreateInfo.multisampling.sampleShadingEnable = VK_TRUE;
-	 pipelineCreateInfo.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	 //pipelineCreateInfo.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 	pipelineCreateInfo.multisampling.minSampleShading = 0.2f; // Optional
 	pipelineCreateInfo.multisampling.pSampleMask = nullptr; // Optional
 	pipelineCreateInfo.multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
@@ -97,6 +107,30 @@ void SkyboxRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGr
 	creatInfo.stageCount = (uint32_t)shaderStages.size();
 	creatInfo.pStages = shaderStages.data();
 
+	struct SpecializationData
+	{
+		float exposure = 4.5f;
+		float gamma = 2.2f;
+	}specializationData;
+
+	std::array<VkSpecializationMapEntry, 2> entries;
+
+	entries[0].constantID = 0;
+	entries[0].offset = offsetof(SpecializationData, exposure);
+	entries[0].size = sizeof(SpecializationData::exposure);
+
+	entries[1].constantID = 1;
+	entries[1].offset = offsetof(SpecializationData, gamma);
+	entries[1].size = sizeof(SpecializationData::gamma);
+
+	VkSpecializationInfo specializationInfo{};
+	specializationInfo.mapEntryCount = 2;
+	specializationInfo.pMapEntries = entries.data();
+	specializationInfo.dataSize = sizeof(specializationData);
+	specializationInfo.pData = &specializationData;
+
+	shaderStages[1].pSpecializationInfo = &specializationInfo;
+
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = 1; // Optional
@@ -146,20 +180,64 @@ void SkyboxRenderer::CreateDescriptSetLayout()
 
 void SkyboxRenderer::SetupDescriptSet(VkDescriptorPool pool)
 {
-}
+	VkDescriptorSetAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = pool;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &descriptorSetLayout;
 
-void SkyboxRenderer::CreateUniformBuffer()
-{
+	if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to allocate shadow descriptor set!");
+	}
+
+	VkDescriptorBufferInfo bufferInfo = {};
+	bufferInfo.buffer = uniformBuffer;
+	bufferInfo.offset = 0;
+	bufferInfo.range = bufferSize;
+
+	VkWriteDescriptorSet descriptorWrite = {};
+	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrite.dstSet = descriptorSet;
+	descriptorWrite.dstBinding = 0;
+	descriptorWrite.dstArrayElement = 0;
+	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorWrite.descriptorCount = 1;
+	descriptorWrite.pBufferInfo = &bufferInfo;
+	descriptorWrite.pImageInfo = nullptr; // Optional
+	descriptorWrite.pTexelBufferView = nullptr; // Optional
+
+	std::array<VkWriteDescriptorSet, 2> descriptorWrites = { descriptorWrite, descriptorWrite };
+	descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorWrites[1].dstBinding = 1;
+	descriptorWrites[1].pBufferInfo = nullptr;
+	descriptorWrites[1].pImageInfo = &cubeMap.descriptor; // Optional
+
+	vkUpdateDescriptorSets(device, 2, descriptorWrites.data(), 0, nullptr);
 }
 
 void SkyboxRenderer::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel)
 {
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	skyboxModel.draw(commandBuffer, pipelineLayout, 2, 0);
 }
 
 void SkyboxRenderer::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos)
 {
+	UniformBufferObject ubo;
+	ubo.model = view;
+	ubo.projection = proj;
+	ubo.model = glm::scale(ubo.model, glm::vec3(10.0f));
+
+	Trans_Data_To_GPU
 }
 
 void SkyboxRenderer::Cleanup()
 {
+	skyboxModel.Cleanup();
+	cubeMap.destroy();
+
+	__super::Cleanup();
 }
+

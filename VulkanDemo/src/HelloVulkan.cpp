@@ -16,26 +16,30 @@
 
 #include "HelloVulkan.h"
 #include "Mesh.h"
+#include "SkyboxRenderer.h"
 #include "CommonShadow.h"
 #include "CascadedShadow.h"
 #include "PreProcess.h"
 #include "ReflectiveShadowMap.h"
 #include "SSAO.h"
 
-#define IBLLIGHTING
+//#define IBLLIGHTING
 
 //#define RSMLIGHTING
 
 //#define SCREENSPACEAO
 
+#define SKYBOX
+
 #define SHADOW
+
+#ifdef  IBLLIGHTING
+#define SKYBOX
+#endif //  SKYBOX
 
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
-
-const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
-const std::string TEXTURE_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/hdr/gcanyon_cube.ktx";
 
 #define SHADOWMAP_SIZE 2048
 
@@ -224,6 +228,10 @@ HelloVulkan::HelloVulkan()
 	camera.rotationSpeed = 0.25f;
     viewUpdated = true;
 
+#ifdef  SKYBOX
+    skyboxRenderer = new SkyboxRenderer();
+#endif //  SKYBOX
+
     #ifdef RSMLIGHTING
     rsm = new ReflectiveShadowMap();
     #else
@@ -280,6 +288,10 @@ void HelloVulkan::InitVulkan()
 
     debug.Init(device, this, zNear, zFar);
 
+#ifdef  SKYBOX
+	skyboxRenderer->Init( this, device, width, height);
+#endif //  SKYBOX
+
     #ifdef RSMLIGHTING
     rsm->Init(this, device, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
     #else
@@ -310,6 +322,10 @@ void HelloVulkan::InitVulkan()
     createDescriptorSetLayout();
 
     debug.CreateDescriptSetLayout();
+
+#ifdef  SKYBOX
+	skyboxRenderer->CreateDescriptSetLayout();
+#endif //  SKYBOX
 
     #ifdef RSMLIGHTING
     rsm->CreateDescriptSetLayout();
@@ -345,6 +361,10 @@ void HelloVulkan::InitVulkan()
 
     debug.CreateUniformBuffer();
 
+#ifdef  SKYBOX
+	skyboxRenderer->CreateUniformBuffer();
+#endif //  SKYBOX
+
     #ifdef RSMLIGHTING
     rsm->CreateUniformBuffer();
     #else
@@ -355,19 +375,24 @@ void HelloVulkan::InitVulkan()
 	ssao->CreateUniformBuffer();
 #endif
 
+#ifdef  SKYBOX
+	skyboxRenderer->LoadSkyBox();
+#endif //  SKYBOX
+
     loadgltfModel(MODEL_PATH, gltfmodel);
 
-	loadgltfModel(SKYBOX_PATH, skyboxModel);
-    skybox.cubeMap.loadFromFile(this, TEXTURE_PATH, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-
 #ifdef IBLLIGHTING
-	PreProcess::generateIrradianceCube(this, skybox.cubeMap, envLight.irradianceCube);
-	PreProcess::prefilterEnvMap(this, skybox.cubeMap, envLight.prefilteredMap);
+	PreProcess::generateIrradianceCube(this, SkyboxRenderer->GetCubemap(), envLight.irradianceCube);
+	PreProcess::prefilterEnvMap(this, SkyboxRenderer->GetCubemap(), envLight.prefilteredMap);
 	PreProcess::genBRDFLut(this, envLight.BRDFLutMap);
 #endif
 
 	createDescriptorPool();
     createDescriptorSet();
+
+#ifdef  SKYBOX
+	skyboxRenderer->SetupDescriptSet(descriptorPool);
+#endif //  SKYBOX
 
     #ifdef RSMLIGHTING
     rsm->SetupDescriptSet(descriptorPool);
@@ -453,9 +478,11 @@ void HelloVulkan::Cleanup()
 
     vkDestroyCommandPool(device, commandPool, nullptr);
 
-    skybox.Cleanup(device);
     gltfmodel.Cleanup();
-    skyboxModel.Cleanup();
+
+#ifdef  SKYBOX
+	skyboxRenderer->Cleanup();
+#endif //  SKYBOX
 
 #ifdef IBLLIGHTING
     envLight.Cleanup();
@@ -927,27 +954,11 @@ void HelloVulkan::createGraphicsPipeline()
     vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
     vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
 
-    std::vector<VkVertexInputAttributeDescription> atrtibutes = Vertex1::getAttributeDescriptions({ Vertex1::VertexComponent::Position, Vertex1::VertexComponent::Normal, Vertex1::VertexComponent::UV});
-	info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(atrtibutes.size());
-	info.vertexInputInfo.pVertexAttributeDescriptions = atrtibutes.data(); // Optional
-
-    info.rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
-	vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/skybox.vert.spv";
-	fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/skybox.frag.spv";
-    shaderStages = CreaterShader(vertexFileName, fragmentFileName);
-
-	pipelineInfo.stageCount = (uint32_t)shaderStages.size();
-	pipelineInfo.pStages = shaderStages.data();
-
-	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &skybox.pipeline) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create graphics pipeline!");
-	}
-
-	vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
-	vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
-
     debug.CreateDebugPipeline(info, pipelineInfo);
+
+#ifdef  SKYBOX
+	skyboxRenderer->CreatePipeline(info, pipelineInfo);
+#endif //  SKYBOX
 
     #ifdef RSMLIGHTING
     rsm->CreatePipeline(info, pipelineInfo);
@@ -958,6 +969,7 @@ void HelloVulkan::createGraphicsPipeline()
 #ifdef SCREENSPACEAO
 	ssao->CreatePipeline(info, pipelineInfo);
 #endif
+
 }
 
 void HelloVulkan::createFrameBuffer()
@@ -990,8 +1002,6 @@ void HelloVulkan::createUniformBuffer()
 {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
     createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffer, uniformBufferMemory);
-
-	createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, skybox.uniformBuffer, skybox.uniformBufferMemory);
 
     bufferSize = sizeof(UBOParams);
     createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBufferL, uniformBufferMemoryL);
@@ -1092,10 +1102,10 @@ void HelloVulkan::buildCommandBuffers()
             }
             else
             {
-				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &skybox.descriptorSetM, 0, nullptr);
-				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &skybox.descriptorSetS, 0, nullptr);
-				vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipeline);
-				skyboxModel.draw(commandBuffers[i], pipelineLayout, 2, 2);
+
+                #ifdef  SKYBOX
+				skyboxRenderer->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+                #endif //  SKYBOX
 
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetM, 0, nullptr);
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptorSetS, 0, nullptr);
@@ -1244,6 +1254,10 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
 
     glm::mat4 proj = isOrth ? ortho : pers;
 
+#ifdef  SKYBOX
+	skyboxRenderer->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, lightPos);
+#endif //  SKYBOX
+
 #ifdef RSMLIGHTING
 	rsm->UpateLightMVP(view, proj, lightPos, zNear, zFar);
 #else
@@ -1258,12 +1272,6 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(UniformBufferObject), 0, &data);
     memcpy(data, &ubo, sizeof(UniformBufferObject));
     vkUnmapMemory(device, uniformBufferMemory);
-
-    ubo.view = glm::mat4(glm::mat3(camera.matrices.view));
-    ubo.view = glm::scale(ubo.view, glm::vec3(10.0f));
-	vkMapMemory(device, skybox.uniformBufferMemory, 0, sizeof(UniformBufferObject), 0, &data);
-	memcpy(data, &ubo, sizeof(UniformBufferObject));
-	vkUnmapMemory(device, skybox.uniformBufferMemory);
 
     glm::mat4 cameratoworld = glm::inverse(view);
     lightNode->matrix = cameratoworld;
@@ -1406,7 +1414,6 @@ void HelloVulkan::cleanupSwapChain()
 
     vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-    vkDestroyPipeline(device, skybox.pipeline, nullptr);
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     vkDestroyRenderPass(device, renderPass, nullptr);
@@ -1459,7 +1466,7 @@ void HelloVulkan::createDescriptorPool()
 
     // ma * 4 + (s * 4) + (s * 4)  + ssao(4)
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) * 4 + static_cast<uint32_t>(skyboxModel.materials.size()) * 4 + 12;
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) * 4 + 4 + 12;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1508,6 +1515,7 @@ void HelloVulkan::createDescriptorSetLayout()
 
     int binding = 0;
     int bindingcount = 2;
+    std::array<VkDescriptorSetLayoutBinding, 2> scenebindings = { uniformLayoutBinding, imageLayoutBinding };
 #ifdef RSMLIGHTING
     std::array<VkDescriptorSetLayoutBinding, 6> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, uniformLayoutBinding };
     bindingcount = 6;
@@ -1581,11 +1589,6 @@ void HelloVulkan::createDescriptorSet()
         throw std::runtime_error("failed to allocate descriptor set!");
     }
 
-	if (vkAllocateDescriptorSets(device, &allocInfo, &skybox.descriptorSetM) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to allocate descriptor set!");
-	}
-
     VkDescriptorBufferInfo bufferInfo = {};
     bufferInfo.buffer = uniformBuffer;
     bufferInfo.offset = 0;
@@ -1609,24 +1612,10 @@ void HelloVulkan::createDescriptorSet()
 		descriptorWrites[1].pBufferInfo = &shadow->GetDescriptorBufferInfo();
 
 		vkUpdateDescriptorSets(device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
-
-        descriptorWrites[0].dstSet = skybox.descriptorSetM;
-        descriptorWrites[1].dstSet = skybox.descriptorSetM;
-
-		bufferInfo.buffer = skybox.uniformBuffer;
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(UniformBufferObject);
-
-        vkUpdateDescriptorSets(device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
 
     layouts[0] = descriptorSetLayoutS;
     if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSetS) != VK_SUCCESS) 
-    {
-        throw std::runtime_error("failed to allocate descriptor set!");
-    }
-
-    if (vkAllocateDescriptorSets(device, &allocInfo, &skybox.descriptorSetS) != VK_SUCCESS) 
     {
         throw std::runtime_error("failed to allocate descriptor set!");
     }
@@ -1716,11 +1705,6 @@ void HelloVulkan::createDescriptorSet()
 #endif
 
     vkUpdateDescriptorSets(device, sceneDescriptorsCount, sceneDescriptorWrites.data(), 0, nullptr);
-
-    sceneDescriptorWrites[0].dstSet = skybox.descriptorSetS;
-    sceneDescriptorWrites[1].dstSet = skybox.descriptorSetS;
-    sceneDescriptorWrites[1].pImageInfo = &skybox.cubeMap.descriptor; // Optional
-    vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
 
     // TODO: deal with situation when no texture
     layouts[0] = descriptorSetLayoutMa;

@@ -16,6 +16,7 @@
 #include "Debug.h"
 #include "Input.h"
 #include "macros.h"
+#include "SkyboxRenderer.h"
 
 class Shadow;
 class ReflectiveShadowMap;
@@ -70,25 +71,7 @@ struct PipelineCreateInfo
 class HelloVulkan
 {
 private:
-	struct Skybox
-	{
-		VkDescriptorSet descriptorSetM;
-		VkDescriptorSet descriptorSetS;
-		VkPipeline pipeline;
-
-		TextureCubeMap cubeMap;
-		VkBuffer uniformBuffer;
-		VkDeviceMemory uniformBufferMemory;
-
-		inline void Cleanup(VkDevice device)
-		{
-			cubeMap.destroy();
-
-			vkDestroyBuffer(device, uniformBuffer, nullptr);
-			vkFreeMemory(device, uniformBufferMemory, nullptr);
-		}
-	};
-
+	
     struct IBLEnviromentLight
     {
         TextureCubeMap irradianceCube;
@@ -202,8 +185,8 @@ public:
     inline Camera& GetCamera() { return camera; }
     inline Input& GetInput() { return input; }
     inline void ViewUpdated() { viewUpdated = true; }
-    inline gltfModel& GetSkybox() { return skyboxModel; }
     inline VkDescriptorSetLayout GetMaterialDescriptorSetLayout() const { return descriptorSetLayoutMa; }
+    inline const gltfModel& GetSkybox() const { return skyboxRenderer->GetSkybox(); }
 
 private:
 	static HelloVulkan* helloVulkan;
@@ -244,7 +227,6 @@ private:
     VkDescriptorSet descriptorSetS;
     VkPipeline graphicsPipeline;
 
-    Skybox skybox;
     IBLEnviromentLight envLight;
 
     VkSemaphore imageAvailableSemaphore;
@@ -274,7 +256,7 @@ private:
     std::vector<VkSemaphore> renderFinishedSemaphores;
 
     // Model    
-    gltfModel skyboxModel;
+
     gltfModel gltfmodel;
 
     float frameTimer = 1.0f;
@@ -288,6 +270,7 @@ private:
     glm::vec4 debugPos;
 
     Node* lightNode;
+    SkyboxRenderer* skyboxRenderer;
     Shadow* shadow;
     Debug debug;
     Input input;
