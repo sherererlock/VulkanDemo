@@ -41,6 +41,7 @@ void CascadedShadow::CreateFrameBuffer()
 
 void CascadedShadow::CreateUniformBuffer()
 {
+    __super::CreateUniformBuffer();
     VkDeviceSize bufferSize = sizeof(ShadowUniformBufferObject);
     vulkanAPP->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffer, uniformMemory);
 }
@@ -231,6 +232,20 @@ void CascadedShadow::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lig
     vkMapMemory(device, uniformMemory, 0, sizeof(ShadowUniformBufferObject), 0, &data);
     memcpy(data, &ubo, sizeof(ShadowUniformBufferObject));
     vkUnmapMemory(device, uniformMemory);
+
+	ShadowBufferObject sbo;
+
+	for (int i = 0; i < casadedInfos.size(); i++)
+	{
+        sbo.depthVP[i] = casadedInfos[i].depthVP;
+        sbo.splitDepth[i] = casadedInfos[i].splitDepth;
+	}
+
+	sbo.params = glm::vec4((float)shadowIndex, (float)filterSize, 0.0, 0.0);
+
+	vkMapMemory(device, shadowMemory, 0, sizeof(ShadowBufferObject), 0, &data);
+	memcpy(data, &sbo, sizeof(ShadowBufferObject));
+	vkUnmapMemory(device, shadowMemory);
 }
 
 void CascadedShadow::Cleanup()

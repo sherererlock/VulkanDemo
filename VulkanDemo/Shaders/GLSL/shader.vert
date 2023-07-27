@@ -12,7 +12,7 @@ out gl_PerVertex {
 };
 
 void main() {
-    vec4 pos = primitive.model * vec4(inPosition, 1.0);
+    vec4 pos = primitive.model * inPosition;
 
     fragColor = inColor;
     fragTexCoord = inTexCoord;
@@ -20,7 +20,7 @@ void main() {
     normal = model * inNormal;
     tangent = model * inTangent;
     worldPos = pos.xyz;
-    outShadowCoord = ubo.depthVP * pos;
+    outShadowCoord = shadowUbo.depthVP * pos;
 
     gl_Position = ubo.proj * ubo.view * pos;
 }

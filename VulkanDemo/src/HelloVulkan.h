@@ -41,16 +41,12 @@ struct SwapChainSupportDetails
 struct UniformBufferObject {
     glm::mat4 view;
     glm::mat4 proj;
-    glm::mat4 depthVP[CASCADED_COUNT];
-	glm::vec4 splitDepth;
     glm::vec4 viewPos;
-    int shadowIndex;
-    float filterSize;
 };
 
 struct UBOParams {
 	glm::vec4 lights[4];
-    int colorCascades;
+
 	float exposure = 4.5f;
 	float gamma = 2.2f;
 };
@@ -193,14 +189,12 @@ public:
 
 	bool isDebug = false;
 	float accTime = 0.0f;
-    int filterSize = 1;
-	int shadowIndex = 0;
     float debugtimer = 0.5f;
     bool isOrth = false;
     void UpdateDebug();
     void UpdateProjectionMatrix();
-    void UpdateShadowIndex(int indx = -1);
-    void UpdateShadowFilterSize();
+	void UpdateShadowIndex(int indx = -1);
+	void UpdateShadowFilterSize();
 
 	static HelloVulkan* GetHelloVulkan() { return helloVulkan; }
 	inline float GetNear() const { return zNear; }
@@ -259,6 +253,7 @@ private:
 
     VkBuffer uniformBuffer;
     VkDeviceMemory uniformBufferMemory;
+
     VkBuffer uniformBufferL;
     VkDeviceMemory uniformBufferMemoryL;
 

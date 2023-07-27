@@ -12,6 +12,7 @@ CommonShadow::CommonShadow()
 
 void CommonShadow::CreateUniformBuffer()
 {
+    __super::CreateUniformBuffer();
     VkDeviceSize bufferSize = sizeof(ShadowUniformBufferObject);
     vulkanAPP->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffer, uniformMemory);
 }
@@ -86,6 +87,16 @@ void CommonShadow::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 light
     vkMapMemory(device, uniformMemory, 0, sizeof(ShadowUniformBufferObject), 0, &data);
     memcpy(data, &ubo, sizeof(ShadowUniformBufferObject));
     vkUnmapMemory(device, uniformMemory);
+
+    ShadowBufferObject sbo;
+
+    sbo.depthVP[0] = ubo.depthVP;
+    sbo.splitDepth = glm::vec4(0.0);
+    sbo.params = glm::vec4((float) shadowIndex, (float)filterSize, 0.0, 0.0 );
+    
+	vkMapMemory(device, shadowMemory, 0, sizeof(ShadowBufferObject), 0, &data);
+	memcpy(data, &sbo, sizeof(ShadowBufferObject));
+	vkUnmapMemory(device, shadowMemory);
 }
 
 void CommonShadow::Cleanup()

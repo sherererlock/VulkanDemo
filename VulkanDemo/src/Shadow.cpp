@@ -10,6 +10,9 @@ void Shadow::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
     device = vkdevice;
     width = w;
     height = h;
+
+	filterSize = 1;
+	shadowIndex = 4;
 }
 
 void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGraphicsPipelineCreateInfo& creatInfo)
@@ -260,6 +263,16 @@ void Shadow::CreateShadowMap()
 	descriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 }
 
+void Shadow::CreateUniformBuffer()
+{
+	VkDeviceSize bufferSize = sizeof(ShadowBufferObject);
+	vulkanAPP->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, shadowBuffer, shadowMemory);
+
+    bufferInfo.buffer = shadowBuffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = bufferSize;
+}
+
 void Shadow::Cleanup()
 {
     vkDestroyImage(device, shadowMapImage, nullptr); 
@@ -271,6 +284,9 @@ void Shadow::Cleanup()
 
     vkDestroyBuffer(device, uniformBuffer, nullptr);
     vkFreeMemory(device, uniformMemory, nullptr);
+
+	vkDestroyBuffer(device, shadowBuffer, nullptr);
+	vkFreeMemory(device, shadowMemory, nullptr);
 
     vkDestroyPipeline(device, shadowPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);

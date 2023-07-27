@@ -55,7 +55,7 @@ float Bias(float depthCtr)
 	ivec2 texDim = textureSize(shadowMapSampler, 0);
 	vec3 lightDir = normalize(uboParam.lights[0].xyz - worldPos);
 	vec3 normal = normalize(normal);
-	float m = FRUSTUM_SIZE / float(texDim.x) / 2.0; //Õý½»¾ØÕó¿í¸ß/shadowMapSize/2
+	float m = FRUSTUM_SIZE / float(texDim.x) / 2.0; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/shadowMapSize/2
 	float bias = max(m, m * (1.0 - dot(normal, lightDir))) * depthCtr;
 
 	return bias;
@@ -127,7 +127,7 @@ float pcf7x7(vec3 texCoord)
         }
     }
 
-    // ¼ÆËãÆ½¾ùÖµ
+    // ï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½Öµ
     depth = depth / float(numSamples);
 
     return depth;
@@ -135,9 +135,10 @@ float pcf7x7(vec3 texCoord)
 
 float PCF(vec3 coords, float filteringSize) {
 	float bias = 0.0;
-	if(ubo.shadowIndex == 2)
+	int shadowIndex = int(shadowUbo.params.x);
+	if(shadowIndex == 2)
 		uniformDiskSamples(coords.xy);
-	else if(ubo.shadowIndex == 3)
+	else if(shadowIndex == 3)
 		poissonDiskSamples(coords.xy);
 
 	float shadow = 0.0;
@@ -239,7 +240,8 @@ float PCSS(vec3 coords)
 
 float getShadow(vec3 coord)
 {
-	switch(ubo.shadowIndex)
+	int shadowIndex = int(shadowUbo.params.x);
+	switch(shadowIndex)
 	{
 		case 0:
 			return textureProj(coord, vec2(0.0));
@@ -248,7 +250,7 @@ float getShadow(vec3 coord)
 		case 2:
 		case 3:
 			ivec2 texDim = textureSize(shadowMapSampler, 0);
-			float filteringSize = ubo.filterSize / float(texDim.x);
+			float filteringSize = shadowUbo.params.y / float(texDim.x);
 			return PCF(coord, filteringSize);
 		case 4:
 			return PCSS(coord);

@@ -11,6 +11,13 @@ struct PipelineCreateInfo;
 #define DEPTH_FORMAT VK_FORMAT_D16_UNORM
 //#define DEPTH_FORMAT VK_FORMAT_D32_SFLOAT
 
+struct ShadowBufferObject
+{
+	glm::mat4 depthVP[CASCADED_COUNT];
+	glm::vec4 splitDepth;
+	glm::vec4 params;
+};
+
 class Shadow
 {
 protected:
@@ -49,11 +56,24 @@ protected:
 		int cascadedIndx;
 	};
 
+	VkBuffer shadowBuffer;
+	VkDeviceMemory shadowMemory;
+	VkDescriptorBufferInfo bufferInfo;
+
+public:
+	int filterSize = 1;
+	int shadowIndex = 0;
 
 public:
 
-	inline VkDescriptorImageInfo GetDescriptorImageInfo() const {
+	inline VkDescriptorImageInfo GetDescriptorImageInfo() const
+	{
 		return descriptor;
+	}
+
+	inline const VkDescriptorBufferInfo& GetDescriptorBufferInfo() const
+	{
+		return bufferInfo;
 	}
 	
 	void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
@@ -64,7 +84,7 @@ public:
 	void SetupDescriptSet(VkDescriptorPool pool);
 
 	virtual void CreateShadowMap();
-	virtual	void CreateUniformBuffer() = 0;
+	virtual	void CreateUniformBuffer();
 	virtual void CreateFrameBuffer() = 0;
 	virtual void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel) = 0;
 	virtual void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos) = 0;

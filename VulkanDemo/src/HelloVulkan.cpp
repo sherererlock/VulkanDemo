@@ -22,16 +22,16 @@
 #include "ReflectiveShadowMap.h"
 #include "SSAO.h"
 
-//#define IBLLIGHTING
+#define IBLLIGHTING
 
 //#define RSMLIGHTING
 
-#define SCREENSPACEAO
+//#define SCREENSPACEAO
 
 #define SHADOW
 
-const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
-//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
+const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
 
 const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
@@ -215,17 +215,14 @@ HelloVulkan::HelloVulkan()
 
 	camera.setPosition(glm::vec3(0.0f, 1.0f, 0.0f));
 	camera.setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
-	//camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
-	//camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
+	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
+	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
 
 	camera.movementSpeed = 4.0f;
     camera.flipY = true;
 	camera.setPerspective(60.0f, (float)width / (float)height, zNear, zFar);
 	camera.rotationSpeed = 0.25f;
     viewUpdated = true;
-
-    filterSize = 1;
-    shadowIndex = 4;
 
     #ifdef RSMLIGHTING
     rsm = new ReflectiveShadowMap();
@@ -329,7 +326,7 @@ void HelloVulkan::InitVulkan()
     createCommandPool();
     createColorResources();
     createDepthResources();
-    createEmptyTexture();
+	createEmptyTexture();
 
     createFrameBuffer();
 
@@ -1094,10 +1091,10 @@ void HelloVulkan::buildCommandBuffers()
             }
             else
             {
-                //vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &skybox.descriptorSetM, 0, nullptr);
-                //vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &skybox.descriptorSetS, 0, nullptr);
-                //vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipeline);
-                //skyboxModel.draw(commandBuffers[i], pipelineLayout, 2, 2);
+				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &skybox.descriptorSetM, 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &skybox.descriptorSetS, 0, nullptr);
+				vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, skybox.pipeline);
+				skyboxModel.draw(commandBuffers[i], pipelineLayout, 2, 2);
 
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetM, 0, nullptr);
 				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptorSetS, 0, nullptr);
@@ -1246,29 +1243,15 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
 
     glm::mat4 proj = isOrth ? ortho : pers;
 
-	ubo.depthVP[0] = proj * view;
-
 #ifdef RSMLIGHTING
 	rsm->UpateLightMVP(view, proj, lightPos, zNear, zFar);
 #else
     shadow->UpateLightMVP(view, proj, lightPos);
-	if (CASCADED_COUNT > 1)
-	{
-		float split[CASCADED_COUNT];
-		((CascadedShadow*)shadow)->GetCascadedInfo(ubo.depthVP, split);
-		ubo.splitDepth.x = split[0];
-		ubo.splitDepth.y = split[1];
-		ubo.splitDepth.z = split[2];
-		ubo.splitDepth.w = split[3];
-	}
 #endif
 
 #ifdef SCREENSPACEAO
     ssao->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, camera.viewPos, camera.getNearClip(), camera.getFarClip());
 #endif
-
-    ubo.shadowIndex = shadowIndex;
-    ubo.filterSize = (float)filterSize;
 
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(UniformBufferObject), 0, &data);
@@ -1313,8 +1296,7 @@ void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
     uboparams.lights[1] = RotateLight(45.0f) * lightPos;
     uboparams.lights[2] = RotateLight(90.0f) * lightPos;
     uboparams.lights[3] = RotateLight(135.0f) * lightPos;
-    uboparams.colorCascades = 0;
-
+ 
     void* data;
     vkMapMemory(device, uniformBufferMemoryL, 0, sizeof(uboparams), 0, &data);
     memcpy(data, &uboparams, sizeof(uboparams));
@@ -1502,10 +1484,13 @@ void HelloVulkan::createDescriptorSetLayout()
     uniformLayoutBinding.pImmutableSamplers = nullptr;
     uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
+    std::array<VkDescriptorSetLayoutBinding, 2> uniformLayoutBindings = {uniformLayoutBinding, uniformLayoutBinding};
+    uniformLayoutBindings[1].binding = 1;
+
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &uniformLayoutBinding;
+    layoutInfo.bindingCount = (uint32_t) uniformLayoutBindings.size();
+    layoutInfo.pBindings = uniformLayoutBindings.data();
 
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayoutM) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
@@ -1521,15 +1506,20 @@ void HelloVulkan::createDescriptorSetLayout()
     imageLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     int binding = 0;
-
+    int bindingcount = 2;
 #ifdef RSMLIGHTING
     std::array<VkDescriptorSetLayoutBinding, 6> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, uniformLayoutBinding };
+    bindingcount = 6;
 #else
 
 #ifdef SCREENSPACEAO
     std::array<VkDescriptorSetLayoutBinding, 6> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, imageLayoutBinding };
-#else
+    bindingcount = 6;
+#endif
+
+#ifdef IBLLIGHTING
     std::array<VkDescriptorSetLayoutBinding, 5> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding };
+    bindingcount = 5;
 #endif
 
 #endif // RSMLIGHTING
@@ -1538,7 +1528,7 @@ void HelloVulkan::createDescriptorSetLayout()
         imageLayoutBinding.binding = binding++;
 	});
 
-    layoutInfo.bindingCount = (uint32_t)scenebindings.size();
+    layoutInfo.bindingCount = bindingcount;
     layoutInfo.pBindings = scenebindings.data();
 
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayoutS) != VK_SUCCESS) {
@@ -1595,6 +1585,7 @@ void HelloVulkan::createDescriptorSet()
 		throw std::runtime_error("failed to allocate descriptor set!");
 	}
 
+
     VkDescriptorBufferInfo bufferInfo = {};
     bufferInfo.buffer = uniformBuffer;
     bufferInfo.offset = 0;
@@ -1611,14 +1602,24 @@ void HelloVulkan::createDescriptorSet()
     descriptorWrite.pImageInfo = nullptr; // Optional
     descriptorWrite.pTexelBufferView = nullptr; // Optional
 
-    vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+	{
+		std::array<VkWriteDescriptorSet, 2> descriptorWrites = { descriptorWrite , descriptorWrite };
 
-	descriptorWrite.dstSet = skybox.descriptorSetM;
-	bufferInfo.buffer = skybox.uniformBuffer;
-	bufferInfo.offset = 0;
-	bufferInfo.range = sizeof(UniformBufferObject);
+		descriptorWrites[1].dstBinding = 1;
+		descriptorWrites[1].pBufferInfo = &shadow->GetDescriptorBufferInfo();
 
-	vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+		vkUpdateDescriptorSets(device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+
+        descriptorWrites[0].dstSet = skybox.descriptorSetM;
+        descriptorWrites[1].dstSet = skybox.descriptorSetM;
+
+		bufferInfo.buffer = skybox.uniformBuffer;
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(UniformBufferObject);
+
+        vkUpdateDescriptorSets(device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+	}
+
     layouts[0] = descriptorSetLayoutS;
     if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSetS) != VK_SUCCESS) 
     {
@@ -1635,6 +1636,7 @@ void HelloVulkan::createDescriptorSet()
     bufferInfo.range = sizeof(UBOParams);
 
     descriptorWrite.dstSet = descriptorSetS;
+    descriptorWrite.pBufferInfo = &bufferInfo;
 
 	std::array<VkWriteDescriptorSet, 6> sceneDescriptorWrites = { descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite };
 

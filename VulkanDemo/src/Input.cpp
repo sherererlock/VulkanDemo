@@ -1,7 +1,8 @@
-#include "Input.h"
-#include "HelloVulkan.h"
 #include <iostream>
 #include <fstream>
+#include "Input.h"
+#include "HelloVulkan.h"
+#include "Shadow.h"
 
 void Input::onWindowResized(GLFWwindow* window, int width, int height)
 {
@@ -175,17 +176,17 @@ void HelloVulkan::UpdateProjectionMatrix()
 
 void HelloVulkan::UpdateShadowIndex(int idx)
 {
-	if (debugtimer > 0)
+	if (debugtimer > 0 || shadow == nullptr)
 		return;
 
 	debugtimer = 0.5f;
 
 	{
-		shadowIndex++;
-		shadowIndex %= 5;
+		shadow->shadowIndex++;
+		shadow->shadowIndex %= 5;
 	}
 
-	switch (shadowIndex)
+	switch (shadow->shadowIndex)
 	{
 	case 0:
 		std::cout << "shadow without pcf" << std::endl;
@@ -207,12 +208,12 @@ void HelloVulkan::UpdateShadowIndex(int idx)
 
 void HelloVulkan::UpdateShadowFilterSize()
 {
-	//if (debugtimer > 0)
-	//	return;
+	if (debugtimer > 0 || shadow == nullptr)
+		return;
 
 	debugtimer = 0.5f;
-	filterSize++;
-	filterSize %= 20;
-	if (filterSize == 0)
-		filterSize = 1;
+	shadow->filterSize++;
+	shadow->filterSize %= 20;
+	if (shadow->filterSize == 0)
+		shadow->filterSize = 1;
 }
