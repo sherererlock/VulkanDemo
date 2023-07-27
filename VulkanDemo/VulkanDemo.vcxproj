@@ -193,6 +193,7 @@
     <ClCompile Include="..\include\ktx\lib\memstream.c" />
     <ClCompile Include="..\include\ktx\lib\swap.c" />
     <ClCompile Include="..\include\ktx\lib\texture.c" />
+    <ClCompile Include="src\PBRLighting.cpp" />
     <ClCompile Include="src\SkyboxRenderer.cpp" />
     <ClCompile Include="src\SinglePipeline.cpp" />
     <ClCompile Include="src\GBufferRenderer.cpp" />
@@ -212,6 +213,7 @@
     <ClCompile Include="src\SSAO.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\PBRLighting.h" />
     <ClInclude Include="src\SkyboxRenderer.h" />
     <ClInclude Include="src\SinglePipeline.h" />
     <ClInclude Include="src\GBufferRenderer.h" />

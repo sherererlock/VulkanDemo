@@ -16,6 +16,7 @@
 
 #include "HelloVulkan.h"
 #include "Mesh.h"
+#include "PBRLighting.h"
 #include "SkyboxRenderer.h"
 #include "CommonShadow.h"
 #include "CascadedShadow.h"
@@ -103,7 +104,7 @@ void HelloVulkan::loadgltfModel(std::string filename, gltfModel& model)
 	bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, filename);
 
 	std::vector<uint32_t> indexBuffer;
-	std::vector<Vertex1> vertexBuffer;
+	std::vector<Vertex> vertexBuffer;
 
 	size_t pos = filename.find_last_of('/');
 	std::string path = filename.substr(0, pos);
@@ -125,7 +126,7 @@ void HelloVulkan::loadgltfModel(std::string filename, gltfModel& model)
 
     lightNode = AddLight(indexBuffer, vertexBuffer);
 
-	size_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex1);
+	size_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex);
 	size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
 	model.indices.count = static_cast<uint32_t>(indexBuffer.size());
 
@@ -163,7 +164,7 @@ void HelloVulkan::loadgltfModel(std::string filename, gltfModel& model)
 	vkFreeMemory(device, indexStaging.memory, nullptr);
 }
 
-Node* HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer)
+Node* HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer)
 {
     CubeMesh mesh;
     const uint32_t indexCount = (uint32_t) mesh.indices.size();
@@ -232,6 +233,8 @@ HelloVulkan::HelloVulkan()
     skyboxRenderer = new SkyboxRenderer();
 #endif //  SKYBOX
 
+    pbrLighting = new PBRLighting();
+
     #ifdef RSMLIGHTING
     rsm = new ReflectiveShadowMap();
     #else
@@ -288,8 +291,10 @@ void HelloVulkan::InitVulkan()
 
     debug.Init(device, this, zNear, zFar);
 
+    pbrLighting->Init(this, device, width, height);
+
 #ifdef  SKYBOX
-	skyboxRenderer->Init( this, device, width, height);
+	skyboxRenderer->Init(this, device, width, height);
 #endif //  SKYBOX
 
     #ifdef RSMLIGHTING
@@ -322,6 +327,8 @@ void HelloVulkan::InitVulkan()
     createDescriptorSetLayout();
 
     debug.CreateDescriptSetLayout();
+
+    pbrLighting->CreateDescriptSetLayout();
 
 #ifdef  SKYBOX
 	skyboxRenderer->CreateDescriptSetLayout();
@@ -380,6 +387,7 @@ void HelloVulkan::InitVulkan()
 #endif //  SKYBOX
 
     loadgltfModel(MODEL_PATH, gltfmodel);
+    pbrLighting->AddModel(&gltfmodel);
 
 #ifdef IBLLIGHTING
 	PreProcess::generateIrradianceCube(this, skyboxRenderer->GetCubemap(), envLight.irradianceCube);
@@ -389,6 +397,8 @@ void HelloVulkan::InitVulkan()
 
 	createDescriptorPool();
     createDescriptorSet();
+
+    pbrLighting->SetupDescriptSet(descriptorPool);
 
 #ifdef  SKYBOX
 	skyboxRenderer->SetupDescriptSet(descriptorPool);
@@ -465,7 +475,6 @@ void HelloVulkan::Cleanup()
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayoutS, nullptr);
     vkDestroyDescriptorSetLayout(device, descriptorSetLayoutM, nullptr);
-    vkDestroyDescriptorSetLayout(device, descriptorSetLayoutMa, nullptr);
 
     vkDestroyBuffer(device, uniformBuffer, nullptr);
     vkFreeMemory(device, uniformBufferMemory, nullptr);
@@ -480,6 +489,7 @@ void HelloVulkan::Cleanup()
 
     gltfmodel.Cleanup();
 
+    pbrLighting->Cleanup();
 #ifdef  SKYBOX
 	skyboxRenderer->Cleanup();
 #endif //  SKYBOX
@@ -511,6 +521,8 @@ void HelloVulkan::Cleanup()
 
     glfwTerminate();
 
+    delete pbrLighting;
+    delete skyboxRenderer;
     delete shadow;
     delete rsm;
     delete ssao;
@@ -847,29 +859,6 @@ PipelineCreateInfo HelloVulkan::CreatePipelineCreateInfo()
 
 void HelloVulkan::createGraphicsPipeline()
 {
-	std::array<VkPushConstantRange, 2> pushConstantRanges;
-	pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	pushConstantRanges[0].offset = 0;
-	pushConstantRanges[0].size = sizeof(glm::mat4);
-
-	pushConstantRanges[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	pushConstantRanges[1].offset = sizeof(glm::mat4);
-	pushConstantRanges[1].size = sizeof(float);
-
-    std::array<VkDescriptorSetLayout, 3> setLayouts = { descriptorSetLayoutM, descriptorSetLayoutS, descriptorSetLayoutMa };
-
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = (uint32_t)setLayouts.size(); // Optional
-    pipelineLayoutInfo.pSetLayouts = setLayouts.data(); // Optional
-    pipelineLayoutInfo.pushConstantRangeCount = (uint32_t)pushConstantRanges.size(); // Optional
-    pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data(); // Optional
-
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create pipeline layout!");
-    }
-
     std::string vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.vert.spv";
     std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shader.frag.spv";
 
@@ -891,17 +880,10 @@ void HelloVulkan::createGraphicsPipeline()
 		fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shaderCascaded.frag.spv";
     }
 
-    auto shaderStages = CreaterShader(vertexFileName, fragmentFileName);
+    pbrLighting->SetShaderFile(vertexFileName, fragmentFileName);
 
     PipelineCreateInfo info = CreatePipelineCreateInfo();
     
-    auto attributeDescriptoins = Vertex1::getAttributeDescriptions();
-    auto attributeDescriptionBindings = Vertex1::getBindingDescription();
-
-    info.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
-    info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptoins.size());
-    info.vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptoins.data(); // Optional
-
     VkDynamicState dynamicStates[] = {
         VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR
@@ -925,34 +907,9 @@ void HelloVulkan::createGraphicsPipeline()
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-
-    pipelineInfo.stageCount = (uint32_t)shaderStages.size();
-    pipelineInfo.pStages = shaderStages.data();
-
-    pipelineInfo.pVertexInputState = &info.vertexInputInfo; // bindings and attribute
-    pipelineInfo.pInputAssemblyState = &info.inputAssembly; // topology
-    pipelineInfo.pViewportState = &info.viewportState; 
-    pipelineInfo.pRasterizationState = &info.rasterizer;
-    pipelineInfo.pMultisampleState = &info.multisampling;
-    pipelineInfo.pDepthStencilState = &info.depthStencil; // Optional
-    pipelineInfo.pColorBlendState = &info.colorBlending;
-    pipelineInfo.pDynamicState = &info.dynamicState; // Optional
-
-    pipelineInfo.layout = pipelineLayout; // uniform±äÁ¿
-
     pipelineInfo.renderPass = renderPass;
-    pipelineInfo.subpass = 0; // Ë÷Òý
 
-    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
-    pipelineInfo.basePipelineIndex = -1; // Optional
-
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create graphics pipeline!");
-    }
-
-    vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
-    vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
+    pbrLighting->CreatePipeline(info, pipelineInfo);
 
     debug.CreateDebugPipeline(info, pipelineInfo);
 
@@ -1107,18 +1064,7 @@ void HelloVulkan::buildCommandBuffers()
 				skyboxRenderer->BuildCommandBuffer(commandBuffers[i], gltfmodel);
                 #endif //  SKYBOX
 
-				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSetM, 0, nullptr);
-				vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &descriptorSetS, 0, nullptr);
-				vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-
-                if (CASCADED_COUNT == 1)
-                {
-                    gltfmodel.draw(commandBuffers[i], pipelineLayout, 0, 2);
-                }
-                else
-                {
-                    gltfmodel.drawWithOffset(commandBuffers[i], pipelineLayout, 0, 2);
-                }
+				pbrLighting->BuildCommandBuffer(commandBuffers[i], gltfmodel);
             }
 
             vkCmdEndRenderPass(commandBuffers[i]);
@@ -1414,8 +1360,6 @@ void HelloVulkan::cleanupSwapChain()
 
     vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-    vkDestroyPipeline(device, graphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     vkDestroyRenderPass(device, renderPass, nullptr);
 
     for (size_t i = 0; i < swapChainImageViews.size(); i++)
@@ -1544,45 +1488,15 @@ void HelloVulkan::createDescriptorSetLayout()
         throw std::runtime_error("failed to create descriptor set layout!");
     }
 
-    std::array<VkDescriptorSetLayoutBinding, 5> bindings = {};
-
-    bindings[0].binding = 0;
-    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    bindings[0].descriptorCount = 1;
-    bindings[0].stageFlags =  VK_SHADER_STAGE_FRAGMENT_BIT;
-    bindings[0].pImmutableSamplers = nullptr; // Optional
-
-    bindings[1] = bindings[0];
-    bindings[1].binding = 1;
-
-    bindings[2] = bindings[0];
-    bindings[2].binding = 2;
-
-	bindings[3] = bindings[0];
-	bindings[3].binding = 3;
-
-	bindings[4].binding = 4;
-	bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	bindings[4].descriptorCount = 1;
-	bindings[4].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	bindings[4].pImmutableSamplers = nullptr; // Optional
-
-    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-    layoutInfo.pBindings = bindings.data();
-
-    if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayoutMa) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create descriptor set layout!");
-    }
 }
 
 void HelloVulkan::createDescriptorSet()
 {
-    VkDescriptorSetLayout layouts[] = {descriptorSetLayoutM};
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = descriptorPool;
     allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = layouts;
+    allocInfo.pSetLayouts = &descriptorSetLayoutM;
 
     if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSetM) != VK_SUCCESS) 
     {
@@ -1614,7 +1528,7 @@ void HelloVulkan::createDescriptorSet()
 		vkUpdateDescriptorSets(device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
 
-    layouts[0] = descriptorSetLayoutS;
+    allocInfo.pSetLayouts = &descriptorSetLayoutS;
     if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSetS) != VK_SUCCESS) 
     {
         throw std::runtime_error("failed to allocate descriptor set!");
@@ -1706,87 +1620,9 @@ void HelloVulkan::createDescriptorSet()
 
     vkUpdateDescriptorSets(device, sceneDescriptorsCount, sceneDescriptorWrites.data(), 0, nullptr);
 
-    // TODO: deal with situation when no texture
-    layouts[0] = descriptorSetLayoutMa;
-    std::array<VkWriteDescriptorSet, 5> descriptorWrites = {};
-    for (int i = 0; i < gltfmodel.materials.size(); i++)
-    {
-        Material& material = gltfmodel.materials[i];
-        if (vkAllocateDescriptorSets(device, &allocInfo, &material.descriptorSet) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to allocate descriptor set!");
-        }
-
-		VkDeviceSize bufferSize = sizeof(Material::MaterialData);
-		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, material.materialBuffer, material.materialBufferMemory);
-        material.UpdateMaterialBuffer(device);
-
-        uint32_t indices[4] = {material.baseColorTextureIndex, material.normalTextureIndex,  material.roughnessTextureIndex, material.emissiveTextureIndex };
-        for (int j = 0; j < 4; j++)
-        {
-            descriptorWrites[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[j].dstSet = material.descriptorSet;
-            descriptorWrites[j].dstBinding = j;
-            descriptorWrites[j].dstArrayElement = 0;
-            descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[j].descriptorCount = 1;
-            descriptorWrites[j].pBufferInfo = nullptr;
-			if (indices[j] != -1)
-                descriptorWrites[j].pImageInfo =  &gltfmodel.images[indices[j]].texture.descriptor; // Optional
-            else
-                descriptorWrites[j].pImageInfo = &emptyTexture.descriptor; // Optional
-            descriptorWrites[j].pTexelBufferView = nullptr; // Optional
-        }
-
-		bufferInfo.buffer = material.materialBuffer;
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(Material::MaterialData);
-
-		descriptorWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[4].dstSet = material.descriptorSet;
-		descriptorWrites[4].dstBinding = 4;
-		descriptorWrites[4].dstArrayElement = 0;
-		descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrites[4].descriptorCount = 1;
-		descriptorWrites[4].pBufferInfo = &bufferInfo;
-		descriptorWrites[4].pImageInfo = nullptr; // Optional
-		descriptorWrites[4].pTexelBufferView = nullptr; // Optional
-
-        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-    }
-
 #ifdef SCREENSPACEAO
 	imageInfo = ssao->GetSSAODescriptorImageInfo();
 #endif // SCREENSPACEAO
 
     debug.SetupDescriptSet(descriptorPool, imageInfo);
-}
-
-void HelloVulkan::updateDescriptorSet(int colorIdx, int normalIdx, int roughnessIdx)
-{
-    std::array<VkWriteDescriptorSet, 4> descriptorWrites = {};
-    auto SetUpWrites = [this, &descriptorWrites](int idx, VkDescriptorType type, uint32_t binding, VkDescriptorBufferInfo* bufferInfo, VkDescriptorImageInfo* imageInfo, uint32_t descriptorCount = 1){
-
-        descriptorWrites[idx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[idx].dstSet = descriptorSetM;
-        descriptorWrites[idx].dstBinding = binding;
-        descriptorWrites[idx].dstArrayElement = 0;
-        descriptorWrites[idx].descriptorType = type;
-        descriptorWrites[idx].descriptorCount = descriptorCount;
-        descriptorWrites[idx].pBufferInfo = bufferInfo;
-        descriptorWrites[idx].pImageInfo = imageInfo; // Optional
-        descriptorWrites[idx].pTexelBufferView = nullptr; // Optional
-    };
-
-    VkDescriptorBufferInfo bufferInfo = {};
-    bufferInfo.buffer = uniformBuffer;
-    bufferInfo.offset = 0;
-    bufferInfo.range = sizeof(UniformBufferObject);
-
-    SetUpWrites(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &bufferInfo, nullptr);
-    SetUpWrites(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, nullptr, &gltfmodel.images[colorIdx].texture.descriptor);
-    SetUpWrites(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, nullptr, &gltfmodel.images[normalIdx].texture.descriptor);
-    SetUpWrites(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, nullptr, &gltfmodel.images[roughnessIdx].texture.descriptor);
-
-    vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }

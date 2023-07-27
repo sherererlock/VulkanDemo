@@ -78,8 +78,8 @@ std::vector<VkImageView> GBufferRenderer::GetImageViews() const
 
 void GBufferRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipelineCreateInfo& creatInfo)
 {
-	auto attributeDescriptoins = Vertex1::getAttributeDescriptions({ Vertex1::VertexComponent::Position, Vertex1::VertexComponent::Normal, Vertex1::VertexComponent::UV, Vertex1::VertexComponent::Tangent });
-	auto attributeDescriptionBindings = Vertex1::getBindingDescription();
+	auto attributeDescriptoins = Vertex::getAttributeDescriptions({ Vertex::VertexComponent::Position, Vertex::VertexComponent::Normal, Vertex::VertexComponent::UV, Vertex::VertexComponent::Tangent });
+	auto attributeDescriptionBindings = Vertex::getBindingDescription();
 
 	pipelineCreateInfo.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
 	pipelineCreateInfo.vertexInputInfo.vertexAttributeDescriptionCount = (uint32_t)attributeDescriptoins.size();

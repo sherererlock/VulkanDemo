@@ -7,7 +7,7 @@
 #include "tinygltf/tiny_gltf.h"
 #include "Texture.h"
 
-struct Vertex1 {
+struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 normal;
 	glm::vec2 uv;
@@ -20,7 +20,7 @@ struct Vertex1 {
     {
         VkVertexInputBindingDescription bindingDescription = {};
         bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Vertex1);
+        bindingDescription.stride = sizeof(Vertex);
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
         return bindingDescription;
@@ -34,27 +34,27 @@ struct Vertex1 {
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex1, pos);
+        attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
         attributeDescriptions[1].binding = 0;
         attributeDescriptions[1].location = 1;
         attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex1, normal);
+        attributeDescriptions[1].offset = offsetof(Vertex, normal);
 
         attributeDescriptions[2].binding = 0;
         attributeDescriptions[2].location = 2;
         attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[2].offset = offsetof(Vertex1, uv);
+        attributeDescriptions[2].offset = offsetof(Vertex, uv);
 
         attributeDescriptions[3].binding = 0;
         attributeDescriptions[3].location = 3;
         attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[3].offset = offsetof(Vertex1, color);
+        attributeDescriptions[3].offset = offsetof(Vertex, color);
 
         attributeDescriptions[4].binding = 0;
         attributeDescriptions[4].location = 4;
         attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[4].offset = offsetof(Vertex1, tangent);
+        attributeDescriptions[4].offset = offsetof(Vertex, tangent);
 
         return attributeDescriptions;
     }
@@ -69,41 +69,41 @@ struct Vertex1 {
 			VertexComponent component = components[i];
 			switch (component)
 			{
-			case Vertex1::VertexComponent::Position:
+			case Vertex::VertexComponent::Position:
 
 				attributeDescriptions[i].binding = 0;
 				attributeDescriptions[i].location = i;
 				attributeDescriptions[i].format = VK_FORMAT_R32G32B32_SFLOAT;
-				attributeDescriptions[i].offset = offsetof(Vertex1, pos);
+				attributeDescriptions[i].offset = offsetof(Vertex, pos);
 
 				break;
-			case Vertex1::VertexComponent::Normal:
+			case Vertex::VertexComponent::Normal:
 				attributeDescriptions[i].binding = 0;
 				attributeDescriptions[i].location = i;
 				attributeDescriptions[i].format = VK_FORMAT_R32G32B32_SFLOAT;
-				attributeDescriptions[i].offset = offsetof(Vertex1, normal);
+				attributeDescriptions[i].offset = offsetof(Vertex, normal);
 				break;
-			case Vertex1::VertexComponent::UV:
+			case Vertex::VertexComponent::UV:
 				attributeDescriptions[i].binding = 0;
 				attributeDescriptions[i].location = i;
 				attributeDescriptions[i].format = VK_FORMAT_R32G32_SFLOAT;
-				attributeDescriptions[i].offset = offsetof(Vertex1, uv);
+				attributeDescriptions[i].offset = offsetof(Vertex, uv);
 				break;
-			case Vertex1::VertexComponent::Color:
+			case Vertex::VertexComponent::Color:
 				attributeDescriptions[i].binding = 0;
 				attributeDescriptions[i].location = i;
 				attributeDescriptions[i].format = VK_FORMAT_R32G32B32_SFLOAT;
-				attributeDescriptions[i].offset = offsetof(Vertex1, color);
+				attributeDescriptions[i].offset = offsetof(Vertex, color);
 				break;
-			case Vertex1::VertexComponent::Tangent:
+			case Vertex::VertexComponent::Tangent:
 				attributeDescriptions[i].binding = 0;
 				attributeDescriptions[i].location = i;
 				attributeDescriptions[i].format = VK_FORMAT_R32G32B32_SFLOAT;
-				attributeDescriptions[i].offset = offsetof(Vertex1, tangent);
+				attributeDescriptions[i].offset = offsetof(Vertex, tangent);
 				break;
-			case Vertex1::VertexComponent::Joint0:
+			case Vertex::VertexComponent::Joint0:
 				break;
-			case Vertex1::VertexComponent::Weight0:
+			case Vertex::VertexComponent::Weight0:
 				break;
 			default:
 				break;
@@ -231,7 +231,7 @@ public:
 
 	void loadMaterials(tinygltf::Model& input);
 
-	void loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, Node* parent, std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
+	void loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, Node* parent, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer);
 
 	// Draw a single node including child nodes (if present)
 	void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node, uint32_t flag, uint32_t offset) const;

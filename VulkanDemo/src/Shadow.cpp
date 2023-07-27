@@ -17,8 +17,8 @@ void Shadow::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
 
 void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGraphicsPipelineCreateInfo& creatInfo)
 {
-    auto attributeDescriptoins = Vertex1::getAttributeDescriptions();
-    auto attributeDescriptionBindings = Vertex1::getBindingDescription();
+    auto attributeDescriptoins = Vertex::getAttributeDescriptions();
+    auto attributeDescriptionBindings = Vertex::getBindingDescription();
     pipelineCreateInfo.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
     pipelineCreateInfo.vertexInputInfo.vertexAttributeDescriptionCount = 1;
     pipelineCreateInfo.vertexInputInfo.pVertexAttributeDescriptions = &attributeDescriptoins[0]; // Optional

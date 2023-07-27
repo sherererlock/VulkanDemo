@@ -19,11 +19,13 @@ public:
 	void LoadSkyBox();
 
 	virtual void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h) override;
-	virtual void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo) override;
+
 	virtual void CreateDescriptSetLayout() override;
+	virtual void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo) override;
 	virtual void SetupDescriptSet(VkDescriptorPool pool) override;
-	virtual void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel) override;
+
 	virtual void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos) override;
+	virtual void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel) override;
 
 	virtual void Cleanup() override;
 };

@@ -13,10 +13,10 @@ class SinglePipeline
 {
 protected:
 	VkPipeline pipeline;
-
 	VkPipelineLayout pipelineLayout;
-	VkDescriptorSetLayout descriptorSetLayout;
+
 	VkDescriptorSet descriptorSet;
+	VkDescriptorSetLayout descriptorSetLayout;
 
 	VkBuffer uniformBuffer;
 	VkDeviceMemory uniformMemory;
@@ -40,7 +40,7 @@ public:
 
 	virtual	void CreateUniformBuffer();
 	virtual void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel) = 0;
-	virtual void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos) = 0;
+	virtual void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos) {};
 
 	virtual void Cleanup();
 };

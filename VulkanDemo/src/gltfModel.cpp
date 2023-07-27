@@ -115,7 +115,7 @@ void gltfModel::loadMaterials(tinygltf::Model& input)
 	}
 }
 
-void gltfModel::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, Node* parent, std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer)
+void gltfModel::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, Node* parent, std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer)
 {
 		Node* node = new Node{};
 		node->matrix = glm::mat4(1.0f);
@@ -203,7 +203,7 @@ void gltfModel::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model&
 
 					// Append data to model's vertex buffer
 					for (size_t v = 0; v < vertexCount; v++) {
-						Vertex1 vert{};
+						Vertex vert{};
 						vert.pos = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
 						vert.normal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
 						vert.uv = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);

@@ -23,8 +23,8 @@ void SkyboxRenderer::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint3
 
 void SkyboxRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipelineCreateInfo& creatInfo)
 {
-	auto attributeDescriptions = Vertex1::getAttributeDescriptions({ Vertex1::VertexComponent::Position, Vertex1::VertexComponent::Normal, Vertex1::VertexComponent::UV });
-	auto vertexInputDescriptionBindings = Vertex1::getBindingDescription();
+	auto attributeDescriptions = Vertex::getAttributeDescriptions({ Vertex::VertexComponent::Position, Vertex::VertexComponent::Normal, Vertex::VertexComponent::UV });
+	auto vertexInputDescriptionBindings = Vertex::getBindingDescription();
 
 	pipelineCreateInfo.vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	pipelineCreateInfo.vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -94,14 +94,7 @@ void SkyboxRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGr
 	pipelineCreateInfo.dynamicState.dynamicStateCount = 2;
 	pipelineCreateInfo.dynamicState.pDynamicStates = dynamicStates;
 
-	creatInfo.pVertexInputState = &pipelineCreateInfo.vertexInputInfo; // bindings and attribute
-	creatInfo.pInputAssemblyState = &pipelineCreateInfo.inputAssembly; // topology
-	creatInfo.pViewportState = &pipelineCreateInfo.viewportState;
-	creatInfo.pRasterizationState = &pipelineCreateInfo.rasterizer;
-	creatInfo.pMultisampleState = &pipelineCreateInfo.multisampling;
-	creatInfo.pDepthStencilState = &pipelineCreateInfo.depthStencil; // Optional
-	creatInfo.pColorBlendState = &pipelineCreateInfo.colorBlending;
-	creatInfo.pDynamicState = &pipelineCreateInfo.dynamicState; // Optional
+	pipelineCreateInfo.Apply(creatInfo);
 
 	auto shaderStages = vulkanAPP->CreaterShader(vertexShader, fragmentShader);
 	creatInfo.stageCount = (uint32_t)shaderStages.size();

@@ -17,6 +17,7 @@
 #include "Input.h"
 #include "macros.h"
 #include "SkyboxRenderer.h"
+#include "PBRLighting.h"
 
 class Shadow;
 class ReflectiveShadowMap;
@@ -66,6 +67,18 @@ struct PipelineCreateInfo
         multisampling({}), colorBlending({}), dynamicState({}), depthStencil({})
     {        
     }
+
+    void Apply(VkGraphicsPipelineCreateInfo& createInfo) const
+    {
+        createInfo.pVertexInputState = &vertexInputInfo; // bindings and attribute
+        createInfo.pInputAssemblyState = &inputAssembly; // topology
+        createInfo.pViewportState = &viewportState; 
+        createInfo.pRasterizationState = &rasterizer;
+        createInfo.pMultisampleState = &multisampling;
+        createInfo.pDepthStencilState = &depthStencil; // Optional
+        createInfo.pColorBlendState = &colorBlending;
+        createInfo.pDynamicState = &dynamicState; // Optional
+    }
 };
 
 class HelloVulkan
@@ -113,7 +126,6 @@ public:
     void createDescriptorPool();
     void createDescriptorSetLayout();
     void createDescriptorSet();
-    void updateDescriptorSet(int colorIdx, int normalIdx, int roughnessIdx);
 
 	VkCommandBuffer beginSingleTimeCommands();
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -167,7 +179,7 @@ public:
     bool hasStencilComponent(VkFormat format);
 
     void loadgltfModel(std::string filename, gltfModel& gltfmodel);
-    Node* AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex1>& vertexBuffer);
+    Node* AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vertex>& vertexBuffer);
 
 	bool isDebug = false;
 	float accTime = 0.0f;
@@ -185,8 +197,12 @@ public:
     inline Camera& GetCamera() { return camera; }
     inline Input& GetInput() { return input; }
     inline void ViewUpdated() { viewUpdated = true; }
-    inline VkDescriptorSetLayout GetMaterialDescriptorSetLayout() const { return descriptorSetLayoutMa; }
+    inline VkDescriptorSetLayout GetMaterialDescriptorSetLayout() const { return pbrLighting->GetDescriptorSetLayout(); }
     inline const gltfModel& GetSkybox() const { return skyboxRenderer->GetSkybox(); }
+    inline std::vector<VkDescriptorSetLayout> GetDescriptorSetLayouts() const { return { descriptorSetLayoutM, descriptorSetLayoutS }; }
+    inline std::array<VkDescriptorSet, 2> GetDescriptorSets() const { return { descriptorSetM, descriptorSetS }; }
+
+    inline const Texture2D& GetEmptyTexture() const { return emptyTexture; }
 
 private:
 	static HelloVulkan* helloVulkan;
@@ -218,14 +234,9 @@ private:
 
     VkDescriptorSetLayout descriptorSetLayoutM;
     VkDescriptorSetLayout descriptorSetLayoutS;
-    VkDescriptorSetLayout descriptorSetLayoutMa;
-
-    VkPushConstantRange pushConstantRange;
-    VkPipelineLayout pipelineLayout;
 
     VkDescriptorSet descriptorSetM;
     VkDescriptorSet descriptorSetS;
-    VkPipeline graphicsPipeline;
 
     IBLEnviromentLight envLight;
 
@@ -271,6 +282,8 @@ private:
 
     Node* lightNode;
     SkyboxRenderer* skyboxRenderer;
+    PBRLighting* pbrLighting;
+
     Shadow* shadow;
     Debug debug;
     Input input;

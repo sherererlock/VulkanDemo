@@ -220,8 +220,8 @@ void PreProcess::generateMap(HelloVulkan* vulkan, const TextureCubeMap& envCubeM
 
 	auto shaderStages = vulkan->CreaterShader(vertexShaderPath, fragmentShaderPath);
 
-	auto attributeDescriptoins = Vertex1::getAttributeDescriptions({ Vertex1::VertexComponent::Position });
-	auto attributeDescriptionBindings = Vertex1::getBindingDescription();
+	auto attributeDescriptoins = Vertex::getAttributeDescriptions({ Vertex::VertexComponent::Position });
+	auto attributeDescriptionBindings = Vertex::getBindingDescription();
 
 	info.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
 	info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptoins.size());
@@ -638,8 +638,8 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 	std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/genBRDFLut.frag.spv";
 	auto shaderStages = vulkan->CreaterShader(vertexFileName, fragmentFileName);
 
-	auto attributeDescriptoins = Vertex1::getAttributeDescriptions({ Vertex1::VertexComponent::Position });
-	auto attributeDescriptionBindings = Vertex1::getBindingDescription();
+	auto attributeDescriptoins = Vertex::getAttributeDescriptions({ Vertex::VertexComponent::Position });
+	auto attributeDescriptionBindings = Vertex::getBindingDescription();
 
 	info.vertexInputInfo.vertexBindingDescriptionCount = 0;
 	info.vertexInputInfo.pVertexBindingDescriptions = VK_NULL_HANDLE; // Optional

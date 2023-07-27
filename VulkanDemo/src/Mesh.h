@@ -53,7 +53,7 @@ public:
 		20, 21, 22, 20, 22, 23,   // left
 	};
 
-	std::vector<Vertex1> vertex;
+	std::vector<Vertex> vertex;
 
 public:
 	CubeMesh()
