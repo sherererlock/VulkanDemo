@@ -41,16 +41,21 @@ struct SwapChainSupportDetails
 struct UniformBufferObject {
     glm::mat4 view;
     glm::mat4 proj;
-    glm::mat4 depthVP[CASCADED_COUNT];
-	glm::vec4 splitDepth;
     glm::vec4 viewPos;
+};
+
+struct ShadowBufferObject
+{
+    glm::mat4 depthVP[CASCADED_COUNT];
+    glm::vec4 splitDepth;
     int shadowIndex;
     float filterSize;
+	int colorCascades;
 };
 
 struct UBOParams {
 	glm::vec4 lights[4];
-    int colorCascades;
+
 	float exposure = 4.5f;
 	float gamma = 2.2f;
 };
@@ -259,6 +264,10 @@ private:
 
     VkBuffer uniformBuffer;
     VkDeviceMemory uniformBufferMemory;
+
+    VkBuffer shadowBuffer;
+    VkDeviceMemory shadowBufferMemory;
+
     VkBuffer uniformBufferL;
     VkDeviceMemory uniformBufferMemoryL;
 
