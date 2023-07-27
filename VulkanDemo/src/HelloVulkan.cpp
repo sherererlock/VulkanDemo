@@ -1502,13 +1502,10 @@ void HelloVulkan::createDescriptorSetLayout()
     uniformLayoutBinding.pImmutableSamplers = nullptr;
     uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    std::array<VkDescriptorSetLayoutBinding, 2> uniformLayoutBindings = {uniformLayoutBinding, uniformLayoutBinding};
-    uniformLayoutBindings[1].binding = 1;
-
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = (uint32_t) uniformLayoutBindings.size();
-    layoutInfo.pBindings = uniformLayoutBindings.data();
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uniformLayoutBinding;
 
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayoutM) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");

@@ -3,23 +3,19 @@
 
 layout(set = 0, binding = 0)
 uniform UniformBufferObject{
-    mat4 view;
-    mat4 proj;
-    vec4 viewPos;
+	mat4 view;
+	mat4 proj;
+	mat4 depthVP;
+	vec4 splitDepth;
+	vec4 viewPos;
+	int shadowIndex;
+	float filterSize;
 } ubo;
-
-layout(set = 0, binding = 1)
-uniform ShadowBufferObject{
-    mat4 depthVP;
-    vec4 splitDepth;
-    int shadowIndex;
-    float filterSize;
-	int colorCascades;
-}shadowUbo;
 
 layout(set = 1, binding = 0)
 uniform uboShared{
 	vec4 lights[4];
+	int colorCascades;
 	float exposure;
 	float gamma;
 } uboParam;

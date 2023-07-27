@@ -13,7 +13,7 @@ out gl_PerVertex {
 
 void main() {
 
-   worldPos = (primitive.model * inPosition).xyz;
+   worldPos = (primitive.model * vec4(inPosition, 1.0)).xyz;
    viewPos = (ubo.view * vec4(worldPos, 1.0)).xyz;
    gl_Position = ubo.proj * vec4(viewPos, 1.0);
 
