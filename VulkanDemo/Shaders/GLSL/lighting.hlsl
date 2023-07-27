@@ -193,11 +193,12 @@ vec3 Lighting(float shadow)
 	ambient = IBLIndirectLighting(n, v, albedo, F0, roughness, metallic);
 	#endif
 
+	float ao = 1.0;
 	#ifdef SSAO
 	
 	ivec2 screenSize = textureSize(ssaoSampler, 0);
 	vec2 uv = vec2(gl_FragCoord.x / float(screenSize.x), gl_FragCoord.y / float(screenSize.y));
-	float ao = texture(ssaoSampler, uv).r;
+	ao = texture(ssaoSampler, uv).r;
 
 	#endif
 
