@@ -79,7 +79,7 @@ private:
 	void BuildSSAOCommandBuffer(VkCommandBuffer commandBuffer);
 
 public:
-	virtual void InitRandomBuffer() override;
+	void InitRandomBuffer();
 	VkDescriptorBufferInfo GetBufferInfo() const override;
 	void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo) override;
 	virtual void CreatePass()override;

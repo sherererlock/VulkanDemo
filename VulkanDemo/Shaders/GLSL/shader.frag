@@ -11,8 +11,6 @@ layout(location = 5) in vec4 shadowCoord;
 vec2 GetRoughnessAndMetallic()
 {
     vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
-	roughMetalic.x = 0.8;
-	roughMetalic.y = 0.1;
 	return roughMetalic;
 }
 

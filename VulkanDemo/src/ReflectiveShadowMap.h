@@ -35,7 +35,7 @@ public:
 	virtual std::vector<VkAttachmentReference> GetAttachmentRefs() const override;
 	virtual std::vector<VkImageView> GetImageViews() const override;
 
-	virtual void InitRandomBuffer() override;
+	void InitRandomBuffer();
 	VkDescriptorBufferInfo GetBufferInfo() const override;
 
 	void SetupDescriptSet(VkDescriptorPool pool) override;
@@ -48,9 +48,7 @@ public:
 	void Cleanup() override;
 
 public:
-	inline const VkDescriptorImageInfo& GetDepthDescriptorImageInfo() const { return depth.descriptor; }
-	inline const VkDescriptorImageInfo& GetPositionDescriptorImageInfo() const { return position.descriptor; }
-	inline const VkDescriptorImageInfo& GetNormalDescriptorImageInfo() const { return normal.descriptor; }
+
 	inline const VkDescriptorImageInfo& GetFluxDescriptorImageInfo() const { return flux.descriptor; }
 
 };

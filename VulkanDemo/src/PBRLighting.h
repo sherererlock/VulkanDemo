@@ -5,7 +5,6 @@
 
 class PBRLighting : public SinglePipeline
 {
-
 private:
 	std::vector<gltfModel*> models;
 

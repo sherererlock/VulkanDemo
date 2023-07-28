@@ -34,8 +34,8 @@ public:
 
 	virtual void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
 
-	virtual void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
 	virtual void CreateDescriptSetLayout();
+	virtual void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
 	virtual void SetupDescriptSet(VkDescriptorPool pool);
 
 	virtual	void CreateUniformBuffer();

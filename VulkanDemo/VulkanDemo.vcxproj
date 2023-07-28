@@ -211,6 +211,8 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\TextureAsset.cpp" />
     <ClCompile Include="src\SSAO.cpp" />
+    <ClCompile Include="src\SSRGbufferRenderer.cpp" />
+    <ClCompile Include="src\SSR.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\PBRLighting.h" />
@@ -232,6 +234,8 @@
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Texture.h" />
     <ClInclude Include="src\SSAO.h" />
+    <ClInclude Include="src\SSRGbufferRenderer.h" />
+    <ClInclude Include="src\SSR.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

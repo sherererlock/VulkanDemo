@@ -6,10 +6,6 @@
 #include "HelloVulkan.h"
 #include "GBufferRenderer.h"
 
-void GBufferRenderer::InitRandomBuffer()
-{
-}
-
 VkDescriptorBufferInfo GBufferRenderer::GetBufferInfo() const
 {
 	VkDescriptorBufferInfo bufferInfo = {};

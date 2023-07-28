@@ -57,10 +57,6 @@ protected:
 	FrameBufferAttachment normal;
 	FrameBufferAttachment depth;
 
-	float depthBiasConstant = 1.25f;
-	// Slope depth bias factor, applied depending on polygon's slope
-	float depthBiasSlope = 1.75f;
-
 	std::string vertexShader;
 	std::string fragmentShader;
 
@@ -72,7 +68,6 @@ public:
 	virtual std::vector<VkAttachmentReference> GetAttachmentRefs() const;
 	virtual std::vector<VkImageView> GetImageViews() const;
 
-	virtual void InitRandomBuffer();
 	virtual VkDescriptorBufferInfo GetBufferInfo() const;
 
 	virtual void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
@@ -89,6 +84,10 @@ public:
 
 	virtual void Cleanup();
 
+public:
+	inline const VkDescriptorImageInfo& GetDepthDescriptorImageInfo() const { return depth.descriptor; }
+	inline const VkDescriptorImageInfo& GetPositionDescriptorImageInfo() const { return position.descriptor; }
+	inline const VkDescriptorImageInfo& GetNormalDescriptorImageInfo() const { return normal.descriptor; }
 };
 
 

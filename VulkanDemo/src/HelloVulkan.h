@@ -203,6 +203,7 @@ public:
     inline std::array<VkDescriptorSet, 2> GetDescriptorSets() const { return { descriptorSetM, descriptorSetS }; }
 
     inline const Texture2D& GetEmptyTexture() const { return emptyTexture; }
+    inline VkSampleCountFlagBits GetSampleCountFlag() const { return msaaSamples; }
 
 private:
 	static HelloVulkan* helloVulkan;
