@@ -22,6 +22,8 @@
 class Shadow;
 class ReflectiveShadowMap;
 class SSAO;
+class SSRGBufferRenderer;
+class SSR;
 
 struct QueueFamilyIndices
 {
@@ -204,6 +206,8 @@ public:
 
     inline const Texture2D& GetEmptyTexture() const { return emptyTexture; }
     inline VkSampleCountFlagBits GetSampleCountFlag() const { return msaaSamples; }
+    inline SSRGBufferRenderer* GetSSRGBuffer() const { return ssrGBuffer; }
+    inline Shadow* GetShadow() const { return shadow; }
 
 private:
 	static HelloVulkan* helloVulkan;
@@ -291,6 +295,9 @@ private:
 
     ReflectiveShadowMap* rsm;
     SSAO* ssao;
+    SSRGBufferRenderer* ssrGBuffer;
+    SSR* ssr;
+
 
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;

@@ -58,12 +58,11 @@ void SSRGBufferRenderer::CreateDescriptSetLayout()
 	binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	binding.pImmutableSamplers = nullptr; // Optional
 
-	std::array<VkDescriptorSetLayoutBinding, 5> bindings = { binding, binding, binding, binding, binding };
+	std::array<VkDescriptorSetLayoutBinding, 5> bindings;
+	bindings.fill(binding);
 
 	for (int i = 1; i < 5; i++)
-	{
 		bindings[i].binding = i;
-	}
 
 	bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
@@ -83,14 +82,10 @@ void SSRGBufferRenderer::CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipe
 	vertexShader = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/ssrgbuffer.vert.spv";
 	fragmentShader = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/ssrgbuffer.frag.spv";
 
-	std::array<VkPushConstantRange, 2> pushConstantRanges;
-	pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	pushConstantRanges[0].offset = 0;
-	pushConstantRanges[0].size = sizeof(glm::mat4);
-
-	pushConstantRanges[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	pushConstantRanges[1].offset = sizeof(glm::mat4);
-	pushConstantRanges[1].size = sizeof(float);
+	VkPushConstantRange pushConstantRange;
+	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	pushConstantRange.offset = 0;
+	pushConstantRange.size = sizeof(glm::mat4);
 
 	std::vector<VkDescriptorSetLayout> setLayouts = vulkanAPP->GetDescriptorSetLayouts();
 	setLayouts.push_back(descriptorSetLayout);
@@ -99,8 +94,8 @@ void SSRGBufferRenderer::CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipe
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = (uint32_t)setLayouts.size(); // Optional
 	pipelineLayoutInfo.pSetLayouts = setLayouts.data(); // Optional
-	pipelineLayoutInfo.pushConstantRangeCount = (uint32_t)pushConstantRanges.size(); // Optional
-	pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data(); // Optional
+	pipelineLayoutInfo.pushConstantRangeCount = 1; // Optional
+	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange; // Optional
 
 	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 	{
@@ -123,7 +118,37 @@ void SSRGBufferRenderer::CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipe
 	creatInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	creatInfo.basePipelineIndex = -1; // Optional
 
+	info.rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	info.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	VkDynamicState dynamicStates[] = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR,
+	};
+	info.dynamicState.dynamicStateCount = 2;
+	info.dynamicState.pDynamicStates = dynamicStates;
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.blendEnable = VK_FALSE;
+	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+
+	auto colorAttachmentRefs = GetAttachmentRefs();
+	std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+	for (auto colorAttachmentRef : colorAttachmentRefs)
+		colorBlendAttachments.push_back(colorBlendAttachment);
+
+	info.colorBlending.pAttachments = colorBlendAttachments.data();
+	info.colorBlending.attachmentCount = (uint32_t)colorBlendAttachments.size();
+
 	info.Apply(creatInfo);
+
+	creatInfo.renderPass = renderPass;
 
 	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &creatInfo, nullptr, &pipeline) != VK_SUCCESS)
 	{

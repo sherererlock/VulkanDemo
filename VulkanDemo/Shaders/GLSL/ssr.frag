@@ -22,10 +22,10 @@ layout(location = 0) out vec4 outColor;
 float getShadow(vec4 worldPos)
 {
 	vec4 screenPos = ubo.depthVP * worldPos;
-	screenPos.xyz /= w;
+	screenPos.xyz /= screenPos.w;
 	screenPos.xy = screenPos.xy * 0.5 + 0.5;
 
-	float shadowDepth = texture(shadowSampler, screenPos.xy);
+	float shadowDepth = texture(shadowSampler, screenPos.xy).r;
 	if(shadowDepth < screenPos.z)
 		return 0.0;
 
@@ -35,9 +35,9 @@ float getShadow(vec4 worldPos)
 vec3 GetScreenUV(vec4 worldPos)
 {
 	vec4 screenPos = ubo.proj * ubo.view * worldPos;
-	screenPos.xyz /= w;
+	screenPos.xyz /= screenPos.w;
 	screenPos.xyz = screenPos.xyz * 0.5 + 0.5;
-	return screenPos;
+	return screenPos.xyz;
 }
 
 float GetDepth(vec4 worldPos)
@@ -47,7 +47,7 @@ float GetDepth(vec4 worldPos)
 	return screenPos.w;
 }
 
-vec3 RayMarch(vec3 origin, vec3 dir, out vec3 pos)
+bool RayMarch(vec3 origin, vec3 dir, out vec3 pos)
 {
 	float step = 0.05;
 	float maxDistance = 10;
@@ -101,7 +101,7 @@ void main()
 	vec3 R = normalize(reflect(-wo, normal));
 
 	vec3 pos;
-	if(RayMarch_w(worldPos, R, pos))
+	if(RayMarch_w(worldPos.xyz, R, pos))
 	{
 		vec3 screenPos = GetScreenUV(vec4(pos, 1.0));
 		color = texture(colorSampler, screenPos.xy);

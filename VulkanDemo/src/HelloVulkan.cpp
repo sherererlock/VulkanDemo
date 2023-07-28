@@ -23,12 +23,16 @@
 #include "PreProcess.h"
 #include "ReflectiveShadowMap.h"
 #include "SSAO.h"
+#include "SSR.h"
+#include "SSRGBufferRenderer.h"
 
-#define IBLLIGHTING
+//#define IBLLIGHTING
 
 //#define RSMLIGHTING
 
 //#define SCREENSPACEAO
+
+#define SCREENSPACEREFLECTION
 
 #define SKYBOX
 
@@ -37,6 +41,11 @@
 #ifdef  IBLLIGHTING
 #define SKYBOX
 #endif //  SKYBOX
+
+#ifdef  SCREENSPACEREFLECTION
+#define SHADOW
+#endif //  SSR
+
 
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
@@ -233,8 +242,6 @@ HelloVulkan::HelloVulkan()
     skyboxRenderer = new SkyboxRenderer();
 #endif //  SKYBOX
 
-    pbrLighting = new PBRLighting();
-
     #ifdef RSMLIGHTING
     rsm = new ReflectiveShadowMap();
     #else
@@ -248,6 +255,14 @@ HelloVulkan::HelloVulkan()
 #ifdef SCREENSPACEAO
     ssao = new SSAO();
 #endif
+
+#ifdef SCREENSPACEREFLECTION
+    ssrGBuffer = new SSRGBufferRenderer();
+    ssr = new SSR();
+#else
+    pbrLighting = new PBRLighting();
+#endif //  SSR
+
 }
 
 void HelloVulkan::Init()
@@ -291,8 +306,6 @@ void HelloVulkan::InitVulkan()
 
     debug.Init(device, this, zNear, zFar);
 
-    pbrLighting->Init(this, device, width, height);
-
 #ifdef  SKYBOX
 	skyboxRenderer->Init(this, device, width, height);
 #endif //  SKYBOX
@@ -306,6 +319,13 @@ void HelloVulkan::InitVulkan()
 #ifdef SCREENSPACEAO
     ssao->Init(this, device, width, height);
 #endif
+
+#ifdef SCREENSPACEREFLECTION
+    ssrGBuffer->Init(this, device, width, height);
+    ssr->Init(this, device, width, height);
+#else
+    pbrLighting->Init(this, device, width, height);
+#endif //  SSR
 
     createSwapChain();
     createImageViews();
@@ -324,11 +344,15 @@ void HelloVulkan::InitVulkan()
     ssao->CreatePass();
 #endif
 
+#ifdef SCREENSPACEREFLECTION
+    ssrGBuffer->CreateGBuffer();
+    ssrGBuffer->CreatePass();
+
+#endif //  SSR
+
     createDescriptorSetLayout();
 
     debug.CreateDescriptSetLayout();
-
-    pbrLighting->CreateDescriptSetLayout();
 
 #ifdef  SKYBOX
 	skyboxRenderer->CreateDescriptSetLayout();
@@ -343,6 +367,13 @@ void HelloVulkan::InitVulkan()
 #ifdef SCREENSPACEAO
     ssao->CreateDescriptSetLayout();
 #endif
+
+#ifdef SCREENSPACEREFLECTION
+    ssrGBuffer->CreateDescriptSetLayout();
+    ssr->CreateDescriptSetLayout();
+#else
+    pbrLighting->CreateDescriptSetLayout();
+#endif //  SSR
 
     createGraphicsPipeline();
 
@@ -364,6 +395,10 @@ void HelloVulkan::InitVulkan()
 	ssao->CreateFrameBuffer();
 #endif
 
+#ifdef SCREENSPACEREFLECTION
+    ssrGBuffer->CreateFrameBuffer();
+#endif //  SSR
+
     createUniformBuffer();
 
     debug.CreateUniformBuffer();
@@ -382,12 +417,21 @@ void HelloVulkan::InitVulkan()
 	ssao->CreateUniformBuffer();
 #endif
 
+#ifdef SCREENSPACEREFLECTION
+    ssr->CreateUniformBuffer();
+#endif //  SSR
+
 #ifdef  SKYBOX
 	skyboxRenderer->LoadSkyBox();
 #endif //  SKYBOX
 
     loadgltfModel(MODEL_PATH, gltfmodel);
+
+#ifdef SCREENSPACEREFLECTION
+    ssrGBuffer->AddModel(&gltfmodel);
+#else
     pbrLighting->AddModel(&gltfmodel);
+#endif //  SSR
 
 #ifdef IBLLIGHTING
 	PreProcess::generateIrradianceCube(this, skyboxRenderer->GetCubemap(), envLight.irradianceCube);
@@ -397,8 +441,6 @@ void HelloVulkan::InitVulkan()
 
 	createDescriptorPool();
     createDescriptorSet();
-
-    pbrLighting->SetupDescriptSet(descriptorPool);
 
 #ifdef  SKYBOX
 	skyboxRenderer->SetupDescriptSet(descriptorPool);
@@ -413,6 +455,13 @@ void HelloVulkan::InitVulkan()
 #ifdef SCREENSPACEAO
 	ssao->SetupDescriptSet(descriptorPool);
 #endif
+
+#ifdef SCREENSPACEREFLECTION
+    ssrGBuffer->SetupDescriptSet(descriptorPool);
+    ssr->SetupDescriptSet(descriptorPool);
+#else
+    pbrLighting->SetupDescriptSet(descriptorPool);
+#endif //  SSR
 
     createCommandBuffers();
 
@@ -489,7 +538,6 @@ void HelloVulkan::Cleanup()
 
     gltfmodel.Cleanup();
 
-    pbrLighting->Cleanup();
 #ifdef  SKYBOX
 	skyboxRenderer->Cleanup();
 #endif //  SKYBOX
@@ -511,6 +559,13 @@ void HelloVulkan::Cleanup()
     ssao->Cleanup();
 #endif
 
+#ifdef SCREENSPACEREFLECTION
+    ssrGBuffer->Cleanup();
+    ssr->Cleanup();
+#else
+    pbrLighting->Cleanup();
+#endif //  SSR
+
     vkDestroyDevice(device, nullptr);
 
     vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -526,6 +581,8 @@ void HelloVulkan::Cleanup()
     delete shadow;
     delete rsm;
     delete ssao;
+    delete ssrGBuffer;
+    delete ssr;
 }
 
 void HelloVulkan::CreateInstance()
@@ -880,7 +937,6 @@ void HelloVulkan::createGraphicsPipeline()
 		fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/shaderCascaded.frag.spv";
     }
 
-    pbrLighting->SetShaderFile(vertexFileName, fragmentFileName);
 
     PipelineCreateInfo info = CreatePipelineCreateInfo();
     
@@ -909,8 +965,7 @@ void HelloVulkan::createGraphicsPipeline()
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.renderPass = renderPass;
 
-    pbrLighting->CreatePipeline(info, pipelineInfo);
-
+    info.Apply(pipelineInfo);
     debug.CreateDebugPipeline(info, pipelineInfo);
 
 #ifdef  SKYBOX
@@ -927,6 +982,14 @@ void HelloVulkan::createGraphicsPipeline()
 	ssao->CreatePipeline(info, pipelineInfo);
 #endif
 
+#ifdef SCREENSPACEREFLECTION
+    ssrGBuffer->CreatePipeline(info, pipelineInfo);
+    pipelineInfo.renderPass = renderPass;
+    ssr->CreatePipeline(info, pipelineInfo);
+#else
+    pbrLighting->SetShaderFile(vertexFileName, fragmentFileName);
+    pbrLighting->CreatePipeline(info, pipelineInfo);
+#endif //  SSR
 }
 
 void HelloVulkan::createFrameBuffer()
@@ -1022,6 +1085,12 @@ void HelloVulkan::buildCommandBuffers()
         }
 
         {
+            #ifdef SCREENSPACEREFLECTION
+            ssrGBuffer->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+            #endif //  SSR
+        }
+
+        {
             VkRenderPassBeginInfo renderPassInfo = {};
             renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             renderPassInfo.renderPass = renderPass;
@@ -1059,12 +1128,15 @@ void HelloVulkan::buildCommandBuffers()
             }
             else
             {
-
                 #ifdef  SKYBOX
 				skyboxRenderer->BuildCommandBuffer(commandBuffers[i], gltfmodel);
                 #endif //  SKYBOX
 
-				pbrLighting->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+                #ifdef SCREENSPACEREFLECTION
+                    ssr->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+                #else       
+				    pbrLighting->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+                #endif //  SSR
             }
 
             vkCmdEndRenderPass(commandBuffers[i]);
@@ -1213,6 +1285,10 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
 #ifdef SCREENSPACEAO
     ssao->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, camera.viewPos, camera.getNearClip(), camera.getFarClip());
 #endif
+
+#ifdef SCREENSPACEREFLECTION
+    ssr->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, view * proj, camera.viewPos);
+#endif //  SSR
 
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(UniformBufferObject), 0, &data);
@@ -1459,7 +1535,7 @@ void HelloVulkan::createDescriptorSetLayout()
 
     int binding = 0;
     int bindingcount = 2;
-    //std::array<VkDescriptorSetLayoutBinding, 2> scenebindings = { uniformLayoutBinding, imageLayoutBinding };
+    std::array<VkDescriptorSetLayoutBinding, 2> scenebindings = { uniformLayoutBinding, imageLayoutBinding };
 #ifdef RSMLIGHTING
     std::array<VkDescriptorSetLayoutBinding, 6> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, uniformLayoutBinding };
     bindingcount = 6;

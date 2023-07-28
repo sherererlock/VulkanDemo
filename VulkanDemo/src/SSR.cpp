@@ -2,6 +2,7 @@
 
 #include "HelloVulkan.h"
 #include "SSRGbufferRenderer.h"
+#include "Shadow.h"
 #include "SSR.h"
 
 void SSR::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
@@ -11,7 +12,7 @@ void SSR::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
 	fragmentShader = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/ssr.frag.spv";
 	bufferSize = sizeof(UniformBufferObject);
 
-	gbuffer = app->GetSSRGbuffer();
+	gbuffer = app->GetSSRGBuffer();
 }
 
 void SSR::CreateDescriptSetLayout()
@@ -64,6 +65,26 @@ void SSR::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipel
 	creatInfo.stageCount = 2;
 	creatInfo.pStages = shaderStages.data();
 
+	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.blendEnable = VK_FALSE;
+	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+
+	pipelineCreateInfo.colorBlending.pAttachments = &colorBlendAttachment;
+	pipelineCreateInfo.colorBlending.attachmentCount = 1;
+
+	VkDynamicState dynamicStates[] = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR,
+	};
+	pipelineCreateInfo.dynamicState.dynamicStateCount = 2;
+	pipelineCreateInfo.dynamicState.pDynamicStates = dynamicStates;
+
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = 1; // Optional
@@ -75,6 +96,7 @@ void SSR::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipel
 	{
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
+
 
 	creatInfo.layout = pipelineLayout;
 
@@ -119,7 +141,7 @@ void SSR::SetupDescriptSet(VkDescriptorPool pool)
 		gbuffer->GetNormalDescriptorImageInfo(),
 		gbuffer->GetDepthDescriptorImageInfo(),
 		gbuffer->GetColorDescriptorImageInfo(),
-		vulkanAPP->GetShadowDescriptorImageInfo()
+		vulkanAPP->GetShadow()->GetDescriptorImageInfo()
 	};
 
 	for (int i = 0; i < 5; i++)
@@ -135,11 +157,20 @@ void SSR::SetupDescriptSet(VkDescriptorPool pool)
 	vkUpdateDescriptorSets(device, 6, descriptorWrites.data(), 0, nullptr);
 }
 
-
 void SSR::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel)
 {
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	vkCmdDraw(commandBuffer, 3, 1, 0,0);
 }
 
-void SSR::Cleanup()
+void SSR::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depthVP, glm::vec4 viewPos)
 {
+	UniformBufferObject ubo;
+	ubo.view = view;
+	ubo.proj = proj;
+	ubo.viewPos = viewPos;
+	ubo.depthVP = depthVP;
+
+	Trans_Data_To_GPU
 }
