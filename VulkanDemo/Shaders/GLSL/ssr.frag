@@ -90,12 +90,12 @@ bool RayMarch_w(vec3 origin, vec3 dir, out vec3 pos)
 
 void main() 
 {
-	vec4 color = vec4(0.0);
+	vec3 color = vec3(0.0);
 
-	vec4 worldPos = texture(positionSampler, inUV);
+	vec3 worldPos = texture(positionSampler, inUV).xyz;
 	vec3 normal = normalize(texture(normalSampler, inUV).xyz * 2.0 - 1.0);
 	float depth = texture(depthSampler, inUV).r;
-	float shadow = getShadow(worldPos);
+	float shadow = getShadow(vec4(worldPos.xyz, 1.0));
 
 	vec3 wo = normalize(ubo.viewPos.xyz - worldPos.xyz);
 	vec3 R = normalize(reflect(-wo, normal));
@@ -104,13 +104,17 @@ void main()
 	if(RayMarch_w(worldPos.xyz, R, pos))
 	{
 		vec3 screenPos = GetScreenUV(vec4(pos, 1.0));
-		color = texture(colorSampler, screenPos.xy);
+		color = texture(colorSampler, screenPos.xy).xyz;
 	}
 	else
 	{
-		color = texture(colorSampler, inUV);
+		color = texture(colorSampler, inUV).xyz;
 	}
 
-	outColor = color * shadow;
+	color = texture(colorSampler, inUV).xyz;
+	color *= shadow;
+
+	color = pow(color, vec3(1.0 / 2.2));
+	outColor = vec4(color, 1.0);
 
 }

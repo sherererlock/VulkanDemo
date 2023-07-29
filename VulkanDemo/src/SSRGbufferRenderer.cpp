@@ -119,6 +119,8 @@ void SSRGBufferRenderer::CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipe
 	creatInfo.basePipelineIndex = -1; // Optional
 
 	info.rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	info.rasterizer.depthBiasClamp = VK_FALSE;
+	info.rasterizer.depthBiasEnable = VK_FALSE;
 	info.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
 	VkDynamicState dynamicStates[] = {

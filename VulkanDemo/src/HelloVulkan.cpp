@@ -133,7 +133,8 @@ void HelloVulkan::loadgltfModel(std::string filename, gltfModel& model)
 		throw std::runtime_error("validation layers requested, but not available!");("Could not open the glTF file.\n\nThe file is part of the additional asset pack.\n\nRun \"download_assets.py\" in the repository root to download the latest version.", -1);
 	}
 
-    lightNode = AddLight(indexBuffer, vertexBuffer);
+    //lightNode = AddLight(indexBuffer, vertexBuffer);
+    //lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.01f));
 
 	size_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex);
 	size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
@@ -965,6 +966,11 @@ void HelloVulkan::createGraphicsPipeline()
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.renderPass = renderPass;
 
+#ifndef SCREENSPACEREFLECTION
+    pbrLighting->SetShaderFile(vertexFileName, fragmentFileName);
+    pbrLighting->CreatePipeline(info, pipelineInfo);
+#endif //  SSR
+
     info.Apply(pipelineInfo);
     debug.CreateDebugPipeline(info, pipelineInfo);
 
@@ -986,9 +992,6 @@ void HelloVulkan::createGraphicsPipeline()
     ssrGBuffer->CreatePipeline(info, pipelineInfo);
     pipelineInfo.renderPass = renderPass;
     ssr->CreatePipeline(info, pipelineInfo);
-#else
-    pbrLighting->SetShaderFile(vertexFileName, fragmentFileName);
-    pbrLighting->CreatePipeline(info, pipelineInfo);
 #endif //  SSR
 }
 
@@ -1129,7 +1132,7 @@ void HelloVulkan::buildCommandBuffers()
             else
             {
                 #ifdef  SKYBOX
-				skyboxRenderer->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+				//skyboxRenderer->BuildCommandBuffer(commandBuffers[i], gltfmodel);
                 #endif //  SKYBOX
 
                 #ifdef SCREENSPACEREFLECTION
@@ -1287,7 +1290,7 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
 #endif
 
 #ifdef SCREENSPACEREFLECTION
-    ssr->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, view * proj, camera.viewPos);
+    ssr->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, proj * view, camera.viewPos);
 #endif //  SSR
 
     void* data;
@@ -1295,9 +1298,9 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     memcpy(data, &ubo, sizeof(UniformBufferObject));
     vkUnmapMemory(device, uniformBufferMemory);
 
-    glm::mat4 cameratoworld = glm::inverse(view);
-    lightNode->matrix = cameratoworld;
-    lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.01f));
+    //glm::mat4 cameratoworld = glm::inverse(view);
+    //lightNode->matrix = cameratoworld;
+    //lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.01f));
 }
 
 void HelloVulkan::updateLight(float frameTimer)
