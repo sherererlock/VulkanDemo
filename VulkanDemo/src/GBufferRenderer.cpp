@@ -232,12 +232,13 @@ void GBufferRenderer::CreateDescriptSetLayout()
 
 void GBufferRenderer::SetupDescriptSet(VkDescriptorPool pool)
 {
+
 }
 
 void GBufferRenderer::CreateGBuffer()
 {
 	CreateAttachment(&position, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-	CreateAttachment(&normal, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	CreateAttachment(&normal, VK_FORMAT_R8G8B8A8_SNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 	CreateAttachment(&depth, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	depth.descriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 }
@@ -263,10 +264,6 @@ void GBufferRenderer::CreateAttachment(FrameBufferAttachment* attachment, VkForm
 	vulkanAPP->createTextureSampler(attachment->sampler, VK_FILTER_NEAREST, VK_FILTER_NEAREST, 1, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
 	attachment->UpdateDescriptor();
-}
-
-void GBufferRenderer::CreateUniformBuffer()
-{
 }
 
 void GBufferRenderer::CreateFrameBuffer()

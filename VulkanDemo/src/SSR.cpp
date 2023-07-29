@@ -167,10 +167,10 @@ void SSR::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& glt
 void SSR::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depthVP, glm::vec4 viewPos)
 {
 	UniformBufferObject ubo;
-	ubo.view = view;
-	ubo.proj = proj;
+	ubo.vp = proj * view;
 	ubo.viewPos = viewPos;
 	ubo.depthVP = depthVP;
 
 	Trans_Data_To_GPU
 }
+

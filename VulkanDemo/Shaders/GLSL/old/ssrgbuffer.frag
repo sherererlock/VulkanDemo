@@ -60,9 +60,9 @@ vec2 GetRoughnessAndMetallic()
 
 void main() 
 {
-	vec3 N = calculateNormal();
 	outPos = vec4(worldPos, depth);
-	outNormal = vec4(normalize(N) * 0.5 + 0.5, 1.0);
 
+	vec3 N = calculateNormal();
+	outNormal = vec4(normal , 1.0);
 	outColor = vec4(Lighting(1.0), 1.0);
 }

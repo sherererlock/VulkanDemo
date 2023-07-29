@@ -34,7 +34,7 @@
 
 #define SCREENSPACEREFLECTION
 
-#define SKYBOX
+//#define SKYBOX
 
 #define SHADOW
 
@@ -47,8 +47,8 @@
 #endif //  SSR
 
 
-//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
-const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
+//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
 
 #define SHADOWMAP_SIZE 2048
@@ -229,9 +229,9 @@ HelloVulkan::HelloVulkan()
 #endif
 
 	camera.setPosition(glm::vec3(0.0f, 1.0f, 0.0f));
-	camera.setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
+	camera.setRotation(glm::vec3(0.0f, -90.0f, 0.0f));/*
 	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
-	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
+	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));*/
 
 	camera.movementSpeed = 4.0f;
     camera.flipY = true;
@@ -1132,7 +1132,7 @@ void HelloVulkan::buildCommandBuffers()
             else
             {
                 #ifdef  SKYBOX
-				//skyboxRenderer->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+				skyboxRenderer->BuildCommandBuffer(commandBuffers[i], gltfmodel);
                 #endif //  SKYBOX
 
                 #ifdef SCREENSPACEREFLECTION

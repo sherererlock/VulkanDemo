@@ -157,7 +157,8 @@
       <Command>D:\games\VulkanDemo\VulkanDemo\Shaders\GLSL\compile.bat</Command>
     </CustomBuildStep>
     <PreBuildEvent>
-      <Command>call shaders\glsl\compile.bat</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

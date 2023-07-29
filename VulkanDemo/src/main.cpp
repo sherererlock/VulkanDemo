@@ -5,6 +5,10 @@
 
 int main()
 {
+    std::string command = "Shaders\\GLSL\\compile.bat";
+
+    int result = std::system(command.c_str());
+
     HelloVulkan vulkanapp;
     vulkanapp.Init();
 
@@ -12,6 +16,5 @@ int main()
 
     vulkanapp.Cleanup();
 
-    getchar();
     return 0;
 }

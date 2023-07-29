@@ -77,7 +77,7 @@ public:
 
 	virtual void CreateGBuffer();
 	
-	virtual void CreateUniformBuffer();
+	virtual void CreateUniformBuffer() {};
 	virtual void CreateFrameBuffer();
 	virtual void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel);
 	virtual void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar);

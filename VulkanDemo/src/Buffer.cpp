@@ -122,4 +122,4 @@
 		{
 			vkFreeMemory(device, memory, nullptr);
 		}
-	}
+	}     

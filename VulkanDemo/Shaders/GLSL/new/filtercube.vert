@@ -16,5 +16,6 @@ out gl_PerVertex
 void main() 
 {
 	outUVW = inPos;
+	vec4 pos;
 	gl_Position = pushConsts.mvp * vec4(inPos.xyz, 1.0);
 }

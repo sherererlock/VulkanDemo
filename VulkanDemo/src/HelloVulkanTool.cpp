@@ -627,7 +627,7 @@ void HelloVulkan::createTextureSampler(VkSampler& sampler, VkFilter magFilter, V
 	samplerInfo.addressModeV = addressMode;
 	samplerInfo.addressModeW = addressMode;
 
-	samplerInfo.anisotropyEnable = VK_TRUE;
+	samplerInfo.anisotropyEnable = VK_FALSE;
 	samplerInfo.maxAnisotropy = 16;
 
 	samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
