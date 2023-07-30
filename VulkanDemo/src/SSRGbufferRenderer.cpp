@@ -19,6 +19,8 @@ std::vector<VkAttachmentDescription> SSRGBufferRenderer::GetAttachmentDescriptio
 	colorAttachment.format = color.format;
 
 	attachments.push_back(colorAttachment);
+	attachments.push_back(colorAttachment);
+	attachments.push_back(colorAttachment);
 
     return attachments;
 }
@@ -28,10 +30,12 @@ std::vector<VkAttachmentReference> SSRGBufferRenderer::GetAttachmentRefs() const
 	VkAttachmentReference colorAttachmentRef = {};
 	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	std::vector<VkAttachmentReference> colorAttachmentRefs = { colorAttachmentRef, colorAttachmentRef, colorAttachmentRef };
+	std::vector<VkAttachmentReference> colorAttachmentRefs = { colorAttachmentRef, colorAttachmentRef, colorAttachmentRef, colorAttachmentRef, colorAttachmentRef };
 	colorAttachmentRefs[0].attachment = 0;
 	colorAttachmentRefs[1].attachment = 1;
 	colorAttachmentRefs[2].attachment = 3;
+	colorAttachmentRefs[3].attachment = 4;
+	colorAttachmentRefs[4].attachment = 5;
 
 	return colorAttachmentRefs;
 }
@@ -42,7 +46,9 @@ std::vector<VkImageView> SSRGBufferRenderer::GetImageViews() const
 		position.view,
 		normal.view,
 		depth.view,
-		color.view
+		color.view,
+		roughnessMetallic.view,
+		albedo.view
 	};
 
 	return imageviews;
@@ -165,6 +171,8 @@ void SSRGBufferRenderer::CreateGBuffer()
 {
 	__super::CreateGBuffer();
 	CreateAttachment(&color, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	CreateAttachment(&roughnessMetallic, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	CreateAttachment(&albedo, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 }
 
 void SSRGBufferRenderer::SetupDescriptSet(VkDescriptorPool pool)
@@ -239,11 +247,13 @@ void SSRGBufferRenderer::BuildCommandBuffer(VkCommandBuffer commandBuffer, const
 	renderPassInfo.renderArea.extent.width = width;
 	renderPassInfo.renderArea.extent.height = height;
 
-	std::vector<VkClearValue> clearValues(4);
+	std::vector<VkClearValue> clearValues(6);
 	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 	clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 	clearValues[2].depthStencil = { 1.0f, 0 };
 	clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+	clearValues[4].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+	clearValues[5].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 
 	renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
 	renderPassInfo.pClearValues = clearValues.data();
@@ -280,6 +290,8 @@ void SSRGBufferRenderer::BuildCommandBuffer(VkCommandBuffer commandBuffer, const
 void SSRGBufferRenderer::Cleanup()
 {
 	color.Cleanup(device);
+	roughnessMetallic.Cleanup(device);
+	albedo.Cleanup(device);
 
 	__super::Cleanup();
 }

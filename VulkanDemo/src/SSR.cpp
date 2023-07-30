@@ -25,18 +25,18 @@ void SSR::CreateDescriptSetLayout()
 	uniformLayoutBinding.pImmutableSamplers = nullptr;
 	uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	std::array<VkDescriptorSetLayoutBinding, 6> uniformLayoutBindings;
-	for (int i = 0; i < 6; i++)
+	std::array<VkDescriptorSetLayoutBinding, 8> uniformLayoutBindings;
+	for (int i = 0; i < 8; i++)
 	{
 		uniformLayoutBindings[i] = uniformLayoutBinding;
 		uniformLayoutBindings[i].binding = i;
 	}
 
-	uniformLayoutBindings[5].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uniformLayoutBindings[7].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = 6;
+	layoutInfo.bindingCount = (uint32_t)uniformLayoutBindings.size();
 	layoutInfo.pBindings = uniformLayoutBindings.data();
 
 	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
@@ -133,28 +133,30 @@ void SSR::SetupDescriptSet(VkDescriptorPool pool)
 	descriptorWrite.pImageInfo = nullptr; // Optional
 	descriptorWrite.pTexelBufferView = nullptr; // Optional
 
-	std::array<VkWriteDescriptorSet, 6> descriptorWrites;
+	std::array<VkWriteDescriptorSet, 8> descriptorWrites;
 	descriptorWrites.fill(descriptorWrite);
-	std::array<VkDescriptorImageInfo, 5> imageInfos =
+	std::array<VkDescriptorImageInfo, 7> imageInfos =
 	{
 		gbuffer->GetPositionDescriptorImageInfo(),
 		gbuffer->GetNormalDescriptorImageInfo(),
 		gbuffer->GetDepthDescriptorImageInfo(),
 		gbuffer->GetColorDescriptorImageInfo(),
+		gbuffer->GetRoughnessDescriptorImageInfo(),
+		gbuffer->GetAlbedoDescriptorImageInfo(),
 		vulkanAPP->GetShadow()->GetDescriptorImageInfo()
 	};
 
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < 7; i++)
 	{
 		descriptorWrites[i].dstBinding = i;
 		descriptorWrites[i].pImageInfo = &imageInfos[i];
 	}
 
-	descriptorWrites[5].dstBinding = 5;
-	descriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptorWrites[5].pBufferInfo = &bufferInfo;
+	descriptorWrites[7].dstBinding = 7;
+	descriptorWrites[7].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorWrites[7].pBufferInfo = &bufferInfo;
 
-	vkUpdateDescriptorSets(device, 6, descriptorWrites.data(), 0, nullptr);
+	vkUpdateDescriptorSets(device,(uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 }
 
 void SSR::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel)

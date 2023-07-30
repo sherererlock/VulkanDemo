@@ -6,6 +6,8 @@ class SSRGBufferRenderer :
 {
 private:
     FrameBufferAttachment color;
+	FrameBufferAttachment roughnessMetallic;
+	FrameBufferAttachment albedo;
 	std::vector<gltfModel*> models;
 
 public:
@@ -27,5 +29,7 @@ public:
 
 public:
 	inline const VkDescriptorImageInfo& GetColorDescriptorImageInfo() const { return color.descriptor; }
+	inline const VkDescriptorImageInfo& GetRoughnessDescriptorImageInfo() const { return roughnessMetallic.descriptor; }
+	inline const VkDescriptorImageInfo& GetAlbedoDescriptorImageInfo() const { return albedo.descriptor; }
 };
 

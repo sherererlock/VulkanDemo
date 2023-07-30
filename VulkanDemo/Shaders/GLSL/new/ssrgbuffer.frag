@@ -42,6 +42,8 @@ layout(location = 4) in float depth;
 layout(location = 0) out vec4 outPos;
 layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outColor;
+layout(location = 3) out vec4 outRoughnessMetallic;
+layout(location = 4) out vec4 outAlbedo;
 
 vec2 GetRoughnessAndMetallic()
 {
@@ -50,8 +52,8 @@ vec2 GetRoughnessAndMetallic()
 		return vec2(0.8, 0.1);
 
     vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
-	roughMetalic.x = 0.8;
-	roughMetalic.y = 0.1;
+//	roughMetalic.x = 0.8;
+//	roughMetalic.y = 0.1;
 	return roughMetalic;
 }
 
@@ -71,4 +73,7 @@ void main()
 	vec3 N = calculateNormal();
 	outNormal = vec4(N , 1.0);
 	outColor = vec4(Lighting(1.0), 1.0);
+	outRoughnessMetallic = vec4(GetRoughnessAndMetallic(), 0.0, 1.0);
+	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
+	outAlbedo = vec4(albedo, 1.0);
 }
