@@ -71,7 +71,7 @@ void main()
 	outPos = vec4(worldPos, depth);
 
 	vec3 N = calculateNormal();
-	outNormal = vec4(N , 1.0);
+	outNormal = vec4(normal , 1.0);
 	outColor = vec4(Lighting(1.0), 1.0);
 	outRoughnessMetallic = vec4(GetRoughnessAndMetallic(), 0.0, 1.0);
 	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error

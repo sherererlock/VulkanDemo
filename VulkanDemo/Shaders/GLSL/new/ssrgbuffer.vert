@@ -45,9 +45,6 @@ void main() {
     normal = model * inNormal;
     tangent = model * inTangent;
 
-    normal = mat3(primitive.model) * inNormal;
-    tangent = mat3(primitive.model) * inTangent;
-
     texcoord = inTexCoord;
     vDepth = gl_Position.w;
 }

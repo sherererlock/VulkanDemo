@@ -111,6 +111,7 @@ void gltfModel::loadMaterials(tinygltf::Model& input)
 		{
 			materials[i].baseColorTextureIndex = textures[materials[i].baseColorTextureIndex].imageIndex;
 			materials[i].normalTextureIndex = textures[materials[i].normalTextureIndex].imageIndex;
+			materials[i].roughnessTextureIndex = textures[materials[i].roughnessTextureIndex].imageIndex;
 		}
 	}
 }
