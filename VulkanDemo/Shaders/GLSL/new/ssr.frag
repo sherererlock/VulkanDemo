@@ -285,7 +285,7 @@ void main()
 
 	vec3 dirLit = texture(colorSampler, inUV).xyz;
 
-	vec3 reflectLit = ScreenSpaceReflectionGloosy(worldPos, normal);
+	vec3 reflectLit = ScreenSpaceReflection(worldPos, normal);
 
 	vec3 color = dirLit + reflectLit;
 

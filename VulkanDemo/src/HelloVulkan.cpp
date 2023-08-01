@@ -426,7 +426,6 @@ void HelloVulkan::InitVulkan()
 #endif
 
 #ifdef SCREENSPACEREFLECTION
-    hierarchicalDepth->CreateUniformBuffer();
     ssr->CreateUniformBuffer();
 #endif //  SSR
 
@@ -571,6 +570,7 @@ void HelloVulkan::Cleanup()
 
 #ifdef SCREENSPACEREFLECTION
     ssrGBuffer->Cleanup();
+    hierarchicalDepth->Cleanup();
     ssr->Cleanup();
 #else
     pbrLighting->Cleanup();
@@ -592,6 +592,7 @@ void HelloVulkan::Cleanup()
     delete rsm;
     delete ssao;
     delete ssrGBuffer;
+    delete hierarchicalDepth;
     delete ssr;
 }
 
@@ -1100,6 +1101,7 @@ void HelloVulkan::buildCommandBuffers()
         {
             #ifdef SCREENSPACEREFLECTION
             ssrGBuffer->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+            hierarchicalDepth->BuildCommandBuffer(commandBuffers[i], gltfmodel);
             #endif //  SSR
         }
 
@@ -1495,7 +1497,7 @@ void HelloVulkan::createDescriptorPool()
     // TODO: create layout for sky box
     //7: model, scene, skybox(2), shadow, debug rsm(2) ssao(3)
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) + 11;
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) + 11 + 12;
 
     // ma * 4 + (s * 4) + (s * 4)  + ssao(4)
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1507,7 +1509,7 @@ void HelloVulkan::createDescriptorPool()
     poolInfo.pPoolSizes = poolSizes.data();
 
     // skybox:2 helloVulkan:2 shadow: 1 debug 1 rsm:1 ssao:3
-    poolInfo.maxSets = static_cast<uint32_t>(gltfmodel.materials.size()) + 10;
+    poolInfo.maxSets = static_cast<uint32_t>(gltfmodel.materials.size()) + 10 + 12;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {

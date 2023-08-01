@@ -28,6 +28,7 @@ public:
 	virtual void Cleanup() override;
 
 public:
+	inline const VkImage GetDepthImage() const { return position.image; }
 	inline const VkDescriptorImageInfo& GetColorDescriptorImageInfo() const { return color.descriptor; }
 	inline const VkDescriptorImageInfo& GetRoughnessDescriptorImageInfo() const { return roughnessMetallic.descriptor; }
 	inline const VkDescriptorImageInfo& GetAlbedoDescriptorImageInfo() const { return albedo.descriptor; }

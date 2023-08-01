@@ -4,6 +4,7 @@
 #include "SSRGbufferRenderer.h"
 #include "Shadow.h"
 #include "SSR.h"
+#include "GenHierarchicalDepth.h"
 
 void SSR::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
 {
@@ -13,6 +14,7 @@ void SSR::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
 	bufferSize = sizeof(UniformBufferObject);
 
 	gbuffer = app->GetSSRGBuffer();
+	hierarchicaldepth = app->GetHierarchicalDepth();
 }
 
 void SSR::CreateDescriptSetLayout()
@@ -97,7 +99,6 @@ void SSR::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipel
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
-
 	creatInfo.layout = pipelineLayout;
 
 	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &creatInfo, nullptr, &pipeline) != VK_SUCCESS)
@@ -139,7 +140,8 @@ void SSR::SetupDescriptSet(VkDescriptorPool pool)
 	{
 		gbuffer->GetPositionDescriptorImageInfo(),
 		gbuffer->GetNormalDescriptorImageInfo(),
-		gbuffer->GetDepthDescriptorImageInfo(),
+		//gbuffer->GetDepthDescriptorImageInfo(),
+		hierarchicaldepth->GetHierarchicalDepth(),
 		gbuffer->GetColorDescriptorImageInfo(),
 		gbuffer->GetRoughnessDescriptorImageInfo(),
 		gbuffer->GetAlbedoDescriptorImageInfo(),

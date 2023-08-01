@@ -2,6 +2,7 @@
 #include "SinglePipeline.h"
 
 class SSRGBufferRenderer;
+class GenHierarchicalDepth;
 class SSR : public SinglePipeline
 {
 private:
@@ -13,6 +14,7 @@ private:
 	};
 
 	SSRGBufferRenderer* gbuffer;
+	GenHierarchicalDepth* hierarchicaldepth;
 
 public:
 	virtual void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);

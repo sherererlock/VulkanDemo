@@ -18,7 +18,7 @@ void GenHierarchicalDepth::CreateRenderpass()
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     VkAttachmentReference colorAttachmentRef = {};
     colorAttachmentRef.attachment = 0; // 引用的附件在数组中的索引
@@ -73,10 +73,9 @@ void GenHierarchicalDepth::CreateRenderpass()
 
 void GenHierarchicalDepth::CreateFrameBuffer()
 {
+	framebuffers.resize(attachments.size());
 	for (int i = 0; i < attachments.size(); i++)
 	{
-		framebuffers.push_back(nullptr);
-
 		FrameBufferAttachment& attachment = attachments[i];
 
 		VkFramebufferCreateInfo framebufferInfo = {};
@@ -95,37 +94,36 @@ void GenHierarchicalDepth::CreateFrameBuffer()
 	}
 }
 
-void GenHierarchicalDepth::UpdateBuffer(uint32_t lv, uint32_t width, uint32_t height)
-{
-	MipData ubo;
-	ubo.currentMipLv = lv;
-	ubo.uLastMipSize.x = width;
-	ubo.uLastMipSize.y = height;
-
-	Trans_Data_To_GPU
-}
-
 void GenHierarchicalDepth::CreateMipMap()
 {
 	const uint32_t numMips = static_cast<uint32_t>(std::max((floor(log2(width))) + 1, floor(log2( height))) + 1);
 	uint32_t currentWidth = width;
 	uint32_t currentHeight = height;
 
-	FrameBufferAttachment color;
-	color.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-	color.width = currentWidth;
-	color.height = currentHeight;
-	attachments.push_back(color);
-
-	for (uint32_t i = 1; i < numMips; i ++)
+	for (uint32_t i = 0; i < numMips; i ++)
 	{
-		currentWidth = std::floor(currentWidth / 2);
-		currentHeight = std::floor(currentHeight / 2);
-
+		FrameBufferAttachment color;
 		CreateAttachment(&color, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, currentWidth, currentHeight);
-
 		attachments.push_back(color);
+
+		if (currentWidth == 1 && currentHeight == 1)
+			break;
+
+		currentWidth = (uint32_t)std::floor(currentWidth / 2);
+		currentHeight = (uint32_t)std::floor(currentHeight / 2);
+
+		currentWidth = std::max((uint32_t)1, currentWidth);
+		currentHeight = std::max((uint32_t)1, currentHeight);
 	}
+
+	uint32_t mip = (uint32_t)attachments.size();
+	vulkanAPP->createImage(width, height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, hierarchicalDepth.image, hierarchicalDepth.deviceMemory, mip, VK_SAMPLE_COUNT_1_BIT);
+	vulkanAPP->createImageView(hierarchicalDepth.view, hierarchicalDepth.image, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT, mip);
+	vulkanAPP->createTextureSampler(hierarchicalDepth.sampler, VK_FILTER_NEAREST, VK_FILTER_NEAREST, mip, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+
+	hierarchicalDepth.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	hierarchicalDepth.updateDescriptor();
+	hierarchicalDepth.device = device;
 }
 
 void GenHierarchicalDepth::CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlagBits usage, uint32_t width, uint32_t height)
@@ -146,18 +144,75 @@ void GenHierarchicalDepth::CreateAttachment(FrameBufferAttachment* attachment, V
 			aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
 	}
 
-	vulkanAPP->createImage(width, height, format, VK_IMAGE_TILING_OPTIMAL, usage | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment->image, attachment->mem, 1, VK_SAMPLE_COUNT_1_BIT);
+	vulkanAPP->createImage(width, height, format, VK_IMAGE_TILING_OPTIMAL, usage| VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment->image, attachment->mem, 1, VK_SAMPLE_COUNT_1_BIT);
 	vulkanAPP->createImageView(attachment->view, attachment->image, format, aspectMask, 1);
 	vulkanAPP->createTextureSampler(attachment->sampler, VK_FILTER_NEAREST, VK_FILTER_NEAREST, 1, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
 	attachment->UpdateDescriptor();
 }
 
-void GenHierarchicalDepth::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
+void GenHierarchicalDepth::CopyDepth(VkCommandBuffer commandBuffer)
 {
-	__super::Init(app, vkdevice, w, h);
+	uint32_t mip = (uint32_t)attachments.size();
+	VkImageSubresourceRange subresourceRange = {};
+	subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	subresourceRange.baseMipLevel = 0;
+	subresourceRange.levelCount = mip;
+	subresourceRange.layerCount = 1;
 
-	bufferSize = sizeof(MipData);
+	vulkanAPP->transitionImageLayout(commandBuffer, hierarchicalDepth.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
+
+	VkImageCopy copyRegion = {};
+
+	copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	copyRegion.srcSubresource.baseArrayLayer = 0;
+	copyRegion.srcSubresource.mipLevel = 0;
+	copyRegion.srcSubresource.layerCount = 1;
+	copyRegion.srcOffset = { 0, 0, 0 };
+
+	subresourceRange.levelCount = 1;
+
+	uint32_t currentWidth = width;
+	uint32_t currentHeight = height;
+	for (int i = 0; i < attachments.size(); i++)
+	{
+		vulkanAPP->transitionImageLayout(commandBuffer, attachments[i].image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, subresourceRange);
+
+		copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		copyRegion.srcSubresource.baseArrayLayer = 0;
+		copyRegion.srcSubresource.mipLevel = 0;
+		copyRegion.srcSubresource.layerCount = 1;
+		copyRegion.srcOffset = { 0, 0, 0 };
+
+		copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		copyRegion.dstSubresource.baseArrayLayer = 0;
+		copyRegion.dstSubresource.mipLevel = i;
+		copyRegion.dstSubresource.layerCount = 1;
+		copyRegion.dstOffset = { 0, 0, 0 };
+
+		copyRegion.extent.width = currentWidth;
+		copyRegion.extent.height = currentHeight;
+		copyRegion.extent.depth = 1;
+
+		vkCmdCopyImage(
+			commandBuffer,
+			attachments[i].image,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			hierarchicalDepth.image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&copyRegion);
+
+		vulkanAPP->transitionImageLayout(commandBuffer, attachments[i].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, subresourceRange);
+
+		currentWidth = static_cast<uint32_t>(std::floor(currentWidth / 2));
+		currentHeight = static_cast<uint32_t>(std::floor(currentHeight / 2));
+		currentWidth = std::max((uint32_t)1, currentWidth);
+		currentHeight = std::max((uint32_t)1, currentHeight);
+	}
+
+	subresourceRange.levelCount = mip;
+	vulkanAPP->transitionImageLayout(commandBuffer, hierarchicalDepth.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subresourceRange);
 }
 
 void GenHierarchicalDepth::CreateDescriptSetLayout()
@@ -170,16 +225,10 @@ void GenHierarchicalDepth::CreateDescriptSetLayout()
 	uniformLayoutBinding.pImmutableSamplers = nullptr;
 	uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	std::array<VkDescriptorSetLayoutBinding, 2> bindings;
-	bindings.fill(uniformLayoutBinding);
-
-	bindings[1].binding = 1;
-	bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = 2;
-	layoutInfo.pBindings = bindings.data();
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &uniformLayoutBinding;
 
 	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create SinglePipeline descriptor set layout!");
@@ -229,12 +278,17 @@ void GenHierarchicalDepth::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo
 	pipelineCreateInfo.dynamicState.dynamicStateCount = 2;
 	pipelineCreateInfo.dynamicState.pDynamicStates = dynamicStates;
 
+	VkPushConstantRange pushConstantRange;
+	pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	pushConstantRange.offset = 0;
+	pushConstantRange.size = sizeof(int);
+
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = 1; // Optional
 	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout; // Optional
-	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+	pipelineLayoutInfo.pushConstantRangeCount = 1; // Optional
+	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange; // Optional
 
 	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 	{
@@ -242,6 +296,7 @@ void GenHierarchicalDepth::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo
 	}
 
 	creatInfo.layout = pipelineLayout;
+	creatInfo.renderPass = renderPass;
 
 	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &creatInfo, nullptr, &pipeline) != VK_SUCCESS)
 	{
@@ -254,12 +309,16 @@ void GenHierarchicalDepth::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo
 
 void GenHierarchicalDepth::SetupDescriptSet(VkDescriptorPool pool)
 {
+	std::array<VkDescriptorSetLayout, 12> descriptorSetLayouts;
+	descriptorSetLayouts.fill(descriptorSetLayout);
+
+	descriptorSets.resize(attachments.size());
+
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = pool;
 	allocInfo.descriptorSetCount = (uint32_t)attachments.size();
-	allocInfo.pSetLayouts = &descriptorSetLayout;
-	descriptorSets.resize(attachments.size());
+	allocInfo.pSetLayouts = descriptorSetLayouts.data();
 	if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to allocate SinglePipeline descriptor set!");
@@ -271,32 +330,27 @@ void GenHierarchicalDepth::SetupDescriptSet(VkDescriptorPool pool)
 
 	VkWriteDescriptorSet descriptorWrite = {};
 	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrite.dstBinding = 1;
+	descriptorWrite.dstBinding = 0;
 	descriptorWrite.dstArrayElement = 0;
-	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descriptorWrite.descriptorCount = 1;
-	descriptorWrite.pBufferInfo = &bufferInfo;
+	descriptorWrite.pBufferInfo = nullptr;
 	descriptorWrite.pImageInfo = nullptr; // Optional
 	descriptorWrite.pTexelBufferView = nullptr; // Optional
 
-	std::array<VkWriteDescriptorSet, 2> descriptorWrites;
-	descriptorWrites.fill(descriptorWrite);
-	descriptorWrites[0].dstBinding = 0;
-	descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descriptorWrites[0].pBufferInfo = nullptr;
-
 	SSRGBufferRenderer* gbuffer = vulkanAPP->GetSSRGBuffer();
-	attachments[0].descriptor = gbuffer->GetDepthDescriptorImageInfo();
-	
+	descriptorWrite.dstSet = descriptorSets[0];
+	descriptorWrite.pImageInfo = &gbuffer->GetDepthDescriptorImageInfo();
+
+	vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+
 	for (int i = 1; i < descriptorSets.size(); i++)
 	{
-		descriptorWrites[0].dstSet = descriptorSets[i];
-		descriptorWrites[0].pImageInfo = &attachments[i - 1].descriptor;
-		descriptorWrites[1].dstSet = descriptorSets[i];
+		descriptorWrite.dstSet = descriptorSets[i];
+		descriptorWrite.pImageInfo = &attachments[i - 1].descriptor;
 
 		vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
 	}
-
 }
 
 void GenHierarchicalDepth::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel)
@@ -310,12 +364,10 @@ void GenHierarchicalDepth::BuildCommandBuffer(VkCommandBuffer commandBuffer, con
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearValue;
 
-	uint32_t currentWidth = attachments[0].width;
-	uint32_t currentHeight = attachments[0].height;
+	uint32_t currentWidth = width;
+	uint32_t currentHeight = height;
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent.width = currentWidth;
-	renderPassInfo.renderArea.extent.height = currentHeight;
 
 	VkRect2D scissor = {};
 	scissor.offset = { 0, 0 };
@@ -328,18 +380,17 @@ void GenHierarchicalDepth::BuildCommandBuffer(VkCommandBuffer commandBuffer, con
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
-	for (int i = 1; i < framebuffers.size(); i++)
+	for (int i = 0; i < framebuffers.size(); i++)
 	{
-		UpdateBuffer(i, currentWidth, currentHeight);
-
-		currentWidth = std::floor(currentWidth / 2);
-		currentHeight = std::floor(currentHeight / 2);
-
+		renderPassInfo.renderArea.extent.width = currentWidth;
+		renderPassInfo.renderArea.extent.height = currentHeight;
 		viewport.width = (float)currentWidth;
 		viewport.height = (float)currentHeight;
 
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int), &i);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
 
 		renderPassInfo.framebuffer = framebuffers[i];
@@ -347,8 +398,14 @@ void GenHierarchicalDepth::BuildCommandBuffer(VkCommandBuffer commandBuffer, con
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 		vkCmdEndRenderPass(commandBuffer);
+
+		currentWidth = (uint32_t)std::floor(currentWidth / 2);
+		currentHeight = (uint32_t)std::floor(currentHeight / 2);
+		currentWidth = std::max((uint32_t)1, currentWidth);
+		currentHeight = std::max((uint32_t)1, currentHeight);
 	}
 
+	CopyDepth(commandBuffer);
 }
 
 void GenHierarchicalDepth::Cleanup()
@@ -359,6 +416,8 @@ void GenHierarchicalDepth::Cleanup()
 	for(VkFramebuffer framebuffer : framebuffers)
 		vkDestroyFramebuffer(device, framebuffer, nullptr);
 
-	for(FrameBufferAttachment& attachment : attachments)
-		attachment.Cleanup(device);
+	for (int i = 0; i < attachments.size(); i++)
+		attachments[i].Cleanup(device);
+
+	hierarchicalDepth.destroy();
 }

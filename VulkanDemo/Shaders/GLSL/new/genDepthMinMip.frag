@@ -4,11 +4,9 @@
 
 layout(set = 0, binding = 0) uniform sampler2D uDepthMipMap;
 
-layout(set = 0, binding = 1)
-uniform MipData{
-	vec2 uLastMipSize;
-	int currentMipLv;
-} mipData;
+layout(push_constant) uniform PushConsts{
+    int level;
+}primitive;
 
 layout (location = 0) in vec2 inUV;
 
@@ -16,8 +14,15 @@ layout(location = 0) out vec4 outDepth;
 
 void main() 
 {
-
     ivec2 thisLevelTexelCoord = ivec2(gl_FragCoord);
+    if(primitive.level == 0)
+    {
+        float depth = texelFetch(uDepthMipMap, thisLevelTexelCoord, 0).r;
+        outDepth = vec4(vec3(depth), 1.0);
+    }
+    else
+    {
+
     ivec2 previousLevelBaseTexelCoord = thisLevelTexelCoord * 2;
 
     vec4 depthTexelValues;
@@ -39,7 +44,8 @@ void main()
 
     // Incorporate additional texels if the previous level's width or height (or both)
     // are odd.
-    ivec2 u_previousLevelDimensions = ivec2(mipData.uLastMipSize.x, mipData.uLastMipSize.y);
+
+    ivec2 u_previousLevelDimensions = textureSize(uDepthMipMap, 0);
 
     bool shouldIncludeExtraColumnFromPreviousLevel = ((u_previousLevelDimensions.x & 1) != 0);
 
@@ -75,5 +81,6 @@ void main()
       minDepth = min(minDepth, min(extraRowTexelValues.x, extraRowTexelValues.y));
     }
 
-    outDepth = vec4(vec3(minDepth), 1.0);		
+    outDepth = vec4(vec3(minDepth), 1.0);
+    }
 }

@@ -208,6 +208,7 @@ public:
     inline const Texture2D& GetEmptyTexture() const { return emptyTexture; }
     inline VkSampleCountFlagBits GetSampleCountFlag() const { return msaaSamples; }
     inline SSRGBufferRenderer* GetSSRGBuffer() const { return ssrGBuffer; }
+    inline GenHierarchicalDepth* GetHierarchicalDepth() const { return hierarchicalDepth;  }
     inline Shadow* GetShadow() const { return shadow; }
 
 private:

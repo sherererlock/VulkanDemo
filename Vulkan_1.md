@@ -86,4 +86,10 @@ WriteDescriptorSet o-- DescriptorImageInfo
 
    Demo：右手坐标系
 
-2. 
+创建Pipeline时容易出的问题
+
+- 忘记设置renderpass
+
+buildCommand时出现的问题
+
+- renderArea的大小不能超过framebuffer的大小

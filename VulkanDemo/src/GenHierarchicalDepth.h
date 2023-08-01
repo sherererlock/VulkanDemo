@@ -31,26 +31,23 @@ private:
 		}
 	};
 
-	struct MipData
-	{
-		glm::ivec2 uLastMipSize;
-		int currentMipLv;
-	};
-
 	std::vector<FrameBufferAttachment> attachments;
 	std::vector<VkFramebuffer> framebuffers;
 	std::vector<VkDescriptorSet> descriptorSets;
 	VkRenderPass renderPass;
+	Texture2D hierarchicalDepth;
 
 public:
 
+	inline VkDescriptorImageInfo GetHierarchicalDepth() const {
+		return hierarchicalDepth.descriptor;
+	}
+
 	void CreateRenderpass();
 	void CreateFrameBuffer();
-	void UpdateBuffer(uint32_t lv, uint32_t width, uint32_t height);
 	void CreateMipMap();
 	void CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlagBits usage, uint32_t width, uint32_t height);
-
-	virtual void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
+	void CopyDepth(VkCommandBuffer commandBuffer);
 
 	virtual void CreateDescriptSetLayout();
 	virtual void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
