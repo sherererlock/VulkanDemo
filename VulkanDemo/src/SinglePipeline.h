@@ -11,6 +11,7 @@ struct PipelineCreateInfo;
 
 class SinglePipeline
 {
+
 protected:
 	VkPipeline pipeline;
 	VkPipelineLayout pipelineLayout;

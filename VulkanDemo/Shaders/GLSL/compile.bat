@@ -33,4 +33,5 @@
 
 glslangValidator.exe -V Shaders\GLSL\new\ssrgbuffer.vert -o Shaders\GLSL\spv\ssrgbuffer.vert.spv
 glslangValidator.exe -V Shaders\GLSL\new\ssrgbuffer.frag -o Shaders\GLSL\spv\ssrgbuffer.frag.spv
+glslangValidator.exe -V Shaders\GLSL\new\genDepthMinMip.frag -o Shaders\GLSL\spv\genDepthMinMip.frag.spv
 glslangValidator.exe -V Shaders\GLSL\new\ssr.frag -o Shaders\GLSL\spv\ssr.frag.spv

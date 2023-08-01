@@ -25,6 +25,7 @@
 #include "SSAO.h"
 #include "SSR.h"
 #include "SSRGBufferRenderer.h"
+#include "GenHierarchicalDepth.h"
 
 //#define IBLLIGHTING
 
@@ -259,6 +260,7 @@ HelloVulkan::HelloVulkan()
 
 #ifdef SCREENSPACEREFLECTION
     ssrGBuffer = new SSRGBufferRenderer();
+    hierarchicalDepth = new GenHierarchicalDepth();
     ssr = new SSR();
 #else
     pbrLighting = new PBRLighting();
@@ -323,6 +325,7 @@ void HelloVulkan::InitVulkan()
 
 #ifdef SCREENSPACEREFLECTION
     ssrGBuffer->Init(this, device, width, height);
+    hierarchicalDepth->Init(this, device, width, height);
     ssr->Init(this, device, width, height);
 #else
     pbrLighting->Init(this, device, width, height);
@@ -346,9 +349,11 @@ void HelloVulkan::InitVulkan()
 #endif
 
 #ifdef SCREENSPACEREFLECTION
+    hierarchicalDepth->CreateMipMap();
+    hierarchicalDepth->CreateRenderpass();
+
     ssrGBuffer->CreateGBuffer();
     ssrGBuffer->CreatePass();
-
 #endif //  SSR
 
     createDescriptorSetLayout();
@@ -370,6 +375,7 @@ void HelloVulkan::InitVulkan()
 #endif
 
 #ifdef SCREENSPACEREFLECTION
+    hierarchicalDepth->CreateDescriptSetLayout();
     ssrGBuffer->CreateDescriptSetLayout();
     ssr->CreateDescriptSetLayout();
 #else
@@ -397,6 +403,7 @@ void HelloVulkan::InitVulkan()
 #endif
 
 #ifdef SCREENSPACEREFLECTION
+    hierarchicalDepth->CreateFrameBuffer();
     ssrGBuffer->CreateFrameBuffer();
 #endif //  SSR
 
@@ -419,6 +426,7 @@ void HelloVulkan::InitVulkan()
 #endif
 
 #ifdef SCREENSPACEREFLECTION
+    hierarchicalDepth->CreateUniformBuffer();
     ssr->CreateUniformBuffer();
 #endif //  SSR
 
@@ -458,6 +466,7 @@ void HelloVulkan::InitVulkan()
 #endif
 
 #ifdef SCREENSPACEREFLECTION
+    hierarchicalDepth->SetupDescriptSet(descriptorPool);
     ssrGBuffer->SetupDescriptSet(descriptorPool);
     ssr->SetupDescriptSet(descriptorPool);
 #else
@@ -989,6 +998,7 @@ void HelloVulkan::createGraphicsPipeline()
 #endif
 
 #ifdef SCREENSPACEREFLECTION
+    hierarchicalDepth->CreatePipeline(info, pipelineInfo);
     ssrGBuffer->CreatePipeline(info, pipelineInfo);
     pipelineInfo.renderPass = renderPass;
     ssr->CreatePipeline(info, pipelineInfo);
@@ -1489,7 +1499,7 @@ void HelloVulkan::createDescriptorPool()
 
     // ma * 4 + (s * 4) + (s * 4)  + ssao(4)
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) * 4 + 4 + 12;
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(gltfmodel.materials.size()) * 4 + 4 + 12 + 12;
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

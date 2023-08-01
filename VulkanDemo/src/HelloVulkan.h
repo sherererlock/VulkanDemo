@@ -23,6 +23,7 @@ class Shadow;
 class ReflectiveShadowMap;
 class SSAO;
 class SSRGBufferRenderer;
+class GenHierarchicalDepth;
 class SSR;
 
 struct QueueFamilyIndices
@@ -296,6 +297,7 @@ private:
     ReflectiveShadowMap* rsm;
     SSAO* ssao;
     SSRGBufferRenderer* ssrGBuffer;
+    GenHierarchicalDepth* hierarchicalDepth;
     SSR* ssr;
 
 

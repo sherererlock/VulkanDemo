@@ -108,7 +108,6 @@ void SinglePipeline::SetupDescriptSet(VkDescriptorPool pool)
 		throw std::runtime_error("failed to allocate SinglePipeline descriptor set!");
 	}
 
-	VkDescriptorBufferInfo bufferInfo = {};
 	bufferInfo.buffer = uniformBuffer;
 	bufferInfo.offset = 0;
 	bufferInfo.range = bufferSize;
