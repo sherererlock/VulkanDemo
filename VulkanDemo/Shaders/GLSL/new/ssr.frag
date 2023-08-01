@@ -188,6 +188,51 @@ bool RayMarch_w(vec3 origin, vec3 dir, out vec3 pos)
 	return false;
 }
 
+float GetMinDepth(vec2 uv, int level)
+{
+	ivec2 size = textureSize(depthSampler, level);
+	ivec2 cell = ivec2(floor(size * uv));
+
+	return texelFetch(depthSampler, cell, level).r;
+}
+
+bool RayMarch_hiz(vec3 origin, vec3 dir, out vec3 hitpos)
+{
+	float stepdis = 0.05;
+	float maxDistance = 1.5;
+
+	int startLevel = 3;
+	int stopLevel = 0;
+
+	int level = startLevel;
+	float currentDistance = stepdis;
+	while(level >= stopLevel && currentDistance <= maxDistance)
+	{
+		vec3 pos = origin + dir * currentDistance;
+		vec3 screenPos = GetScreenUV(vec4(pos, 1.0));
+
+		float depthInBuffer = GetMinDepth(screenPos.xy, level);
+		if(screenPos.z - depthInBuffer > 0.00001)
+		{
+			if(level == 0)
+			{
+				hitpos = pos;
+				return true;
+			}
+
+			level --;
+		}
+		else
+		{
+			level = min(11, level + 1);
+			currentDistance += stepdis;
+		}
+	}
+
+	return false;
+}
+
+
 vec3 GetBRDF(vec3 N, vec3 wo, vec3 wi, vec3 albedo, float roughness, float metallic)
 {
 	vec3 brdf;
@@ -223,7 +268,7 @@ vec3 ScreenSpaceReflection(vec3 worldPos, vec3 normal)
 	vec3 wo = normalize(ubo.viewPos.xyz - worldPos.xyz);
 	vec3 R = normalize(reflect(-wo, normal));
 	vec3 pos;
-	if(RayMarch_w(worldPos.xyz, R, pos))
+	if(RayMarch_hiz(worldPos.xyz, R, pos))
 	{
 		vec3 screenPos = GetScreenUV(vec4(pos, 1.0));
 
@@ -252,13 +297,13 @@ vec3 ScreenSpaceReflectionGloosy(vec3 worldPos, vec3 normal)
 	for(int i = 0; i < SAMPLE_NUM; i ++)
 	{
 		float pdf;
-//		vec3 localDir = SampleHemisphereCos(s, pdf);
-		vec3 localDir = SampleHemisphereUniform(s, pdf);
+		vec3 localDir = SampleHemisphereCos(s, pdf);
+//		vec3 localDir = SampleHemisphereUniform(s, pdf);
 		vec3 b1, b2;
 		LocalBasis(normal, b1, b2);
 		vec3 dir = normalize( mat3(b1, b2, normal) * localDir);
 		vec3 pos;
-		if(RayMarch_w(worldPos.xyz, dir, pos))
+		if(RayMarch_hiz(worldPos.xyz, dir, pos))
 		{
 			vec3 screenPos = GetScreenUV(vec4(pos, 1.0));
 
@@ -285,7 +330,10 @@ void main()
 
 	vec3 dirLit = texture(colorSampler, inUV).xyz;
 
-	vec3 reflectLit = ScreenSpaceReflection(worldPos, normal);
+	float isup = texture(roughnessSampler, inUV).z;
+	vec3 reflectLit = vec3(0.0);
+	if(isup > 0.8)
+		reflectLit = ScreenSpaceReflection(worldPos, normal);
 
 	vec3 color = dirLit + reflectLit;
 

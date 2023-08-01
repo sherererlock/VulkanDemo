@@ -70,10 +70,12 @@ void main()
 {
 	outPos = vec4(worldPos, depth);
 
+	vec3 up = vec3(0.0, 1.0, 0.0);
+	float isup = dot(up, normal);
 	vec3 N = calculateNormal();
 	outNormal = vec4(normal , 1.0);
 	outColor = vec4(Lighting(1.0), 1.0);
-	outRoughnessMetallic = vec4(GetRoughnessAndMetallic(), 0.0, 1.0);
+	outRoughnessMetallic = vec4(GetRoughnessAndMetallic(), isup, 1.0);
 	vec3 albedo = pow(texture(colorSampler, fragTexCoord).rgb, vec3(2.2)); // error
 	outAlbedo = vec4(albedo, 1.0);
 }
