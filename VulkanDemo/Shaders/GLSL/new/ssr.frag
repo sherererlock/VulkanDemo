@@ -212,6 +212,7 @@ bool RayMarch_hiz(vec3 origin, vec3 dir, out vec3 hitpos)
 		vec3 screenPos = GetScreenUV(vec4(pos, 1.0));
 
 		float depthInBuffer = GetMinDepth(screenPos.xy, level);
+
 		if(screenPos.z - depthInBuffer > 0.00001)
 		{
 			if(level == 0)
@@ -224,8 +225,8 @@ bool RayMarch_hiz(vec3 origin, vec3 dir, out vec3 hitpos)
 		}
 		else
 		{
-			level = min(11, level + 1);
-			currentDistance += stepdis;
+			level = min(10, level + 1);
+			currentDistance += stepdis * level;
 		}
 	}
 
@@ -268,7 +269,7 @@ vec3 ScreenSpaceReflection(vec3 worldPos, vec3 normal)
 	vec3 wo = normalize(ubo.viewPos.xyz - worldPos.xyz);
 	vec3 R = normalize(reflect(-wo, normal));
 	vec3 pos;
-	if(RayMarch_hiz(worldPos.xyz, R, pos))
+	if(RayMarch(worldPos.xyz, R, pos))
 	{
 		vec3 screenPos = GetScreenUV(vec4(pos, 1.0));
 
@@ -279,7 +280,7 @@ vec3 ScreenSpaceReflection(vec3 worldPos, vec3 normal)
 		vec3 wi = normalize(pos - worldPos);
 		vec3 brdf = GetBRDF(normal, wo, wi, albedo, roughness.x, roughness.y);
 		
-		color = indirL * brdf * dot(wi, normal);
+//		color = indirL * brdf * dot(wi, normal);
 		color = indirL;
 	}
 

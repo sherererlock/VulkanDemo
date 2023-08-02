@@ -9,7 +9,7 @@
 void GenHierarchicalDepth::CreateRenderpass()
 {
     VkAttachmentDescription colorAttachment = {};
-    colorAttachment.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    colorAttachment.format = VK_FORMAT_R32_SFLOAT;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // 采样数
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // clear
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // 存储下来
@@ -103,7 +103,7 @@ void GenHierarchicalDepth::CreateMipMap()
 	for (uint32_t i = 0; i < numMips; i ++)
 	{
 		FrameBufferAttachment color;
-		CreateAttachment(&color, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, currentWidth, currentHeight);
+		CreateAttachment(&color, VK_FORMAT_R32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, currentWidth, currentHeight);
 		attachments.push_back(color);
 
 		if (currentWidth == 1 && currentHeight == 1)
@@ -117,8 +117,8 @@ void GenHierarchicalDepth::CreateMipMap()
 	}
 
 	uint32_t mip = (uint32_t)attachments.size();
-	vulkanAPP->createImage(width, height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, hierarchicalDepth.image, hierarchicalDepth.deviceMemory, mip, VK_SAMPLE_COUNT_1_BIT);
-	vulkanAPP->createImageView(hierarchicalDepth.view, hierarchicalDepth.image, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT, mip);
+	vulkanAPP->createImage(width, height, VK_FORMAT_R32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, hierarchicalDepth.image, hierarchicalDepth.deviceMemory, mip, VK_SAMPLE_COUNT_1_BIT);
+	vulkanAPP->createImageView(hierarchicalDepth.view, hierarchicalDepth.image, VK_FORMAT_R32_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT, mip);
 	vulkanAPP->createTextureSampler(hierarchicalDepth.sampler, VK_FILTER_NEAREST, VK_FILTER_NEAREST, mip, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
 	hierarchicalDepth.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -259,7 +259,7 @@ void GenHierarchicalDepth::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo
 	creatInfo.pStages = shaderStages.data();
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT;
 	colorBlendAttachment.blendEnable = VK_FALSE;
 	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
 	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional

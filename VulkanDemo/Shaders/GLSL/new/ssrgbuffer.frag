@@ -71,8 +71,8 @@ void main()
 	outPos = vec4(worldPos, depth);
 
 	vec3 up = vec3(0.0, 1.0, 0.0);
-	float isup = dot(up, normal);
 	vec3 N = calculateNormal();
+	float isup = dot(up, normal);
 	outNormal = vec4(normal , 1.0);
 	outColor = vec4(Lighting(1.0), 1.0);
 	outRoughnessMetallic = vec4(GetRoughnessAndMetallic(), isup, 1.0);

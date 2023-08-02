@@ -211,7 +211,7 @@ HelloVulkan::HelloVulkan()
 
     isOrth = true;
 	lightPos = glm::vec4(0.0f, 20.0f, 10.0f, 1.0f);
-	//lightPos = glm::vec4(0.0f, 5.0f, 0.0f, 1.0f);
+	lightPos = glm::vec4(0.0f, 5.0f, 0.0f, 1.0f);
 
 	zNear = 0.1f;
 	zFar = 250.0f;

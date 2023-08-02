@@ -298,8 +298,8 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 		//nodeMatrix =  translation * nodeMatrix;
 
 		for (Primitive& primitive : node->mesh.primitives) {
-			if (primitive.indexCount > 0) {
-			//if (primitive.indexCount == 18 || primitive.indexCount == 6642 ) {
+			//if (primitive.indexCount > 0) {
+			if (primitive.indexCount == 18  ) {
 
 				if (flag == 1)
 				{

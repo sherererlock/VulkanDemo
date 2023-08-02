@@ -10,7 +10,7 @@ layout(push_constant) uniform PushConsts{
 
 layout (location = 0) in vec2 inUV;
 
-layout(location = 0) out vec4 outDepth;
+layout(location = 0) out float outDepth;
 
 void main() 
 {
@@ -18,7 +18,7 @@ void main()
     if(primitive.level == 0)
     {
         float depth = texelFetch(uDepthMipMap, thisLevelTexelCoord, 0).r;
-        outDepth = vec4(vec3(depth), 1.0);
+        outDepth = depth;
     }
     else
     {
@@ -81,6 +81,6 @@ void main()
       minDepth = min(minDepth, min(extraRowTexelValues.x, extraRowTexelValues.y));
     }
 
-    outDepth = vec4(vec3(minDepth), 1.0);
+    outDepth = minDepth;
     }
 }

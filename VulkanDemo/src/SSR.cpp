@@ -140,8 +140,8 @@ void SSR::SetupDescriptSet(VkDescriptorPool pool)
 	{
 		gbuffer->GetPositionDescriptorImageInfo(),
 		gbuffer->GetNormalDescriptorImageInfo(),
-		//gbuffer->GetDepthDescriptorImageInfo(),
-		hierarchicaldepth->GetHierarchicalDepth(),
+		gbuffer->GetDepthDescriptorImageInfo(),
+		//hierarchicaldepth->GetHierarchicalDepth(),
 		gbuffer->GetColorDescriptorImageInfo(),
 		gbuffer->GetRoughnessDescriptorImageInfo(),
 		gbuffer->GetAlbedoDescriptorImageInfo(),
