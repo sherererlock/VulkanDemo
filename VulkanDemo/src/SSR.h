@@ -8,7 +8,8 @@ class SSR : public SinglePipeline
 private:
 	struct UniformBufferObject
 	{
-		glm::mat4 vp;
+		glm::mat4 view;
+		glm::mat4 projection;
 		glm::mat4 depthVP;
 		glm::vec4 viewPos;
 	};
