@@ -9,8 +9,8 @@
 @REM glslangValidator.exe -V Shaders\GLSL\new\shadow.vert -o Shaders\GLSL\spv\shadow.vert.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\shadow.frag -o Shaders\GLSL\spv\shadow.frag.spv
 										  
-@REM glslangValidator.exe -V Shaders\GLSL\new\quad.vert -o Shaders\GLSL\spv\quad.vert.spv
-@REM glslangValidator.exe -V Shaders\GLSL\new\quad.frag -o Shaders\GLSL\spv\quad.frag.spv
+glslangValidator.exe -V Shaders\GLSL\new\quad.vert -o Shaders\GLSL\spv\quad.vert.spv
+glslangValidator.exe -V Shaders\GLSL\new\quad.frag -o Shaders\GLSL\spv\quad.frag.spv
 										  
 @REM glslangValidator.exe -V Shaders\GLSL\new\skybox.vert -o Shaders\GLSL\spv\skybox.vert.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\skybox.frag -o Shaders\GLSL\spv\skybox.frag.spv

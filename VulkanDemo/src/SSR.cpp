@@ -53,7 +53,6 @@ void SSR::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipel
 	vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	creatInfo.pVertexInputState = &vertexInputCreateInfo;
 
-	pipelineCreateInfo.colorBlending.attachmentCount = 0;
 	pipelineCreateInfo.rasterizer.cullMode = VK_CULL_MODE_NONE;
 	pipelineCreateInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
@@ -93,6 +92,7 @@ void SSR::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipel
 	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout; // Optional
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+
 
 	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 	{
@@ -165,7 +165,7 @@ void SSR::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& glt
 {
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-	vkCmdDraw(commandBuffer, 3, 1, 0,0);
+	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 }
 
 void SSR::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depthVP, glm::vec4 viewPos)

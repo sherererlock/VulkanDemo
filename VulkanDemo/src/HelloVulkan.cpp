@@ -900,10 +900,10 @@ PipelineCreateInfo HelloVulkan::CreatePipelineCreateInfo()
     pipelineCreateInfo.rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
 
     pipelineCreateInfo.multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    pipelineCreateInfo.multisampling.sampleShadingEnable = VK_TRUE;
+    pipelineCreateInfo.multisampling.sampleShadingEnable = VK_FALSE;
     // pipelineCreateInfo.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
     pipelineCreateInfo.multisampling.rasterizationSamples = msaaSamples;
-    pipelineCreateInfo.multisampling.minSampleShading = 0.2f; // Optional
+    pipelineCreateInfo.multisampling.minSampleShading = 0.0f; // Optional
     pipelineCreateInfo.multisampling.pSampleMask = nullptr; // Optional
     pipelineCreateInfo.multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
     pipelineCreateInfo.multisampling.alphaToOneEnable = VK_FALSE; // Optional
@@ -999,7 +999,7 @@ void HelloVulkan::createGraphicsPipeline()
 #endif
 
 #ifdef SCREENSPACEREFLECTION
-    hierarchicalDepth->CreatePipeline(info, pipelineInfo);
+    //hierarchicalDepth->CreatePipeline(info, pipelineInfo);
     ssrGBuffer->CreatePipeline(info, pipelineInfo);
     pipelineInfo.renderPass = renderPass;
     ssr->CreatePipeline(info, pipelineInfo);
@@ -1101,7 +1101,7 @@ void HelloVulkan::buildCommandBuffers()
         {
             #ifdef SCREENSPACEREFLECTION
             ssrGBuffer->BuildCommandBuffer(commandBuffers[i], gltfmodel);
-            hierarchicalDepth->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+            //hierarchicalDepth->BuildCommandBuffer(commandBuffers[i], gltfmodel);
             #endif //  SSR
         }
 
@@ -1275,7 +1275,24 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     ubo.proj = camera.matrices.perspective;
     ubo.viewPos = camera.viewPos;
 
-    glm::vec3 pos = {lightPos.x, lightPos.y, lightPos.z};
+    glm::vec3 pos = glm::vec3(0.0);
+    glm::vec3 normal = glm::vec3(0.0, 1.0, 0.0);
+    glm::vec3 campos = camera.viewPos;
+
+    glm::vec3 wo = glm::normalize(campos - pos);
+    glm::vec3 R = glm::normalize(glm::reflect(-wo, normal));
+    glm::vec3 enpos = pos + 2.0f * R;
+    glm::vec3 endposvs = ubo.view * glm::vec4(enpos, 1.0);
+
+    glm::vec3 posVS = ubo.view * glm::vec4(pos, 1.0);
+    glm::vec3 normalVS = ubo.view * glm::vec4(normal, 0.0);
+    glm::vec3 camposVS = ubo.view * camera.viewPos;
+    glm::vec3 wovs = glm::normalize(camposVS - posVS);
+    glm::vec3 RVS = glm::normalize(glm::reflect(-wovs, normalVS));
+    glm::vec3 RV = ubo.view * glm::vec4(R, 0.0);
+    glm::vec3 enposv = posVS + 2.0f * RVS;
+
+   pos = {lightPos.x, lightPos.y, lightPos.z};
     glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 	float range = 5.0f;

@@ -287,6 +287,7 @@ std::vector<const char*> HelloVulkan::getRequiredExtensions()
 }
 
 VkSampleCountFlagBits HelloVulkan::getMaxUsableSampleCount() {
+	return VK_SAMPLE_COUNT_2_BIT;
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 	vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 

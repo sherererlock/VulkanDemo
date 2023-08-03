@@ -168,28 +168,6 @@ vec2 GetRoughness(vec2 uv)
 	 return texture(roughnessSampler, uv).rg;
 }
 
-bool RayMarch(vec3 origin, vec3 dir, out vec3 pos)
-{
-	float stepdis = 0.05;
-	float maxDistance = 1.5;
-
-	float currentDistance = stepdis;
-	while (currentDistance < maxDistance)
-	{
-		vec3 worldPos = origin + dir * currentDistance;
-		vec3 screenPos = GetScreenUV(vec4(worldPos, 1.0));
-		float depth = texture(depthSampler, screenPos.xy).r;
-		if(screenPos.z - depth > 0.00001)
-		{
-			pos = worldPos;
-			return true;
-		}
-
-		currentDistance += stepdis;
-	}
-
-	return false;
-}
 
 bool RayMarch_w(vec3 origin, vec3 dir, out vec3 pos)
 {
@@ -260,33 +238,6 @@ bool RayMarch_hiz(vec3 origin, vec3 dir, out vec3 hitpos)
 	return false;
 }
 
-vec3 ScreenSpaceReflection(vec3 worldPos, vec3 normal)
-{
-	vec3 color = vec3(0.0);
-	if(length(normal) < 0.001)
-		return color;
-
-	vec3 wo = normalize(ubo.viewPos.xyz - worldPos.xyz);
-	vec3 R = normalize(reflect(-wo, normal));
-	vec3 pos;
-	if(RayMarch(worldPos.xyz, R, pos))
-	{
-		vec3 screenPos = GetScreenUV(vec4(pos, 1.0));
-
-		vec3 indirL = texture(colorSampler, screenPos.xy).xyz;
-		vec3 albedo = texture(albedoSampler, screenPos.xy).xyz;
-		vec2 roughness = texture(roughnessSampler, screenPos.xy).xy;
-		vec3 wo = normalize(ubo.viewPos.xyz - worldPos);
-		vec3 wi = normalize(pos - worldPos);
-		vec3 brdf = GetBRDF(normal, wo, wi, albedo, roughness.x, roughness.y);
-		
-//		color = indirL * brdf * dot(wi, normal);
-		color = indirL;
-	}
-
-	return color;
-}
-
 void ComputePositonAndReflection(vec3 origin, vec3 R, out vec3 originTS, out vec3 rTS, out float maxTraceDistance)
 {
 	vec3 end = origin + R * 1000.0;
@@ -303,8 +254,8 @@ void ComputePositonAndReflection(vec3 origin, vec3 R, out vec3 originTS, out vec
 
 	vec3 rCS = normalize((endCS - originCS).xyz);
 
-	originCS.xy = originCS.xy * 0.5 + 0.5;
-	rCS.xy = rCS.xy * 0.5;
+	originCS.xy = originCS.xy * vec2(0.5, 0.5) + vec2(0.5, 0.5);
+	rCS.xy = rCS.xy * vec2(0.5, 0.5);
 
 	originTS = originCS.xyz;
 	rTS = rCS.xyz;
@@ -329,17 +280,17 @@ bool FindIntersectionLinear(vec3 origin, vec3 R, float maxTraceDistance, out vec
 	int maxdist = max(abs(dp2.x), abs(dp2.y));
 	dp /= float(maxdist);
 
-	vec4 rayPos = vec4(origin + dp, 0.0);
-	vec4 rayDir = vec4(dp.xyz, 0.0);
-	vec4 rayStartPos = rayPos;
+	vec3 rayPos = origin + dp;
+	vec3 rayDir = dp.xyz;
+	vec3 rayStartPos = rayPos;
 
 	int hitIndex = -1;
-	for(int i = 0; i < maxdist && i < MAX_ITERATION; i ++)
+	for(int i = 0; i <= maxdist && i < MAX_ITERATION; i +=4)
 	{
-		vec4 rayPos0 = rayPos + rayDir * 0;
-		vec4 rayPos1 = rayPos + rayDir * 1;
-		vec4 rayPos2 = rayPos + rayDir * 2;
-		vec4 rayPos3 = rayPos + rayDir * 3;
+		vec3 rayPos0 = rayPos + rayDir * 0;
+		vec3 rayPos1 = rayPos + rayDir * 1;
+		vec3 rayPos2 = rayPos + rayDir * 2;
+		vec3 rayPos3 = rayPos + rayDir * 3;
 
 		float depth3 = texture(depthSampler, rayPos3.xy).r;
 		float depth2 = texture(depthSampler, rayPos2.xy).r;
@@ -348,31 +299,39 @@ bool FindIntersectionLinear(vec3 origin, vec3 R, float maxTraceDistance, out vec
 
 		{
 			float thickness = rayPos3.z - depth3;
-			hitIndex = (thickness >= 0 && thickness < MAX_THICKNESS) ? 0 : hitIndex;
+			hitIndex = (thickness >= 0 && thickness < MAX_THICKNESS) ? (i + 3) : hitIndex;
 		}
 
 		{
 			float thickness = rayPos2.z - depth2;
-			hitIndex = (thickness >= 0 && thickness < MAX_THICKNESS) ? 0 : hitIndex;
+			hitIndex = (thickness >= 0 && thickness < MAX_THICKNESS) ? (i + 2) : hitIndex;
 		}
 
 		{
 			float thickness = rayPos1.z - depth1;
-			hitIndex = (thickness >= 0 && thickness < MAX_THICKNESS) ? 0 : hitIndex;
+			hitIndex = (thickness >= 0 && thickness < MAX_THICKNESS) ? (i + 1) : hitIndex;
 		}
 
 		{
 			float thickness = rayPos0.z - depth0;
-			hitIndex = (thickness >= 0 && thickness < MAX_THICKNESS) ? 0 : hitIndex;
+			hitIndex = (thickness >= 0 && thickness < MAX_THICKNESS) ? (i + 0) : hitIndex;
 		}
 
 		if(hitIndex != -1) break;
 		
-		rayPos += rayPos3;
+		rayPos = rayPos3 + rayDir;
 	}
 
 	bool intersected = hitIndex >= 0;
-	intersection = rayPos.xyz + rayDir.xyz * hitIndex;
+	intersection = rayStartPos.xyz + rayDir.xyz * hitIndex;
+	intersection.z = hitIndex;
+
+	float depth = texture(depthSampler, rayStartPos.xy).r;
+	intersection.x = depth;
+	intersection.y = rayStartPos.z;
+	intersection.z = hitIndex;
+
+	intersection = origin;
 
 	return intersected;
 }
@@ -412,6 +371,88 @@ vec3 ScreenSpaceReflectionGloosy(vec3 worldPos, vec3 normal)
 	return color / float(SAMPLE_NUM);
 }
 
+bool RayMarch(vec3 origin, vec3 dir, out vec3 pos)
+{
+	float stepdis = 0.05;
+	float maxDistance = 1.5;
+
+	float currentDistance = stepdis;
+	while (currentDistance < maxDistance)
+	{
+		vec3 worldPos = origin + dir * currentDistance;
+		vec3 screenPos = GetScreenUV(vec4(worldPos, 1.0));
+		float depth = texture(depthSampler, screenPos.xy).r;
+		float thickness = screenPos.z - depth;
+		if(thickness > 0.00001 && thickness < 0.01)
+		{
+			pos = worldPos;
+			return true;
+		}
+
+		currentDistance += stepdis;
+	}
+
+	return false;
+}
+
+vec3 ScreenSpaceReflection(vec3 worldPos, vec3 normal)
+{
+	vec3 color = vec3(0.0);
+	if(length(normal) < 0.001)
+		return color;
+
+	vec3 wo = normalize(ubo.viewPos.xyz - worldPos.xyz);
+	vec3 R = normalize(reflect(-wo, normal));
+	vec3 pos = vec3(0.0);
+	if(RayMarch(worldPos.xyz, R, pos))
+	{
+		vec3 screenPos = GetScreenUV(vec4(pos, 1.0));
+
+		vec3 indirL = texture(colorSampler, screenPos.xy).xyz;
+		vec3 albedo = texture(albedoSampler, screenPos.xy).xyz;
+		vec2 roughness = texture(roughnessSampler, screenPos.xy).xy;
+		vec3 wo = normalize(ubo.viewPos.xyz - worldPos);
+		vec3 wi = normalize(pos - worldPos);
+		vec3 brdf = GetBRDF(normal, wo, wi, albedo, roughness.x, roughness.y);
+
+		color = indirL * brdf * dot(wi, normal);
+//		color = indirL;
+	}
+
+	return color;
+}
+
+vec3 ScreenSpaceReflectionInTS(vec3 worldPos, vec3 normal, out bool intersected)
+{
+	vec3 color = vec3(0.0);
+	if(length(normal) < 0.001)
+		return color;
+
+	vec3 wo = normalize(ubo.viewPos.xyz - worldPos.xyz);
+	vec3 R = normalize(reflect(-wo, normal));
+	vec3 pos;
+	vec3 originTS;
+	vec3 rTs;
+	float maxTraceDistance;
+	ComputePositonAndReflection(worldPos, R, originTS, rTs, maxTraceDistance);
+	vec3 intersection = vec3(0.0);
+	intersected = FindIntersectionLinear(originTS, rTs, maxTraceDistance, intersection);
+	if(intersected)
+	{
+		vec3 indirL = texture(colorSampler, intersection.xy).xyz;
+//		vec3 albedo = texture(albedoSampler, intersection.xy).xyz;
+//		vec2 roughness = texture(roughnessSampler, intersection.xy).xy;
+//		vec3 wo = normalize(ubo.viewPos.xyz - worldPos);
+//		vec3 wi = normalize(pos - worldPos);
+//		vec3 brdf = GetBRDF(normal, wo, wi, albedo, roughness.x, roughness.y);
+		
+//		color = indirL * brdf * dot(wi, normal);
+		color = intersection;
+	}
+
+	return color;
+}
+
 void main() 
 {
 	vec3 worldPos = texture(positionSampler, inUV).xyz;
@@ -423,10 +464,19 @@ void main()
 
 	float isup = texture(roughnessSampler, inUV).z;
 	vec3 reflectLit = vec3(0.0);
-	if(isup > 0.8)
-		reflectLit = ScreenSpaceReflection(worldPos, normal);
 
-	vec3 color = dirLit + reflectLit;
+	bool intersected = false;
+	if(isup > 0.8)
+		reflectLit = ScreenSpaceReflectionInTS(worldPos, normal, intersected);
+
+	vec3 color = dirLit;
+//	if(intersected)
+	{
+		vec4 pos = ubo.projection * ubo.view * vec4(worldPos, 1.0);
+		pos /= pos.w;
+
+		color = vec3(inUV, pos.z);
+	}
 
 	color = pow(color, vec3(1.0 / 2.2));
 	outColor = vec4(color, 1.0);
