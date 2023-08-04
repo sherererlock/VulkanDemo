@@ -278,6 +278,7 @@ bool FindIntersectionLinear(vec3 origin, vec3 R, float maxTraceDistance, out vec
 	ivec2 endPos = ivec2(end.xy * size);
 	ivec2 dp2 = endPos - originPos;
 	int maxdist = max(abs(dp2.x), abs(dp2.y));
+	vec3 dp3 = dp;
 	dp /= float(maxdist);
 
 	vec3 rayPos = origin + dp;
@@ -324,15 +325,7 @@ bool FindIntersectionLinear(vec3 origin, vec3 R, float maxTraceDistance, out vec
 
 	bool intersected = hitIndex >= 0;
 	intersection = rayStartPos.xyz + rayDir.xyz * hitIndex;
-	intersection.z = hitIndex;
-
-	float depth = texture(depthSampler, rayStartPos.xy).r;
-	intersection.x = depth;
-	intersection.y = rayStartPos.z;
-	intersection.z = hitIndex;
-
-	intersection = origin;
-
+	
 	return intersected;
 }
 
@@ -440,14 +433,14 @@ vec3 ScreenSpaceReflectionInTS(vec3 worldPos, vec3 normal, out bool intersected)
 	if(intersected)
 	{
 		vec3 indirL = texture(colorSampler, intersection.xy).xyz;
-//		vec3 albedo = texture(albedoSampler, intersection.xy).xyz;
-//		vec2 roughness = texture(roughnessSampler, intersection.xy).xy;
-//		vec3 wo = normalize(ubo.viewPos.xyz - worldPos);
-//		vec3 wi = normalize(pos - worldPos);
-//		vec3 brdf = GetBRDF(normal, wo, wi, albedo, roughness.x, roughness.y);
+		vec3 albedo = texture(albedoSampler, intersection.xy).xyz;
+		vec2 roughness = texture(roughnessSampler, intersection.xy).xy;
+		vec3 wo = normalize(ubo.viewPos.xyz - worldPos);
+		vec3 wi = normalize(pos - worldPos);
+		vec3 brdf = GetBRDF(normal, wo, wi, albedo, roughness.x, roughness.y);
 		
-//		color = indirL * brdf * dot(wi, normal);
-		color = intersection;
+		color = indirL * brdf * dot(wi, normal);
+		color = indirL;
 	}
 
 	return color;
@@ -470,13 +463,8 @@ void main()
 		reflectLit = ScreenSpaceReflectionInTS(worldPos, normal, intersected);
 
 	vec3 color = dirLit;
-//	if(intersected)
-	{
-		vec4 pos = ubo.projection * ubo.view * vec4(worldPos, 1.0);
-		pos /= pos.w;
-
-		color = vec3(inUV, pos.z);
-	}
+	if (intersected)
+		color = reflectLit;
 
 	color = pow(color, vec3(1.0 / 2.2));
 	outColor = vec4(color, 1.0);

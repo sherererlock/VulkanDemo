@@ -9,8 +9,8 @@
 @REM glslangValidator.exe -V Shaders\GLSL\new\shadow.vert -o Shaders\GLSL\spv\shadow.vert.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\shadow.frag -o Shaders\GLSL\spv\shadow.frag.spv
 										  
-glslangValidator.exe -V Shaders\GLSL\new\quad.vert -o Shaders\GLSL\spv\quad.vert.spv
-glslangValidator.exe -V Shaders\GLSL\new\quad.frag -o Shaders\GLSL\spv\quad.frag.spv
+@REM glslangValidator.exe -V Shaders\GLSL\new\quad.vert -o Shaders\GLSL\spv\quad.vert.spv
+@REM glslangValidator.exe -V Shaders\GLSL\new\quad.frag -o Shaders\GLSL\spv\quad.frag.spv
 										  
 @REM glslangValidator.exe -V Shaders\GLSL\new\skybox.vert -o Shaders\GLSL\spv\skybox.vert.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\skybox.frag -o Shaders\GLSL\spv\skybox.frag.spv
@@ -31,7 +31,7 @@ glslangValidator.exe -V Shaders\GLSL\new\quad.frag -o Shaders\GLSL\spv\quad.frag
 @REM glslangValidator.exe -V Shaders\GLSL\new\ssao.frag -o Shaders\GLSL\spv\ssao.frag.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\shader_ssao.frag -o Shaders\GLSL\spv\shader_ssao.frag.spv
 
-glslangValidator.exe -V Shaders\GLSL\new\ssrgbuffer.vert -o Shaders\GLSL\spv\ssrgbuffer.vert.spv
-glslangValidator.exe -V Shaders\GLSL\new\ssrgbuffer.frag -o Shaders\GLSL\spv\ssrgbuffer.frag.spv
-glslangValidator.exe -V Shaders\GLSL\new\genDepthMinMip.frag -o Shaders\GLSL\spv\genDepthMinMip.frag.spv
+@REM glslangValidator.exe -V Shaders\GLSL\new\ssrgbuffer.vert -o Shaders\GLSL\spv\ssrgbuffer.vert.spv
+@REM glslangValidator.exe -V Shaders\GLSL\new\ssrgbuffer.frag -o Shaders\GLSL\spv\ssrgbuffer.frag.spv
+@REM glslangValidator.exe -V Shaders\GLSL\new\genDepthMinMip.frag -o Shaders\GLSL\spv\genDepthMinMip.frag.spv
 glslangValidator.exe -V Shaders\GLSL\new\ssr.frag -o Shaders\GLSL\spv\ssr.frag.spv
