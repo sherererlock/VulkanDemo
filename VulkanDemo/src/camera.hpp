@@ -42,7 +42,7 @@ private:
 			matrices.view = transM * rotM;
 		}
 
-		viewPos = glm::vec4(position, 0.0f) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
+		viewPos = glm::vec4(position, 0.0f) * glm::vec4(1.0f, 1.0f, -1.0f, 1.0f);
 
 		updated = true;
 	};
