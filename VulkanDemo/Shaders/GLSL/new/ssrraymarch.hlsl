@@ -27,11 +27,15 @@ bool RayMarch_w(vec3 origin, vec3 dir, out vec3 pos)
 	{
 		vec3 worldPos = origin + dir * currentDistance;
 		vec3 screenPos = GetScreenUV(vec4(worldPos, 1.0));
+		
 		float depthInBuffer = texture(positionSampler, screenPos.xy).w;
 		float depth = GetDepth(vec4(worldPos, 1.0));
-		if(depth - depthInBuffer > 0.00001)
+        float thickness = depth - depthInBuffer;
+		
+        if (thickness > 0.001 && thickness < 1)
 		{
 			pos = worldPos;
+            pos.x = thickness;
 			return true;
 		}
 
@@ -145,29 +149,39 @@ bool RayMarch(vec3 origin, vec3 dir, out vec3 pos)
 	return false;
 }
 
-vec3 ScreenSpaceReflection(vec3 worldPos, vec3 normal)
+bool CheckUVValid(vec2 uv)
+{
+    return uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0;
+}
+
+vec3 ScreenSpaceReflection(vec3 worldPos, vec3 normal, out bool intersected)
 {
 	vec3 color = vec3(0.0);
 	if(length(normal) < 0.001)
 		return color;
 
-	vec3 wo = normalize(ubo.viewPos.xyz - worldPos.xyz);
+    intersected = false;
+	vec3 wo = normalize(ubo.viewPos.xyz - worldPos);
 	vec3 R = normalize(reflect(-wo, normal));
 	vec3 pos = vec3(0.0);
-	if(RayMarch(worldPos.xyz, R, pos))
+	if(RayMarch(worldPos, R, pos))
 	{
 		vec3 screenPos = GetScreenUV(vec4(pos, 1.0));
+        if (!CheckUVValid(screenPos.xy))
+            return color;
+		
+        intersected = true;
+        vec3 indirL = texture(colorSampler, screenPos.xy).rgb;
+        vec3 albedo = texture(albedoSampler, screenPos.xy).rgb;
+		//vec2 roughness = texture(roughnessSampler, screenPos.xy).xy;
+		//vec3 wo = normalize(ubo.viewPos.xyz - worldPos);
+		//vec3 wi = normalize(pos - worldPos);
+		//vec3 brdf = GetBRDF(normal, wo, wi, albedo, roughness.x, roughness.y);
 
-		vec3 indirL = texture(colorSampler, screenPos.xy).xyz;
-		vec3 albedo = texture(albedoSampler, screenPos.xy).xyz;
-		vec2 roughness = texture(roughnessSampler, screenPos.xy).xy;
-		vec3 wo = normalize(ubo.viewPos.xyz - worldPos);
-		vec3 wi = normalize(pos - worldPos);
-		vec3 brdf = GetBRDF(normal, wo, wi, albedo, roughness.x, roughness.y);
+		//color = indirL * brdf * dot(wi, normal);
 
-		color = indirL * brdf * dot(wi, normal);
-//		color = indirL;
-	}
+        color = screenPos;
+    }
 
 	return color;
 }

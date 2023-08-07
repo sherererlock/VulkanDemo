@@ -159,7 +159,7 @@ vec3 ScreenSpaceReflectionInTS(vec3 worldPos, vec3 normal, out bool intersected)
 	if(intersected)
 	{
 		vec3 indirL = texture(colorSampler, intersection.xy).xyz;
-		//vec3 pos = texture(positionSampler, intersection.xy).xyz;
+        vec3 pos = texture(positionSampler, intersection.xy).xyz;
 		//vec3 albedo = texture(albedoSampler, intersection.xy).xyz;
 		//vec2 roughness = texture(roughnessSampler, intersection.xy).xy;
 		//vec3 wo = normalize(ubo.viewPos.xyz - worldPos);
@@ -167,8 +167,8 @@ vec3 ScreenSpaceReflectionInTS(vec3 worldPos, vec3 normal, out bool intersected)
 		//vec3 brdf = GetBRDF(normal, wo, wi, albedo, roughness.x, roughness.y);
 		//
 		//color = indirL * brdf * dot(wi, normal);
-		color = indirL;
-	}
+        color = indirL;
+    }
 
 	return color;
 }

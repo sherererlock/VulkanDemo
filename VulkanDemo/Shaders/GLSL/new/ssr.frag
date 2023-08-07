@@ -51,22 +51,20 @@ void main()
 {
 	vec3 worldPos = texture(positionSampler, inUV).xyz;
 	vec3 normal = normalize(texture(normalSampler, inUV).xyz);
-	float depth = texture(depthSampler, inUV).r;
 	float shadow = getShadow(vec4(worldPos.xyz, 1.0));
-
 	vec3 dirLit = texture(colorSampler, inUV).xyz;
 
 	float isup = texture(roughnessSampler, inUV).z;
-	vec3 reflectLit = vec3(0.0);
 
+	vec3 reflectLit = vec3(0.0);
 	bool intersected = false;
 	if(isup > 0.8)
-		reflectLit = ScreenSpaceReflectionInTS(worldPos, normal, intersected);
+		reflectLit = ScreenSpaceReflection(worldPos, normal, intersected);
 
 	vec3 color = dirLit;
 	if (intersected)
 		color = reflectLit;
-
+//	else
 	{
 		color = pow(color, vec3(1.0 / 2.2));
 	}
@@ -80,4 +78,5 @@ void main()
 //	}
 
 	outColor = vec4(color, 1.0);
+
 }
