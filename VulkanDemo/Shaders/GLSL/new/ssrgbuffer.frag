@@ -69,7 +69,6 @@ vec2 GetRoughnessAndMetallic()
 void main() 
 {
 	outPos = vec4(worldPos, depth);
-
 	vec3 up = vec3(0.0, 1.0, 0.0);
 	vec3 N = calculateNormal();
 	float isup = dot(up, normal);

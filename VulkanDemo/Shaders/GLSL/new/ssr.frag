@@ -59,7 +59,7 @@ void main()
 	vec3 reflectLit = vec3(0.0);
 	bool intersected = false;
 	if(isup > 0.8)
-		reflectLit = ScreenSpaceReflection(worldPos, normal, intersected);
+		reflectLit = ScreenSpaceReflectionInTS(worldPos, normal, intersected);
 
 	vec3 color = dirLit;
 	if (intersected)
@@ -68,14 +68,7 @@ void main()
 	{
 		color = pow(color, vec3(1.0 / 2.2));
 	}
-//	if(intersected)
-//	{
-//		vec4 pos = ubo.projection * ubo.view * vec4(worldPos, 1.0);
-//		pos /= pos.w;
-//		pos.xy = pos.xy * 0.5 + 0.5;
-//		float depth1 = texture(depthSampler, pos.xy).r;
-//		color = vec3(pos.z, depth, depth1);
-//	}
+
 
 	outColor = vec4(color, 1.0);
 

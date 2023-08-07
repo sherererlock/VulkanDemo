@@ -203,5 +203,4 @@ vec3 ScreenSpaceReflectionInTS1(vec3 worldPos, vec3 normal, out bool intersected
 	return color;
 }
 
-
 #endif

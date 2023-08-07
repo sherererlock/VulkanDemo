@@ -35,7 +35,6 @@ bool RayMarch_w(vec3 origin, vec3 dir, out vec3 pos)
         if (thickness > 0.001 && thickness < 1)
 		{
 			pos = worldPos;
-            pos.x = thickness;
 			return true;
 		}
 
@@ -137,7 +136,7 @@ bool RayMarch(vec3 origin, vec3 dir, out vec3 pos)
 		vec3 screenPos = GetScreenUV(vec4(worldPos, 1.0));
 		float depth = texture(depthSampler, screenPos.xy).r;
 		float thickness = screenPos.z - depth;
-		if(thickness > 0.00001 && thickness < 0.01)
+		if(thickness > 0 && thickness < 0.01)
 		{
 			pos = worldPos;
 			return true;
@@ -169,7 +168,7 @@ vec3 ScreenSpaceReflection(vec3 worldPos, vec3 normal, out bool intersected)
 		vec3 screenPos = GetScreenUV(vec4(pos, 1.0));
         if (!CheckUVValid(screenPos.xy))
             return color;
-		
+
         intersected = true;
         vec3 indirL = texture(colorSampler, screenPos.xy).rgb;
         vec3 albedo = texture(albedoSampler, screenPos.xy).rgb;
@@ -179,8 +178,8 @@ vec3 ScreenSpaceReflection(vec3 worldPos, vec3 normal, out bool intersected)
 		//vec3 brdf = GetBRDF(normal, wo, wi, albedo, roughness.x, roughness.y);
 
 		//color = indirL * brdf * dot(wi, normal);
-
-        color = screenPos;
+	
+        color = indirL;
     }
 
 	return color;

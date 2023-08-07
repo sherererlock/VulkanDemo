@@ -59,9 +59,9 @@ uniform sampler2D normalTexture;
 
 maxDistance参数控制片段可以反射的最大距离。换句话说，它控制反射射线的最大长度或大小。
 
-resolution参数控制在第一次通过时在沿着反射射线的方向上跳过多少片段。这第一次通过是为了找到射线方向上的一个点，该点在场景中进入或穿过一些几何体。可以将这第一次通过视为粗略的过程。注意，resolution的取值范围是从零到一。零将导致没有反射，而一将在反射射线的方向上逐个片段地进行跟踪。resolution为一可能会明显降低您的帧率，尤其在maxDistance较大时。
+resolution参数控制在第一次pass时在沿着反射射线的方向上跳过多少片段。这第一次pass是为了找到射线方向上的一个点，该点在场景中进入或穿过一些几何体。可以将这第一次pass视为粗略的过程。注意，resolution的取值范围是从零到一。零将导致没有反射，而一将在反射射线的方向上逐个片段地进行跟踪。resolution为一可能会明显降低您的帧率，尤其在maxDistance较大时。
 
-steps参数控制在第二次通过时进行多少次迭代。这第二次通过是为了找到沿着反射射线的方向，射线立即与场景中的一些几何体相交的确切点。可以将这第二次通过视为细化的过程。
+steps参数控制在第二次pass时进行多少次迭代。这第二次pass是为了找到沿着反射射线的方向，射线立即与场景中的一些几何体相交的确切点。可以将这第二次pass视为细化的过程。
 
 thickness参数控制哪些地方被视为可能的反射点，哪些不被视为反射点。理想情况下，希望射线立即在场景中的某个相机捕捉到的位置或深度处停止。这将是光线反射、碰撞到当前片段并反射进入相机的确切点。不幸的是，计算并不总是那么精确，因此thickness提供了一些余地或容差。希望thickness尽可能小——刚好超出采样位置或深度的短距离。
 
@@ -99,7 +99,7 @@ thickness参数控制哪些地方被视为可能的反射点，哪些不被视�
        uv.xy = frag / texSize;
 ```
 
-第一次通过将从反射射线的起始片段位置开始。通过将片段位置的坐标除以位置纹理的尺寸，将片段位置转换为UV坐标。
+第一次pass将从反射射线的起始片段位置开始。通过将片段位置的坐标除以位置纹理的尺寸，将片段位置转换为UV坐标。
 
 ```
   float deltaX    = endFrag.x - startFrag.x;
@@ -118,7 +118,7 @@ thickness参数控制哪些地方被视为可能的反射点，哪些不被视�
 
 为了处理射线可能采取的各种不同方向（垂直、水平、对角线等），您需要跟踪并使用较大的差异。较大的差异将帮助您确定每次迭代在X和Y方向上要前进多少，需要多少次迭代才能行进整个线，并且当前位置表示线的百分比。
 
-useX要么是1，要么是0。它用于根据哪个差异更大来选择X或Y维度。delta是两个X和Y差异中较大的那个。它用于确定每次迭代时在每个维度上前进多少，并在第一次通过期间需要多少次迭代。
+useX要么是1，要么是0。它用于根据哪个差异更大来选择X或Y维度。delta是两个X和Y差异中较大的那个。它用于确定每次迭代时在每个维度上前进多少，并在第一次pass期间需要多少次迭代。
 
 ```
   vec2  increment = vec2(deltaX, deltaY) / max(delta, 0.001);
@@ -158,9 +158,9 @@ To move from the start fragment to the end fragment, the algorithm uses linear i
 
 search1的取值范围是从零到一。当search1为零时，当前位置是起始片段。当search1为一时，当前位置是结束片段。对于任何其他值，当前位置介于起始片段和结束片段之间。
 
-search0用于记住射线未命中或未与任何几何体相交的线上的上一个位置。在第二次通过中，算法将使用search0来帮助细化射线与场景几何体接触的点。
+search0用于记住射线未命中或未与任何几何体相交的线上的上一个位置。在第二次pass中，算法将使用search0来帮助细化射线与场景几何体接触的点。
 
-hit0指示在第一次通过中有交点（即射线在第一次通过中与场景发生了相交）。hit1指示在第二次通过中有交点（即射线在第二次通过中与场景发生了相交）。
+hit0指示在第一次pass中有交点（即射线在第一次pass中与场景发生了相交）。hit1指示在第二次pass中有交点（即射线在第二次pass中与场景发生了相交）。
 
 ```
   float viewDistance = startView.y;
@@ -186,4 +186,181 @@ for (i = 0; i < int(delta); ++i) {
         ); 
 ```
 
-现在您可以开始第一次通过。第一次通过在i小于delta值时运行。当i等于delta时，算法已经沿着整条线行进了。请记住，delta是X和Y两个差异中较大的那个。
+现在您可以开始第一次pass。第一次pass在i小于delta值时运行。当i等于delta时，算法已经沿着整条线行进了。请记住，delta是X和Y两个差异中较大的那个。
+
+![Screen Space Transformations](D:\Games\VulkanDemo\doc\Qnsvkc0.gif)
+
+```c
+/*
+  (C) 2019 David Lettier
+  lettier.com
+*/
+
+#version 150
+
+uniform mat4 lensProjection;
+
+uniform sampler2D positionTexture;
+uniform sampler2D normalTexture;
+uniform sampler2D maskTexture;
+
+uniform vec2 enabled;
+
+out vec4 fragColor;
+
+void main() {
+  float maxDistance = 8;
+  float resolution  = 0.3;
+  int   steps       = 5;
+  float thickness   = 0.5;
+
+  vec2 texSize  = textureSize(positionTexture, 0).xy;
+  vec2 texCoord = gl_FragCoord.xy / texSize;
+
+  vec4 uv = vec4(0.0);
+
+  vec4 positionFrom = texture(positionTexture, texCoord);
+  vec4 mask         = texture(maskTexture,     texCoord);
+
+  if (  positionFrom.w <= 0.0
+     || enabled.x      != 1.0
+     || mask.r         <= 0.0
+     ) { fragColor = uv; return; }
+
+  vec3 unitPositionFrom = normalize(positionFrom.xyz);
+  vec3 normal           = normalize(texture(normalTexture, texCoord).xyz);
+  vec3 pivot            = normalize(reflect(unitPositionFrom, normal));
+
+  vec4 positionTo = positionFrom;
+
+  vec4 startView = vec4(positionFrom.xyz + (pivot *         0.0), 1.0);
+  vec4 endView   = vec4(positionFrom.xyz + (pivot * maxDistance), 1.0);
+
+  vec4 startFrag      = startView;
+       startFrag      = lensProjection * startFrag;
+       startFrag.xyz /= startFrag.w;
+       startFrag.xy   = startFrag.xy * 0.5 + 0.5;
+       startFrag.xy  *= texSize;
+
+  vec4 endFrag      = endView;
+       endFrag      = lensProjection * endFrag;
+       endFrag.xyz /= endFrag.w;
+       endFrag.xy   = endFrag.xy * 0.5 + 0.5;
+       endFrag.xy  *= texSize;
+
+  vec2 frag  = startFrag.xy;
+       uv.xy = frag / texSize;
+
+  float deltaX    = endFrag.x - startFrag.x;
+  float deltaY    = endFrag.y - startFrag.y;
+  float useX      = abs(deltaX) >= abs(deltaY) ? 1.0 : 0.0;
+  float delta     = mix(abs(deltaY), abs(deltaX), useX) * clamp(resolution, 0.0, 1.0);
+  vec2  increment = vec2(deltaX, deltaY) / max(delta, 0.001);
+
+  float search0 = 0;
+  float search1 = 0;
+
+  int hit0 = 0;
+  int hit1 = 0;
+
+  float viewDistance = startView.y;
+  float depth        = thickness;
+
+  float i = 0;
+
+  for (i = 0; i < int(delta); ++i) {
+    frag      += increment;
+    uv.xy      = frag / texSize;
+    positionTo = texture(positionTexture, uv.xy);
+
+    search1 =
+      mix
+        ( (frag.y - startFrag.y) / deltaY
+        , (frag.x - startFrag.x) / deltaX
+        , useX
+        );
+
+    search1 = clamp(search1, 0.0, 1.0);
+
+    viewDistance = (startView.y * endView.y) / mix(endView.y, startView.y, search1);
+    depth        = viewDistance - positionTo.y;
+
+    if (depth > 0 && depth < thickness) {
+      hit0 = 1;
+      break;
+    } else {
+      search0 = search1;
+    }
+  }
+
+  search1 = search0 + ((search1 - search0) / 2.0);
+
+  steps *= hit0;
+
+  for (i = 0; i < steps; ++i) {
+    frag       = mix(startFrag.xy, endFrag.xy, search1);
+    uv.xy      = frag / texSize;
+    positionTo = texture(positionTexture, uv.xy);
+
+    viewDistance = (startView.y * endView.y) / mix(endView.y, startView.y, search1);
+    depth        = viewDistance - positionTo.y;
+
+    if (depth > 0 && depth < thickness) {
+      hit1 = 1;
+      search1 = search0 + ((search1 - search0) / 2);
+    } else {
+      float temp = search1;
+      search1 = search1 + ((search1 - search0) / 2);
+      search0 = temp;
+    }
+  }
+
+  float visibility =
+      hit1
+    * positionTo.w
+    * ( 1 - max ( dot(-unitPositionFrom, pivot), 0))
+    * ( 1 - clamp( depth / thickness, 0, 1))
+    * ( 1 - clamp( length(positionTo - positionFrom) / maxDistance, 0, 1))
+    * (uv.x < 0 || uv.x > 1 ? 0 : 1)
+    * (uv.y < 0 || uv.y > 1 ? 0 : 1);
+
+  visibility = clamp(visibility, 0, 1);
+
+  uv.ba = vec2(visibility);
+
+  fragColor = uv;
+}
+
+```
+
+
+在这段描述中，主要是计算当前片段在直线上所占的百分比或部分。如果useX为零，则使用直线的Y维度。如果useX为一，则使用直线的X维度。
+
+当frag等于startFrag时，search1等于零，因为frag - startFrag为零。当frag等于endFrag时，search1等于一，因为frag - startFrag等于delta。
+
+search1表示当前位置在直线上所代表的百分比或部分。您将需要使用这个百分比在相机的视空间中在射线的起始和终止距离之间进行插值。
+
+使用search1，在反射射线上的当前位置进行视距插值（即相机在视空间中到当前位置的距离）。
+
+您可能会尝试简单地在起始和结束的视空间位置之间进行视距插值，但这样会导致反射射线上当前位置的视距不正确。相反，您需要进行透视校正插值，如下所示。
+
+计算在这一点上射线的视距与场景在这一点上采样视距之间的差异。
+
+如果差异在零和厚度之间，那么这是一个击中（hit）。将hit0设置为1并退出第一遍扫描。如果差异不在零和厚度之间，那么这是一个未击中（miss）。将search0设置为等于search1，以记住这个位置作为最后已知的未击中位置。继续沿着射线朝结束片段前进。
+
+现在您已经完成了第二次也是最后一次扫描，但在输出反射UV坐标之前，您需要计算反射的可见性（visibility）。可见性的范围从零到一。如果第二次扫描没有击中（hit），则可见性为零。
+
+如果反射场景位置的alpha或w分量为零，则可见性为零。请注意，如果w为零，表示该点处没有场景位置。
+
+![Reflection ray pointing towards the camera position.](D:\Games\VulkanDemo\doc\7e2cOdZ.gif)
+
+
+屏幕空间反射可能失败的一种情况是反射射线指向相机的大致方向。如果反射射线指向相机并且击中了某个物体，很可能是击中了面向相机背面的物体。
+
+为了处理这种失败情况，您需要根据反射向量与相机位置之间的夹角逐渐淡化反射效果。如果反射向量指向位置向量的完全相反方向，则可见性为零。其他任何方向都会导致可见性大于零。
+
+在计算点乘时，请记得对两个向量进行归一化。unitPositionFrom是经过归一化的位置向量，它的长度或大小为一。
+
+在对反射射线进行采样时，您希望找到反射射线与场景几何体首次相交的确切点。然而，您可能找不到这个特定的点。在找到的相交点附近，逐渐淡化反射效果。
+
+根据反射点距离初始起始点的远近逐渐淡化反射效果。这样可以让反射逐渐变淡，而不是在达到最大距离时突然结束。
