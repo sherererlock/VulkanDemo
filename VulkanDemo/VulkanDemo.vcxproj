@@ -219,6 +219,7 @@
   <ItemGroup>
     <ClInclude Include="src\GenHierarchicalDepth.h" />
     <ClInclude Include="src\PBRLighting.h" />
+    <ClInclude Include="src\Renderer.h" />
     <ClInclude Include="src\SkyboxRenderer.h" />
     <ClInclude Include="src\SinglePipeline.h" />
     <ClInclude Include="src\GBufferRenderer.h" />

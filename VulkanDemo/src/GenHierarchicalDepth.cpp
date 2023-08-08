@@ -6,7 +6,7 @@
 #include "SSRGBufferRenderer.h"
 #include "GenHierarchicalDepth.h"
 
-void GenHierarchicalDepth::CreateRenderpass()
+void GenHierarchicalDepth::CreatePass()
 {
     VkAttachmentDescription colorAttachment = {};
     colorAttachment.format = VK_FORMAT_R32_SFLOAT;

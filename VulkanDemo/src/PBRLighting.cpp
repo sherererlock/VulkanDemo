@@ -15,12 +15,11 @@ void PBRLighting::CreateDescriptSetLayout()
     binding.stageFlags =  VK_SHADER_STAGE_FRAGMENT_BIT;
     binding.pImmutableSamplers = nullptr; // Optional
 
-   std::array<VkDescriptorSetLayoutBinding, 5> bindings = { binding, binding, binding, binding, binding };
+   std::array<VkDescriptorSetLayoutBinding, 5> bindings;
+   bindings.fill(binding);
 
    for (int i = 1; i < 5; i++)
-   {
         bindings[i].binding = i;
-   }
 
 	bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
@@ -67,6 +66,41 @@ void PBRLighting::CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCre
     info.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
     info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptoins.size());
     info.vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptoins.data(); // Optional
+
+    info.rasterizer.depthClampEnable = VK_FALSE;
+    info.rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // VK_POLYGON_MODE_LINE
+    //pipelineCreateInfo.rasterizer.polygonMode = VK_POLYGON_MODE_LINE; // VK_POLYGON_MODE_LINE
+
+    info.rasterizer.lineWidth = 1.0f;
+
+    info.rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    info.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+
+    info.rasterizer.depthBiasEnable = VK_FALSE;
+    info.rasterizer.depthBiasConstantFactor = 0.0f; // Optional
+    info.rasterizer.depthBiasClamp = 0.0f; // Optional
+    info.rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
+
+    VkDynamicState dynamicStates[] = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+
+    info.dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    info.dynamicState.dynamicStateCount = 2;
+    info.dynamicState.pDynamicStates = dynamicStates;
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment.blendEnable = VK_FALSE;
+    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+
+    info.colorBlending.pAttachments = &colorBlendAttachment;
 
     auto shaderStages = vulkanAPP->CreaterShader(vertexShader, fragmentShader);
 

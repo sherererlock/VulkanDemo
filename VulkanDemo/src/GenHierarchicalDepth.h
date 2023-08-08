@@ -43,16 +43,15 @@ public:
 		return hierarchicalDepth.descriptor;
 	}
 
-	void CreateRenderpass();
-	void CreateFrameBuffer();
 	void CreateMipMap();
 	void CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlagBits usage, uint32_t width, uint32_t height);
 	void CopyDepth(VkCommandBuffer commandBuffer);
 
+	virtual void CreatePass();
 	virtual void CreateDescriptSetLayout();
 	virtual void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
 	virtual void SetupDescriptSet(VkDescriptorPool pool);
-	
+	virtual void CreateFrameBuffer();
 	virtual void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel);
 
 	virtual void Cleanup();

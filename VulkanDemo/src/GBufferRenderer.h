@@ -61,7 +61,7 @@ protected:
 	std::string fragmentShader;
 
 public:
-	void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
+
 	void CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlagBits usage);
 
 	virtual std::vector<VkAttachmentDescription> GetAttachmentDescriptions() const;
@@ -70,18 +70,16 @@ public:
 
 	virtual VkDescriptorBufferInfo GetBufferInfo() const;
 
-	virtual void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
+	virtual void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
 	virtual void CreatePass();
 	virtual void CreateDescriptSetLayout();
+	virtual void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo);
 	virtual void SetupDescriptSet(VkDescriptorPool pool);
-
 	virtual void CreateGBuffer();
-	
 	virtual void CreateUniformBuffer() {};
 	virtual void CreateFrameBuffer();
 	virtual void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel);
 	virtual void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar);
-
 	virtual void Cleanup();
 
 public:

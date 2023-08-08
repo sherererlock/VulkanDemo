@@ -55,35 +55,6 @@ struct UBOParams {
 	float gamma = 2.2f;
 };
 
-struct PipelineCreateInfo
-{
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo;
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly;
-    VkPipelineViewportStateCreateInfo viewportState;
-    VkPipelineRasterizationStateCreateInfo rasterizer;
-    VkPipelineMultisampleStateCreateInfo multisampling;
-    VkPipelineColorBlendStateCreateInfo colorBlending;
-    VkPipelineDynamicStateCreateInfo dynamicState;
-    VkPipelineDepthStencilStateCreateInfo depthStencil;
-
-    PipelineCreateInfo() : vertexInputInfo({}), inputAssembly({}), viewportState({}), rasterizer({}),
-        multisampling({}), colorBlending({}), dynamicState({}), depthStencil({})
-    {        
-    }
-
-    void Apply(VkGraphicsPipelineCreateInfo& createInfo) const
-    {
-        createInfo.pVertexInputState = &vertexInputInfo; // bindings and attribute
-        createInfo.pInputAssemblyState = &inputAssembly; // topology
-        createInfo.pViewportState = &viewportState; 
-        createInfo.pRasterizationState = &rasterizer;
-        createInfo.pMultisampleState = &multisampling;
-        createInfo.pDepthStencilState = &depthStencil; // Optional
-        createInfo.pColorBlendState = &colorBlending;
-        createInfo.pDynamicState = &dynamicState; // Optional
-    }
-};
-
 class HelloVulkan
 {
 private:
@@ -300,7 +271,7 @@ private:
     SSRGBufferRenderer* ssrGBuffer;
     GenHierarchicalDepth* hierarchicalDepth;
     SSR* ssr;
-
+    std::vector<Renderer*> renderers;
 
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;
