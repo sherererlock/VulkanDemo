@@ -236,8 +236,12 @@ HelloVulkan::HelloVulkan()
 
 	camera.setPosition(glm::vec3(0.0f, 1.0f, 0.0f));
 	camera.setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
+
 	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
 	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
+
+	//camera.setPosition(glm::vec3(10.0f, 13.0f, 1.8f));
+	//camera.setRotation(glm::vec3(-62.5f, 90.0f, 0.0f));
 
 	camera.movementSpeed = 4.0f;
     camera.flipY = true;

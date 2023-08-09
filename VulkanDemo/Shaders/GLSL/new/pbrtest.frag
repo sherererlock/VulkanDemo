@@ -64,22 +64,23 @@ void main()
 	vec3 N = normalize(normal);
 	vec3 wo = normalize(ubo.viewPos.xyz - position.xyz);
 
-	float ndotv = clamp(dot(wo, N), 0.0, 1.0);
+
+
 	vec3 F0 = mix(vec3(0.04), albedo, material.metallic);
 
 	vec3 color = vec3(0.0);
-	for(int i = 0; i < 1; i ++)
+	for(int i = 0; i < 4; i ++)
 	{
 		vec3 wi = normalize(ubo.lightPos[i].xyz - position.xyz);
 		vec3 H = normalize(wi + wo);
 
-		float ndotl = dot(N, wi);
+		float ndotv = clamp(dot(wo, N), 0.0, 1.0);
+		float ndotl = clamp(dot(N, wi), 0.0, 1.0);
+		float ndoth = clamp(dot(N, H), 0.0, 1.0);
+		float hdotv = clamp(dot(H, wo), 0.0, 1.0);
+
 		if(ndotl > 0.0)
 		{
-			float ndoth = clamp(dot(N, H), 0.0, 1.0);
-			float hdotv = clamp(dot(H, wo), 0.0, 1.0);
-			ndotl = clamp(ndotl, 0.0, 1.0);
-
 			vec3 F = fresnelSchlick(ndotv, F0);
 			float D = D_GGX_TR(ndoth, material.roughness);
 			float G = GeometrySmith(ndotv, ndotl, material.roughness);
@@ -92,6 +93,7 @@ void main()
 		}
 	}
 
+	color += albedo * 0.02;
 	color = pow(color, vec3(1.0/2.2));
 	outColor = vec4(color, 1.0);
 }

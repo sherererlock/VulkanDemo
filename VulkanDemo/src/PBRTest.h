@@ -27,7 +27,7 @@ private:
 		glm::mat4 view;
 		glm::mat4 proj;
 		glm::vec4 viewPos;
-		glm::vec4 lightPos[4];
+		glm::vec4 lights[4];
 	};
 
 	std::vector<Material> materials;

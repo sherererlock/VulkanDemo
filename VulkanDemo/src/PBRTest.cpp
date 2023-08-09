@@ -210,7 +210,13 @@ void PBRTest::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel&
 void PBRTest::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos)
 {
 	UniformBufferObject ubo;
-	ubo.lightPos[0] = ubo.lightPos[1] = ubo.lightPos[2] = ubo.lightPos[3] = lightPos;
+
+	const float p = 15.0f;
+	ubo.lights[0] = glm::vec4(-p, p * 0.5f, -p, 1.0f);
+	ubo.lights[1] = glm::vec4(-p, p * 0.5f, p, 1.0f);
+	ubo.lights[2] = glm::vec4(p, p * 0.5f, p, 1.0f);
+	ubo.lights[3] = glm::vec4(p, p * 0.5f, -p, 1.0f);
+
 	ubo.model = glm::mat4(1.0);
 	ubo.view = view;
 	ubo.proj = proj;
