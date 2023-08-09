@@ -58,33 +58,38 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 } 
 
-void main(){
+void main()
+{
 	vec3 albedo = vec3(material.r, material.g, material.b);
 	vec3 N = normalize(normal);
 	vec3 wo = normalize(ubo.viewPos.xyz - position.xyz);
 
-	float ndotv = dot(wo, N);
+	float ndotv = clamp(dot(wo, N), 0.0, 1.0);
 	vec3 F0 = mix(vec3(0.04), albedo, material.metallic);
 
-	vec3 color;
-	for(int i = 0; i < 4; i ++)
+	vec3 color = vec3(0.0);
+	for(int i = 0; i < 1; i ++)
 	{
 		vec3 wi = normalize(ubo.lightPos[i].xyz - position.xyz);
 		vec3 H = normalize(wi + wo);
 
 		float ndotl = dot(N, wi);
-		float ndoth = dot(N, H);
-		float hdotv = dot(H, wo);
+		if(ndotl > 0.0)
+		{
+			float ndoth = clamp(dot(N, H), 0.0, 1.0);
+			float hdotv = clamp(dot(H, wo), 0.0, 1.0);
+			ndotl = clamp(ndotl, 0.0, 1.0);
 
-		vec3 F = fresnelSchlick(hdotv, F0);
-		float D = D_GGX_TR(ndoth, material.roughness);
-		float G = GeometrySmith(ndotv, ndotl, material.roughness);
+			vec3 F = fresnelSchlick(ndotv, F0);
+			float D = D_GGX_TR(ndoth, material.roughness);
+			float G = GeometrySmith(ndotv, ndotl, material.roughness);
 
-		vec3 nom = F * D * G;
-		float denom = max(4 * ndotl * ndotv, 0.0001);
-		vec3 fr = nom / denom;
+			vec3 nom = F * D * G;
+			float denom = max(4 * ndotl * ndotv, 0.0001);
+			vec3 fr = nom / denom;
 
-		color += vec3(1.0) * fr * ndotl;
+			color += vec3(1.0) * fr * ndotl;
+		}
 	}
 
 	color = pow(color, vec3(1.0/2.2));

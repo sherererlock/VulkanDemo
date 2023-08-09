@@ -26,8 +26,9 @@
 #include "SSR.h"
 #include "SSRGBufferRenderer.h"
 #include "GenHierarchicalDepth.h"
+#include "PBRTest.h"
 
-#define IBLLIGHTING
+//#define IBLLIGHTING
 
 //#define RSMLIGHTING
 
@@ -39,6 +40,8 @@
 
 #define SHADOW
 
+#define PBRTESTING
+
 #ifdef  IBLLIGHTING
 #define SKYBOX
 #endif //  SKYBOX
@@ -49,8 +52,9 @@
 
 
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
-const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
+const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sphere.gltf";
 
 #define SHADOWMAP_SIZE 2048
 
@@ -248,16 +252,18 @@ HelloVulkan::HelloVulkan()
     renderers.push_back(skyboxRenderer);
 #endif //  SKYBOX
 
-    #ifdef RSMLIGHTING
+#ifdef RSMLIGHTING
     rsm = new ReflectiveShadowMap();
     renderers.push_back(rsm);
-    #else
+#endif
 
+#ifdef SHADOW
 	if (CASCADED_COUNT > 1)
 		shadow = new CascadedShadow();
 	else
 		shadow = new CommonShadow();
-    #endif
+#endif
+
 
 #ifdef SCREENSPACEAO
     ssao = new SSAO();
@@ -273,8 +279,15 @@ HelloVulkan::HelloVulkan()
     renderers.push_back(hierarchicalDepth);
     renderers.push_back(ssr);
 #else
+
+#ifdef PBRTESTING
+    pbrTest = new PBRTest();
+    renderers.push_back(pbrTest);
+#else
     pbrLighting = new PBRLighting();
     renderers.push_back(pbrLighting);
+#endif
+
 #endif //  SSR
 
 }
@@ -323,7 +336,7 @@ void HelloVulkan::InitVulkan()
     for(Renderer* render : renderers)
         render->Init(this, device, width, height);
 
-    #ifndef RSMLIGHTING
+    #ifdef SHADOW
 	shadow->Init(this, device, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
     #endif
 
@@ -338,7 +351,7 @@ void HelloVulkan::InitVulkan()
         render->CreatePass();
     }
 
-    #ifndef RSMLIGHTING
+    #ifdef SHADOW
     shadow->CreateShadowPass();
     #endif
 
@@ -353,7 +366,7 @@ void HelloVulkan::InitVulkan()
     for (Renderer* render : renderers)
         render->CreateDescriptSetLayout();
 
-    #ifndef RSMLIGHTING
+    #ifdef SHADOW
     shadow->CreateDescriptSetLayout();
     #endif
 
@@ -369,7 +382,7 @@ void HelloVulkan::InitVulkan()
     for (Renderer* render : renderers)
         render->CreateFrameBuffer();
 
-    #ifndef RSMLIGHTING
+    #ifdef SHADOW
 	shadow->CreateShadowMap();
     shadow->CreateFrameBuffer();
     #endif
@@ -380,7 +393,7 @@ void HelloVulkan::InitVulkan()
     for (Renderer* render : renderers)
         render->CreateUniformBuffer();
 
-    #ifndef RSMLIGHTING
+    #ifdef SHADOW
     shadow->CreateUniformBuffer();
     #endif
 
@@ -393,7 +406,11 @@ void HelloVulkan::InitVulkan()
 #ifdef SCREENSPACEREFLECTION
     ssrGBuffer->AddModel(&gltfmodel);
 #else
-    pbrLighting->AddModel(&gltfmodel);
+    if (pbrTest)
+        pbrTest->AddModel(&gltfmodel);
+
+    if(pbrLighting)
+        pbrLighting->AddModel(&gltfmodel);
 #endif //  SSR
 
 #ifdef IBLLIGHTING
@@ -408,7 +425,7 @@ void HelloVulkan::InitVulkan()
     for (Renderer* render : renderers)
         render->SetupDescriptSet(descriptorPool);
 
-    #ifndef RSMLIGHTING
+    #ifdef SHADOW
     shadow->SetupDescriptSet(descriptorPool);
     #endif
 
@@ -497,7 +514,7 @@ void HelloVulkan::Cleanup()
     debug.Cleanup(instance);
     emptyTexture.destroy();
 
-    #ifndef RSMLIGHTING
+    #ifdef SHADOW
     shadow->Cleanup();
     #endif
 
@@ -519,6 +536,7 @@ void HelloVulkan::Cleanup()
     delete ssrGBuffer;
     delete hierarchicalDepth;
     delete ssr;
+    delete pbrTest;
 }
 
 void HelloVulkan::CreateInstance()
@@ -902,7 +920,8 @@ void HelloVulkan::createGraphicsPipeline()
     pipelineInfo.renderPass = renderPass;
 
 #ifndef SCREENSPACEREFLECTION
-    pbrLighting->SetShaderFile(vertexFileName, fragmentFileName);
+    if(pbrLighting != nullptr)
+        pbrLighting->SetShaderFile(vertexFileName, fragmentFileName);
 #endif //  SSR
 
     info.Apply(pipelineInfo);
@@ -911,7 +930,7 @@ void HelloVulkan::createGraphicsPipeline()
     for(Renderer* renderer : renderers)
         renderer->CreatePipeline(info, pipelineInfo);
 
-    #ifndef RSMLIGHTING
+    #ifdef SHADOW
     shadow->CreateShadowPipeline(info, pipelineInfo);
     #endif
 }
@@ -997,7 +1016,9 @@ void HelloVulkan::buildCommandBuffers()
         {
             #ifdef RSMLIGHTING
             rsm->BuildCommandBuffer(commandBuffers[i], gltfmodel);
-            #else
+            #endif
+
+            #ifdef SHADOW
             shadow->BuildCommandBuffer(commandBuffers[i], gltfmodel);
             #endif
         }
@@ -1059,9 +1080,14 @@ void HelloVulkan::buildCommandBuffers()
 
                 #ifdef SCREENSPACEREFLECTION
                     ssr->BuildCommandBuffer(commandBuffers[i], gltfmodel);
-                #else       
+                #else
+                if (pbrLighting != nullptr)
 				    pbrLighting->BuildCommandBuffer(commandBuffers[i], gltfmodel);
                 #endif //  SSR
+
+                #ifdef PBRTESTING
+                pbrTest->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+                #endif
             }
 
             vkCmdEndRenderPass(commandBuffers[i]);
@@ -1197,13 +1223,15 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
 
     glm::mat4 proj = isOrth ? ortho : pers;
 
-#ifdef  SKYBOX
+#ifdef SKYBOX
 	skyboxRenderer->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, lightPos);
 #endif //  SKYBOX
 
 #ifdef RSMLIGHTING
 	rsm->UpateLightMVP(view, proj, lightPos, zNear, zFar);
-#else
+#endif
+
+#ifdef SHADOW
     shadow->UpateLightMVP(view, proj, lightPos);
 #endif
 
@@ -1214,6 +1242,10 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
 #ifdef SCREENSPACEREFLECTION
     ssr->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, proj * view, camera.viewPos);
 #endif //  SSR
+
+#ifdef PBRTESTING
+	pbrTest->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, lightPos);
+#endif
 
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(UniformBufferObject), 0, &data);
@@ -1460,7 +1492,7 @@ void HelloVulkan::createDescriptorSetLayout()
 
     int binding = 0;
     int bindingcount = 2;
-    //std::array<VkDescriptorSetLayoutBinding, 2> scenebindings = { uniformLayoutBinding, imageLayoutBinding };
+    std::array<VkDescriptorSetLayoutBinding, 2> scenebindings = { uniformLayoutBinding, imageLayoutBinding };
 #ifdef RSMLIGHTING
     std::array<VkDescriptorSetLayoutBinding, 6> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, uniformLayoutBinding };
     bindingcount = 6;
@@ -1520,6 +1552,7 @@ void HelloVulkan::createDescriptorSet()
     descriptorWrite.pImageInfo = nullptr; // Optional
     descriptorWrite.pTexelBufferView = nullptr; // Optional
 
+    if(shadow != nullptr)
 	{
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites = { descriptorWrite , descriptorWrite };
 
@@ -1544,10 +1577,13 @@ void HelloVulkan::createDescriptorSet()
 
 	std::array<VkWriteDescriptorSet, 6> sceneDescriptorWrites = { descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite };
 
+    VkDescriptorImageInfo imageInfo = {};
 #ifdef RSMLIGHTING
-    VkDescriptorImageInfo imageInfo = rsm->GetDepthDescriptorImageInfo();
-#else
-    VkDescriptorImageInfo imageInfo = shadow->GetDescriptorImageInfo();
+    imageInfo = rsm->GetDepthDescriptorImageInfo();
+#endif
+
+#ifdef SHADOW
+    imageInfo = shadow->GetDescriptorImageInfo();
 #endif
 
 	sceneDescriptorWrites[1].dstBinding = 1;

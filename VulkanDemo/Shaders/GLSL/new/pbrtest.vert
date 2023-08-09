@@ -12,7 +12,7 @@ uniform UniformBufferObject{
 } ubo;
 
 layout(push_constant) uniform PushConsts{
-    vec4 objPos;
+    vec3 objPos;
 }primitive;
 
 layout(location = 0) in vec4 inPosition;
@@ -27,7 +27,7 @@ layout(location = 1) out vec3 normal;
 
 void main() {
     vec4 pos = ubo.model * inPosition;
-    pos += primitive.objPos;
+    pos.xyz += primitive.objPos;
     normal = mat3(ubo.model) * inNormal;
 
     gl_Position = ubo.proj * ubo.view * pos;

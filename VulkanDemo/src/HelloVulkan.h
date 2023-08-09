@@ -25,6 +25,7 @@ class SSAO;
 class SSRGBufferRenderer;
 class GenHierarchicalDepth;
 class SSR;
+class PBRTest;
 
 struct QueueFamilyIndices
 {
@@ -261,6 +262,7 @@ private:
     Node* lightNode;
     SkyboxRenderer* skyboxRenderer;
     PBRLighting* pbrLighting;
+    PBRTest* pbrTest;
 
     Shadow* shadow;
     Debug debug;
