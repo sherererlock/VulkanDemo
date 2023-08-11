@@ -40,7 +40,7 @@
 
 #define SHADOW
 
-#define PBRTESTING
+//#define PBRTESTING
 
 #ifdef  IBLLIGHTING
 #define SKYBOX
@@ -52,9 +52,9 @@
 
 
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
-//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
+const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
-const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sphere.gltf";
+//const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sphere.gltf";
 
 #define SHADOWMAP_SIZE 2048
 

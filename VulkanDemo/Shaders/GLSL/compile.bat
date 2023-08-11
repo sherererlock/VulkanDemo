@@ -1,5 +1,5 @@
 @REM glslangValidator.exe -V Shaders\GLSL\new\shader.vert	-o Shaders\GLSL\spv\shader.vert.spv
-@REM glslangValidator.exe -V Shaders\GLSL\new\shader.frag -o Shaders\GLSL\spv\shader.frag.spv
+glslangValidator.exe -V Shaders\GLSL\new\shader.frag -o Shaders\GLSL\spv\shader.frag.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\shader_rsm.frag -o Shaders\GLSL\spv\shader_rsm.frag.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\shader_ibl.frag -o Shaders\GLSL\spv\shader_ibl.frag.spv
 										  

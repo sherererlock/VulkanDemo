@@ -221,6 +221,7 @@ void PBRTest::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos)
 	ubo.view = view;
 	ubo.proj = proj;
 	ubo.viewPos = vulkanAPP->GetCamera().viewPos;
+	//ubo.viewPos = glm::vec4(-vulkanAPP->GetCamera().position, 1.0);
 
 	Trans_Data_To_GPU
 }

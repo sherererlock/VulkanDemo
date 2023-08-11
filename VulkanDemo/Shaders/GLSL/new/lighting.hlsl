@@ -94,8 +94,10 @@ vec3 DirectLighting(vec3 n, vec3 v, vec3 albedo, vec3 F0, float roughness, float
 			vec3 kd = (vec3(1.0) - f);
 			kd *= (1 - metallic);
 
-			Lo += (kd * albedo / PI + specular) * ndotl;
-		}
+			//Lo += (kd * albedo / PI + specular) * ndotl;
+			
+            Lo += specular * ndotl;
+        }
 	}
 
 	return Lo;
