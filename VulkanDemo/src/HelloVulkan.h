@@ -218,6 +218,8 @@ private:
     VkDescriptorSet descriptorSetS;
 
     IBLEnviromentLight envLight;
+    Texture2D EmuMap;
+    Texture2D EavgMap;
 
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;

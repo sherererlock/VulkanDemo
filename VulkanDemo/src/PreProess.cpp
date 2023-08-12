@@ -44,22 +44,22 @@ void PreProcess::generateMap(HelloVulkan* vulkan, const TextureCubeMap& envCubeM
 
 	VkAttachmentDescription colorAttachment = {};
 	colorAttachment.format = format;
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // 采样数
+	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // clear
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // 存储下来
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentReference colorAttachmentRef = {};
-	colorAttachmentRef.attachment = 0; // 引用的附件在数组中的索引
+	colorAttachmentRef.attachment = 0; 
 	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkSubpassDescription subpass = {};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // 图像渲染的子流程
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; 
 	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentRef; // fragment shader使用 location = 0 outcolor,输出
+	subpass.pColorAttachments = &colorAttachmentRef;
 	subpass.pDepthStencilAttachment = nullptr;
 	subpass.pResolveAttachments = nullptr;
 
@@ -68,11 +68,11 @@ void PreProcess::generateMap(HelloVulkan* vulkan, const TextureCubeMap& envCubeM
 	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependencies[0].dstSubpass = 0;
 
-	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;   //  A subpass layout发生转换的阶段
-	dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT; // A subpass 中需要完成的操作
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT; 
+	dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT; 
 
-	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //  B subpass 等待执行的阶段
-	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // b subpass等待执行操作
+	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
@@ -263,10 +263,10 @@ void PreProcess::generateMap(HelloVulkan* vulkan, const TextureCubeMap& envCubeM
 	pipelineInfo.pColorBlendState = &info.colorBlending;
 	pipelineInfo.pDynamicState = &info.dynamicState; // Optional
 
-	pipelineInfo.layout = pipelineLayout; // uniform变量
+	pipelineInfo.layout = pipelineLayout;
 
 	pipelineInfo.renderPass = renderPass;
-	pipelineInfo.subpass = 0; // 索引
+	pipelineInfo.subpass = 0; 
 
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipelineInfo.basePipelineIndex = -1; // Optional
@@ -486,33 +486,33 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 	const VkFormat format = VK_FORMAT_R16G16B16A16_SFLOAT;
 	const uint32_t dim = 512;
 
-	//创建brdflut，作为RT
+	//锟斤拷锟斤拷brdflut锟斤拷锟斤拷为RT
 
 	vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, brdflut.image, brdflut.deviceMemory, 1, VK_SAMPLE_COUNT_1_BIT, 1);
 	vulkan->createImageView(brdflut.view, brdflut.image, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, VK_IMAGE_VIEW_TYPE_2D, 1);
 	vulkan->createTextureSampler(brdflut.sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, 1, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
-	//创建renderpass
+	//锟斤拷锟斤拷renderpass
 
 	VkAttachmentDescription colorAttachment = {};
 	colorAttachment.format = format;
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // 采样数
+	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; 
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // clear
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // 存储下来
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; 
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	VkAttachmentReference colorAttachmentRef = {};
-	colorAttachmentRef.attachment = 0; // 引用的附件在数组中的索引
+	colorAttachmentRef.attachment = 0;
 	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkSubpassDescription subpass = {};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // 图像渲染的子流程
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentRef; // fragment shader使用 location = 0 outcolor,输出
+	subpass.pColorAttachments = &colorAttachmentRef; 
 	subpass.pDepthStencilAttachment = nullptr;
 	subpass.pResolveAttachments = nullptr;
 
@@ -521,11 +521,11 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependencies[0].dstSubpass = 0;
 
-	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;   //  A subpass layout发生转换的阶段
-	dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT; // A subpass 中需要完成的操作
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT; 
 
-	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //  B subpass 等待执行的阶段
-	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // b subpass等待执行操作
+	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; 
+	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; 
 
 	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
@@ -638,9 +638,6 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 	std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/genBRDFLut.frag.spv";
 	auto shaderStages = vulkan->CreaterShader(vertexFileName, fragmentFileName);
 
-	auto attributeDescriptoins = Vertex::getAttributeDescriptions({ Vertex::VertexComponent::Position });
-	auto attributeDescriptionBindings = Vertex::getBindingDescription();
-
 	info.vertexInputInfo.vertexBindingDescriptionCount = 0;
 	info.vertexInputInfo.pVertexBindingDescriptions = VK_NULL_HANDLE; // Optional
 	info.vertexInputInfo.vertexAttributeDescriptionCount = 0;
@@ -682,10 +679,10 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 	pipelineInfo.pColorBlendState = &info.colorBlending;
 	pipelineInfo.pDynamicState = &info.dynamicState; // Optional
 
-	pipelineInfo.layout = pipelineLayout; // uniform变量
+	pipelineInfo.layout = pipelineLayout;
 
 	pipelineInfo.renderPass = renderPass;
-	pipelineInfo.subpass = 0; // 索引
+	pipelineInfo.subpass = 0;
 
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipelineInfo.basePipelineIndex = -1; // Optional
@@ -696,7 +693,7 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
 
-	//渲染
+	//锟斤拷染
 
 	VkClearValue clearValue = {};
 	clearValue.color = { 0.0f, 0.0f, 0.2f, 0.0f };
@@ -750,6 +747,298 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 	brdflut.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	brdflut.updateDescriptor();
 	brdflut.device = vulkan->GetDevice();
+
+	vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
+	vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
+
+	vkDestroyRenderPass(device, renderPass, nullptr);
+	vkDestroyFramebuffer(device, frameBuffer, nullptr);
+	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+	vkDestroyPipeline(device, pipeline, nullptr);
+	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+}
+
+void PreProcess::genBRDFMissLut(HelloVulkan* vulkan, Texture2D& Emu, Texture2D& Eavg)
+{
+	std::string title = "Generating kulla-conty brdf lut Map cube took ";
+	TimeStat timestat(title);
+
+	VkDevice device = vulkan->GetDevice();
+	const VkFormat format = VK_FORMAT_R16G16B16A16_SFLOAT;
+	const uint32_t dim = 128;
+
+	vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Emu.image, Emu.deviceMemory, 1, VK_SAMPLE_COUNT_1_BIT, 1);
+	vulkan->createImageView(Emu.view, Emu.image, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, VK_IMAGE_VIEW_TYPE_2D, 1);
+	vulkan->createTextureSampler(Emu.sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, 1, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+
+	vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Eavg.image, Eavg.deviceMemory, 1, VK_SAMPLE_COUNT_1_BIT, 1);
+	vulkan->createImageView(Eavg.view, Eavg.image, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, VK_IMAGE_VIEW_TYPE_2D, 1);
+	vulkan->createTextureSampler(Eavg.sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, 1, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+
+	VkAttachmentDescription colorAttachment = {};
+	colorAttachment.format = format;
+	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	std::array<VkAttachmentDescription, 2> attachmentDes;
+	attachmentDes.fill(colorAttachment);
+
+	VkAttachmentReference colorAttachmentRef = {};
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	std::array<VkAttachmentReference, 2> colorAttachmentRefs;
+	colorAttachmentRefs.fill(colorAttachmentRef);
+
+	colorAttachmentRefs[1].attachment = 1;
+
+	VkSubpassDescription subpass = {};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 2;
+	subpass.pColorAttachments = colorAttachmentRefs.data();
+	subpass.pDepthStencilAttachment = nullptr;
+	subpass.pResolveAttachments = nullptr;
+
+	std::array<VkSubpassDependency, 2> dependencies;
+
+	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass = 0;
+
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
+	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; 
+	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+	dependencies[1].srcSubpass = 0;
+	dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
+	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+	VkRenderPassCreateInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = 2;
+	renderPassInfo.pAttachments = attachmentDes.data();
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+
+	renderPassInfo.dependencyCount = (uint32_t)dependencies.size();
+	renderPassInfo.pDependencies = dependencies.data();
+
+	VkRenderPass renderPass;
+	if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create render pass!");
+	}
+
+	std::array<VkImageView, 2> views = { Emu.view, Eavg.view };
+	VkFramebufferCreateInfo framebufferInfo = {};
+	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	framebufferInfo.renderPass = renderPass;
+	framebufferInfo.attachmentCount = 2;
+	framebufferInfo.pAttachments = views.data();
+	framebufferInfo.width = dim;
+	framebufferInfo.height = dim;
+	framebufferInfo.layers = 1;
+
+	VkFramebuffer frameBuffer;
+	if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &frameBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create framebuffer!");
+	}
+
+	//pipeline
+	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 0;
+	layoutInfo.pBindings = nullptr;
+
+	VkDescriptorSetLayout descriptorSetLayout;
+	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create descriptor set layout!");
+	}
+
+	VkDescriptorPoolSize poolSize = {};
+	poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	poolSize.descriptorCount = 1;
+
+	VkDescriptorPoolCreateInfo poolInfo = {};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = &poolSize;
+
+	poolInfo.maxSets = 1;
+
+	VkDescriptorPool descriptorPool;
+	if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create descriptor pool!");
+	}
+
+	VkDescriptorSetAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &descriptorSetLayout;
+
+	VkDescriptorSet descriptorSet;
+	if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to allocate descriptor set!");
+	}
+
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 1; // Optional
+	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout; // Optional
+	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+
+	VkPipelineLayout pipelineLayout;
+	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create pipeline layout!");
+	}
+
+	PipelineCreateInfo info = vulkan->CreatePipelineCreateInfo();
+
+	info.rasterizer.cullMode = VK_CULL_MODE_NONE;
+	info.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	info.depthStencil.depthTestEnable = VK_FALSE;
+	info.depthStencil.depthWriteEnable = VK_FALSE;
+	info.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+
+	std::string vertexFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/genBRDFLut.vert.spv";
+	std::string fragmentFileName = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/genBRDFMissLut.frag.spv";
+	auto shaderStages = vulkan->CreaterShader(vertexFileName, fragmentFileName);
+
+	info.vertexInputInfo.vertexBindingDescriptionCount = 0;
+	info.vertexInputInfo.pVertexBindingDescriptions = VK_NULL_HANDLE; // Optional
+	info.vertexInputInfo.vertexAttributeDescriptionCount = 0;
+	info.vertexInputInfo.pVertexAttributeDescriptions = VK_NULL_HANDLE; // Optional
+
+	VkDynamicState dynamicStates[] = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+
+	info.dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	info.dynamicState.dynamicStateCount = 2;
+	info.dynamicState.pDynamicStates = dynamicStates;
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+	colorBlendAttachment.colorWriteMask = 0xf;
+	colorBlendAttachment.blendEnable = VK_FALSE;
+	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+
+	std::array<VkPipelineColorBlendAttachmentState, 2> colorBlendAttachments;
+	colorBlendAttachments.fill(colorBlendAttachment);
+
+	info.colorBlending.attachmentCount = 2;
+	info.colorBlending.pAttachments = colorBlendAttachments.data();
+
+	VkGraphicsPipelineCreateInfo pipelineInfo = {};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+
+	pipelineInfo.stageCount = (uint32_t)shaderStages.size();
+	pipelineInfo.pStages = shaderStages.data();
+
+	pipelineInfo.pVertexInputState = &info.vertexInputInfo; // bindings and attribute
+	pipelineInfo.pInputAssemblyState = &info.inputAssembly; // topology
+	pipelineInfo.pViewportState = &info.viewportState;
+	pipelineInfo.pRasterizationState = &info.rasterizer;
+	pipelineInfo.pMultisampleState = &info.multisampling;
+	pipelineInfo.pDepthStencilState = &info.depthStencil; // Optional
+	pipelineInfo.pColorBlendState = &info.colorBlending;
+	pipelineInfo.pDynamicState = &info.dynamicState; // Optional
+
+	pipelineInfo.layout = pipelineLayout; 
+
+	pipelineInfo.renderPass = renderPass;
+	pipelineInfo.subpass = 0; 
+
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+	pipelineInfo.basePipelineIndex = -1; // Optional
+
+	VkPipeline pipeline;
+	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create graphics pipeline!");
+	}
+
+	VkClearValue clearValue = {};
+	clearValue.color = { 0.0f, 0.0f, 0.2f, 0.0f };
+
+	std::array<VkClearValue, 2> clearValues;
+	clearValues.fill(clearValue);
+
+	VkRenderPassBeginInfo renderPassBeginInfo = {};
+	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassBeginInfo.renderPass = renderPass;
+	renderPassBeginInfo.framebuffer = frameBuffer;
+
+	renderPassBeginInfo.renderArea.offset = { 0, 0 };
+	renderPassBeginInfo.renderArea.extent.width = dim;
+	renderPassBeginInfo.renderArea.extent.height = dim;
+
+	renderPassBeginInfo.clearValueCount = 2;
+	renderPassBeginInfo.pClearValues = clearValues.data();
+
+	VkCommandBuffer cmdBuffer = vulkan->beginSingleTimeCommands();
+
+	VkViewport viewport = {};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = dim;
+	viewport.height = dim;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	VkRect2D scissor = {};
+	scissor.offset = { 0, 0 };
+	scissor.extent.width = dim;
+	scissor.extent.height = dim;
+
+	vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+	vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+	vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+	vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+	vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+
+	vkCmdEndRenderPass(cmdBuffer);
+
+	vulkan->endSingleTimeCommands(cmdBuffer);
+
+	Emu.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	Emu.updateDescriptor();
+	Emu.device = vulkan->GetDevice();
+
+	Eavg.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	Eavg.updateDescriptor();
+	Eavg.device = vulkan->GetDevice();
 
 	vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
 	vkDestroyShaderModule(device, shaderStages[1].module, nullptr);

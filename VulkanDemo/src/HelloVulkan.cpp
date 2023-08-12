@@ -423,6 +423,8 @@ void HelloVulkan::InitVulkan()
 	PreProcess::genBRDFLut(this, envLight.BRDFLutMap);
 #endif
 
+    PreProcess::genBRDFMissLut(this, EmuMap, EavgMap);
+
 	createDescriptorPool();
     createDescriptorSet();
 
@@ -514,6 +516,9 @@ void HelloVulkan::Cleanup()
 #ifdef IBLLIGHTING
     envLight.Cleanup();
 #endif
+
+    EmuMap.destroy();
+    EavgMap.destroy();
 
     debug.Cleanup(instance);
     emptyTexture.destroy();
@@ -1495,8 +1500,9 @@ void HelloVulkan::createDescriptorSetLayout()
     imageLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     int binding = 0;
-    int bindingcount = 2;
-    std::array<VkDescriptorSetLayoutBinding, 2> scenebindings = { uniformLayoutBinding, imageLayoutBinding };
+    int bindingcount = 4;
+    std::array<VkDescriptorSetLayoutBinding, 4> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding, imageLayoutBinding };
+
 #ifdef RSMLIGHTING
     std::array<VkDescriptorSetLayoutBinding, 6> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, uniformLayoutBinding };
     bindingcount = 6;
@@ -1597,7 +1603,21 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[1].pImageInfo = &imageInfo; // Optional
 	sceneDescriptorWrites[1].pTexelBufferView = nullptr; // Optional
 
-    int sceneDescriptorsCount = 2;
+	sceneDescriptorWrites[2].dstBinding = 2;
+	sceneDescriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sceneDescriptorWrites[2].descriptorCount = 1;
+	sceneDescriptorWrites[2].pBufferInfo = nullptr;
+	sceneDescriptorWrites[2].pImageInfo = &EmuMap.descriptor; // Optional
+	sceneDescriptorWrites[2].pTexelBufferView = nullptr; // Optional
+
+	sceneDescriptorWrites[3].dstBinding = 2;
+	sceneDescriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sceneDescriptorWrites[3].descriptorCount = 1;
+	sceneDescriptorWrites[3].pBufferInfo = nullptr;
+	sceneDescriptorWrites[3].pImageInfo = &EavgMap.descriptor; // Optional
+	sceneDescriptorWrites[3].pTexelBufferView = nullptr; // Optional
+
+    int sceneDescriptorsCount = 4;
 
 #ifdef IBLLIGHTING
 

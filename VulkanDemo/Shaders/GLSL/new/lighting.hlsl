@@ -66,6 +66,33 @@ vec3 blin_phong()
 	return diffuse + specular;
 }
 
+//https://blog.selfshadow.com/publications/s2017-shading-course/imageworks/s2017_pbs_imageworks_slides_v2.pdf
+vec3 AverageFresnel(vec3 r, vec3 g)
+{
+	return vec3(0.087237) + 0.0230685 * g - 0.0864902 * g * g + 0.0774594 * g * g * g
+		+ 0.782654 * r - 0.136432 * r * r + 0.278708 * r * r * r
+		+ 0.19744 * g * r + 0.0360605 * g * g * r - 0.2586 * g * r * r;
+}
+
+vec3 MultiScatterBRDF(vec3 N, vec3 L, vec3 V, vec3 albedo, float roughness)
+{
+	float ndotl = clamp(dot(N, L), 0.0, 1.0);
+	float ndotv = clamp(dot(N, V), 0.0, 1.0);
+
+	vec3 Eo = texture(EmuSampler, vec2(ndotv, roughness)).rgb;
+	vec3 Ei = texture(EmuSampler, vec2(ndotl, roughness)).rgb;
+
+	vec3 Eavg = texture(EavgSampler, vec2(0.0, roughness)).rgb;
+
+	vec3 edgetint = vec3(0.827, 0.792, 0.678);
+	vec3 Favg = AverageFresnel(albedo, edgetint);
+
+	vec3 fms = (vec3(1.0) - Ei) * (vec3(1.0) - Eo) / (PI * (vec3(1.0) - Eavg));
+	vec3 fadd = Favg * Eavg / (vec3(1.0) - Favg * (vec3(1.0) - Eavg));
+
+	return fms * fadd;
+}
+
 vec3 DirectLighting(vec3 n, vec3 v, vec3 albedo, vec3 F0, float roughness, float metallic)
 {
 	float ndotv = clamp(dot(n, v), 0.0, 1.0);
@@ -96,7 +123,8 @@ vec3 DirectLighting(vec3 n, vec3 v, vec3 albedo, vec3 F0, float roughness, float
 
 			//Lo += (kd * albedo / PI + specular) * ndotl;
 			
-            Lo += specular * ndotl;
+			vec3 E = MultiScatterBRDF(n, l, v, albedo, roughness);
+            Lo += (specular + E) * ndotl;
         }
 	}
 
@@ -188,6 +216,7 @@ vec3 Lighting(float shadow)
 	vec3 v = normalize(ubo.viewPos.xyz - worldPos);
 
 	vec3 Lo = DirectLighting(n, v, albedo, F0, roughness, metallic);
+
 	vec3 ambient = vec3(0.0);
 	vec3 emissive = texture(emissiveSampler, fragTexCoord).rgb * materialData.emissiveFactor;
 
