@@ -18,6 +18,7 @@ public:
 	static void generateIrradianceCube(HelloVulkan* vulkan, const TextureCubeMap& cubeMap, TextureCubeMap& irradianceMap);
 	static void prefilterEnvMap(HelloVulkan* vulkan, const TextureCubeMap& cubeMap, TextureCubeMap& prifilterMap);
 	static void genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut);
-	static void genBRDFMissLut(HelloVulkan* vulkan, Texture2D& Emu, Texture2D& Eavg);
+	static void genBRDFEmuLut(HelloVulkan* vulkan, Texture2D& Emu);
+	static void genBRDFEavgLut(HelloVulkan* vulkan, const Texture2D& Emu, Texture2D& Eavg);
 };
 

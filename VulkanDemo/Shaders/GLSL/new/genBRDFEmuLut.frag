@@ -2,7 +2,6 @@
 
 layout (location = 0) in vec2 inUV;
 layout (location = 0) out vec4 outColor;
-layout (location = 1) out vec4 outColor1;
 
 layout (constant_id = 0) const uint NUM_SAMPLES = 1024;
 
@@ -61,6 +60,27 @@ vec3 importanceSample_GGX(vec2 Xi, float roughness, vec3 normal)
 	return normalize(tangentX * H.x + tangentY * H.y + normal * H.z);
 }
 
+vec3 importanceSample_GGX1(vec2 Xi, float roughness, vec3 normal) 
+{
+	// Maps a 2D point to a hemisphere with spread based on roughness
+	float alpha = roughness * roughness;
+	float theta = atan(alpha * sqrt(Xi.x) / sqrt(1.0f - Xi.x));
+	float phi = 2.0 * PI * Xi.x;
+
+	float cosTheta = cos(theta);
+	float sinTheta = sin(theta);
+
+	vec3 H = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+
+	// Tangent space
+	vec3 up = abs(normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+	vec3 tangentX = normalize(cross(up, normal));
+	vec3 tangentY = normalize(cross(normal, tangentX));
+
+	// Convert to world Space
+	return normalize(tangentX * H.x + tangentY * H.y + normal * H.z);
+}
+
 // Geometric Shadowing function
 float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
 {
@@ -99,8 +119,6 @@ vec3 IntegrateBRDF(float ndotv, float roughness)
 
 void main()
 {
-	vec3 Emu = IntegrateBRDF(inUV.s, (1.0 - inUV.t));
-	vec3 Eavg = 2.0 * Emu * inUV.s;
+	vec3 Emu = IntegrateBRDF(inUV.s, inUV.t);
 	outColor = vec4(Emu, 1.0);
-	outColor1 = vec4(Eavg, 1.0);
 }

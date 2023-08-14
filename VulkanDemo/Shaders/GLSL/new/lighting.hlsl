@@ -79,10 +79,10 @@ vec3 MultiScatterBRDF(vec3 N, vec3 L, vec3 V, vec3 albedo, float roughness)
 	float ndotl = clamp(dot(N, L), 0.0, 1.0);
 	float ndotv = clamp(dot(N, V), 0.0, 1.0);
 
-	vec3 Eo = texture(EmuSampler, vec2(ndotv, roughness)).rgb;
-	vec3 Ei = texture(EmuSampler, vec2(ndotl, roughness)).rgb;
+	vec3 Eo = texture(EmuSampler, vec2(ndotv, roughness)).rgb * 0.5;
+	vec3 Ei = texture(EmuSampler, vec2(ndotl, roughness)).rgb * 0.5;
 
-	vec3 Eavg = texture(EavgSampler, vec2(0.0, roughness)).rgb;
+	vec3 Eavg = texture(EavgSampler, vec2(0.0, roughness)).rgb * 0.5;
 
 	vec3 edgetint = vec3(0.827, 0.792, 0.678);
 	vec3 Favg = AverageFresnel(albedo, edgetint);
@@ -117,14 +117,14 @@ vec3 DirectLighting(vec3 n, vec3 v, vec3 albedo, vec3 F0, float roughness, float
 			float denom = 4 * ndotv * ndotl + 0.001;
 			vec3 specular = nom / denom;
 
-			vec3 ks = f;
-			vec3 kd = (vec3(1.0) - f);
-			kd *= (1 - metallic);
+			//vec3 ks = f;
+			//vec3 kd = (vec3(1.0) - f);
+			//kd *= (1 - metallic);
 
 			//Lo += (kd * albedo / PI + specular) * ndotl;
 			
-			vec3 E = MultiScatterBRDF(n, l, v, albedo, roughness);
-            Lo += (specular + E) * ndotl;
+			vec3 Fms = MultiScatterBRDF(n, l, v, albedo, roughness);
+            Lo += (specular + Fms) * ndotl;
         }
 	}
 

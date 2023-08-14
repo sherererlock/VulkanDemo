@@ -56,6 +56,10 @@ const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_dro
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/vulkanscene_shadow.gltf";
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sphere.gltf";
 
+
+const std::string Emu_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/GGX_E_LUT.png";
+const std::string Eavg_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/GGX_Eavg_LUT.png";
+
 #define SHADOWMAP_SIZE 2048
 
 HelloVulkan* HelloVulkan::helloVulkan = nullptr;
@@ -423,7 +427,11 @@ void HelloVulkan::InitVulkan()
 	PreProcess::genBRDFLut(this, envLight.BRDFLutMap);
 #endif
 
-    PreProcess::genBRDFMissLut(this, EmuMap, EavgMap);
+    PreProcess::genBRDFEmuLut(this, EmuMap);
+    PreProcess::genBRDFEavgLut(this, EmuMap, EavgMap);
+
+    //EmuMap.loadFromFile(this, Emu_PATH, VK_FORMAT_R8G8B8A8_UNORM);
+    //EavgMap.loadFromFile(this, Eavg_PATH, VK_FORMAT_R8G8B8A8_UNORM);
 
 	createDescriptorPool();
     createDescriptorSet();
@@ -1013,7 +1021,6 @@ void HelloVulkan::createCommandBuffers()
 
 void HelloVulkan::buildCommandBuffers()
 {
-    PreProcess::genBRDFMissLut(this, EmuMap, EavgMap);
     for (size_t i = 0; i < commandBuffers.size(); i++)
     {
         VkCommandBufferBeginInfo beginInfo = {};
