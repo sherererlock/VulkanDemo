@@ -762,21 +762,24 @@ void PreProcess::genBRDFLut(HelloVulkan* vulkan, Texture2D& brdflut)
 void PreProcess::genBRDFMissLut(HelloVulkan* vulkan, Texture2D& Emu, Texture2D& Eavg)
 {
 	std::string title = "Generating kulla-conty brdf lut Map cube took ";
-	TimeStat timestat(title);
+	//TimeStat timestat(title);
 
 	VkDevice device = vulkan->GetDevice();
 	const VkFormat format = VK_FORMAT_R16G16B16A16_SFLOAT;
 	const uint32_t dim = 128;
 
-	vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Emu.image, Emu.deviceMemory, 1, VK_SAMPLE_COUNT_1_BIT, 1);
-	vulkan->createImageView(Emu.view, Emu.image, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, VK_IMAGE_VIEW_TYPE_2D, 1);
-	vulkan->createTextureSampler(Emu.sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, 1, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+	if (Emu.image == VK_NULL_HANDLE)
+	{
+		vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Emu.image, Emu.deviceMemory, 1, VK_SAMPLE_COUNT_1_BIT, 1);
+		vulkan->createImageView(Emu.view, Emu.image, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, VK_IMAGE_VIEW_TYPE_2D, 1);
+		vulkan->createTextureSampler(Emu.sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, 1, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
-	vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Eavg.image, Eavg.deviceMemory, 1, VK_SAMPLE_COUNT_1_BIT, 1);
-	vulkan->createImageView(Eavg.view, Eavg.image, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, VK_IMAGE_VIEW_TYPE_2D, 1);
-	vulkan->createTextureSampler(Eavg.sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, 1, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+		vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Eavg.image, Eavg.deviceMemory, 1, VK_SAMPLE_COUNT_1_BIT, 1);
+		vulkan->createImageView(Eavg.view, Eavg.image, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, VK_IMAGE_VIEW_TYPE_2D, 1);
+		vulkan->createTextureSampler(Eavg.sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, 1, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+	}
 
 	VkAttachmentDescription colorAttachment = {};
 	colorAttachment.format = format;

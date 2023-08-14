@@ -80,24 +80,27 @@ vec3 IntegrateBRDF(float ndotv, float roughness)
 	{
 		vec2 Xi = hammersley2d(i, NUM_SAMPLES);
 		vec3 H = importanceSample_GGX(Xi, roughness, N);
-		vec3 L = 2.0 * dot(V, H) * H - V;
+		vec3 L = normalize(2.0 * dot(V, H) * H - V);
 
+		float ndotv = max(dot(N, V), 0.0);
 		float ndoth = max(dot(N, H), 0.0);
 		float ndotl = max(dot(N, L), 0.0);
 		float vdoth = max(dot(V, H), 0.0);
-
-		float G = G_SchlicksmithGGX(ndotl, ndotv, roughness);
-		float weight = vdoth * G /(ndotv * ndoth);
-		Emu += vec3(weight);
+		if(ndotl > 0.0)
+		{
+			float G = G_SchlicksmithGGX(ndotl, ndotv, roughness);
+			float weight = vdoth * G /(ndotv * ndoth);
+			Emu += vec3(weight);
+		}
 	}
 
-	return Emu / NUM_SAMPLES;
+	return Emu / float(NUM_SAMPLES);
 }
 
 void main()
 {
-	vec3 Emu = IntegrateBRDF(inUV.s, inUV.t);
+	vec3 Emu = IntegrateBRDF(inUV.s, (1.0 - inUV.t));
 	vec3 Eavg = 2.0 * Emu * inUV.s;
 	outColor = vec4(Emu, 1.0);
-	outColor = vec4(Eavg, 1.0);
+	outColor1 = vec4(Eavg, 1.0);
 }

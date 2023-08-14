@@ -1013,6 +1013,7 @@ void HelloVulkan::createCommandBuffers()
 
 void HelloVulkan::buildCommandBuffers()
 {
+    PreProcess::genBRDFMissLut(this, EmuMap, EavgMap);
     for (size_t i = 0; i < commandBuffers.size(); i++)
     {
         VkCommandBufferBeginInfo beginInfo = {};
@@ -1610,7 +1611,7 @@ void HelloVulkan::createDescriptorSet()
 	sceneDescriptorWrites[2].pImageInfo = &EmuMap.descriptor; // Optional
 	sceneDescriptorWrites[2].pTexelBufferView = nullptr; // Optional
 
-	sceneDescriptorWrites[3].dstBinding = 2;
+	sceneDescriptorWrites[3].dstBinding = 3;
 	sceneDescriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	sceneDescriptorWrites[3].descriptorCount = 1;
 	sceneDescriptorWrites[3].pBufferInfo = nullptr;
