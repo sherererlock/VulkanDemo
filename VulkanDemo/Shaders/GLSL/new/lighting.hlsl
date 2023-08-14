@@ -79,10 +79,10 @@ vec3 MultiScatterBRDF(vec3 N, vec3 L, vec3 V, vec3 albedo, float roughness)
 	float ndotl = clamp(dot(N, L), 0.0, 1.0);
 	float ndotv = clamp(dot(N, V), 0.0, 1.0);
 
-	vec3 Eo = texture(EmuSampler, vec2(ndotv, roughness)).rgb * 0.5;
-	vec3 Ei = texture(EmuSampler, vec2(ndotl, roughness)).rgb * 0.5;
+	vec3 Eo = texture(EmuSampler, vec2(ndotv, roughness)).rgb;
+	vec3 Ei = texture(EmuSampler, vec2(ndotl, roughness)).rgb;
 
-	vec3 Eavg = texture(EavgSampler, vec2(0.0, roughness)).rgb * 0.5;
+	vec3 Eavg = texture(EavgSampler, vec2(0.0, roughness)).rgb;
 
 	vec3 edgetint = vec3(0.827, 0.792, 0.678);
 	vec3 Favg = AverageFresnel(albedo, edgetint);

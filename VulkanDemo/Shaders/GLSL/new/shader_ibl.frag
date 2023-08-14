@@ -9,6 +9,9 @@
 #include"IBLInput.hlsl"
 
 layout(set = 1, binding = 1) uniform sampler2D shadowMapSampler;
+layout(set = 1, binding = 2) uniform sampler2D EmuSampler;
+layout(set = 1, binding = 3) uniform sampler2D EavgSampler;
+
 layout(location = 5) in vec4 shadowCoord;
 
 vec2 GetRoughnessAndMetallic()

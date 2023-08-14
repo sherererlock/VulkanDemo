@@ -28,7 +28,7 @@
 #include "GenHierarchicalDepth.h"
 #include "PBRTest.h"
 
-//#define IBLLIGHTING
+#define IBLLIGHTING
 
 //#define RSMLIGHTING
 
@@ -1509,7 +1509,7 @@ void HelloVulkan::createDescriptorSetLayout()
 
     int binding = 0;
     int bindingcount = 4;
-    std::array<VkDescriptorSetLayoutBinding, 4> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding, imageLayoutBinding };
+    //std::array<VkDescriptorSetLayoutBinding, 4> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding, imageLayoutBinding };
 
 #ifdef RSMLIGHTING
     std::array<VkDescriptorSetLayoutBinding, 6> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, uniformLayoutBinding };
@@ -1522,8 +1522,8 @@ void HelloVulkan::createDescriptorSetLayout()
 #endif
 
 #ifdef IBLLIGHTING
-    std::array<VkDescriptorSetLayoutBinding, 5> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding };
-    bindingcount = 5;
+    std::array<VkDescriptorSetLayoutBinding, 7> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, imageLayoutBinding, imageLayoutBinding };
+    bindingcount = 7;
 #endif
 
 #endif // RSMLIGHTING
@@ -1593,7 +1593,7 @@ void HelloVulkan::createDescriptorSet()
     descriptorWrite.dstSet = descriptorSetS;
     descriptorWrite.pBufferInfo = &bufferInfo;
 
-	std::array<VkWriteDescriptorSet, 6> sceneDescriptorWrites = { descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite };
+	std::array<VkWriteDescriptorSet, 7> sceneDescriptorWrites = { descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite, descriptorWrite };
 
     VkDescriptorImageInfo imageInfo = {};
 #ifdef RSMLIGHTING
@@ -1629,22 +1629,24 @@ void HelloVulkan::createDescriptorSet()
 
 #ifdef IBLLIGHTING
 
-    sceneDescriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    sceneDescriptorWrites[2].pBufferInfo = nullptr;
-	sceneDescriptorWrites[2].dstBinding = 2;
-	sceneDescriptorWrites[2].pImageInfo = &envLight.irradianceCube.descriptor; // Optional
-
-	sceneDescriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	sceneDescriptorWrites[3].pBufferInfo = nullptr;
-	sceneDescriptorWrites[3].dstBinding = 3;
-	sceneDescriptorWrites[3].pImageInfo = &envLight.prefilteredMap.descriptor; // Optional
-
 	sceneDescriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	sceneDescriptorWrites[4].pBufferInfo = nullptr;
 	sceneDescriptorWrites[4].dstBinding = 4;
-	sceneDescriptorWrites[4].pImageInfo = &envLight.BRDFLutMap.descriptor; // Optional
+	sceneDescriptorWrites[4].pImageInfo = &envLight.irradianceCube.descriptor; // Optional
 
-    vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
+	sceneDescriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sceneDescriptorWrites[5].pBufferInfo = nullptr;
+	sceneDescriptorWrites[5].dstBinding = 5;
+	sceneDescriptorWrites[5].pImageInfo = &envLight.prefilteredMap.descriptor; // Optional
+
+	sceneDescriptorWrites[6].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sceneDescriptorWrites[6].pBufferInfo = nullptr;
+	sceneDescriptorWrites[6].dstBinding = 6;
+	sceneDescriptorWrites[6].pImageInfo = &envLight.BRDFLutMap.descriptor; // Optional
+
+    sceneDescriptorsCount = 7;
+
+    //vkUpdateDescriptorSets(device, (uint32_t)sceneDescriptorWrites.size(), sceneDescriptorWrites.data(), 0, nullptr);
 #endif
 
 #ifdef RSMLIGHTING
