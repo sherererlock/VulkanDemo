@@ -298,6 +298,7 @@ HelloVulkan::HelloVulkan()
 
 #endif //  SSR
 
+    msaa = true;
 }
 
 void HelloVulkan::Init()
@@ -754,16 +755,13 @@ void HelloVulkan::createRenderPass()
     colorAttachment.samples = msaaSamples; // 采样数
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // clear
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // 存储下来
-
     colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference colorAttachmentRef = {};
-    colorAttachmentRef.attachment = 0; // 引用的附件在数组中的索引
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    if(msaa)
+        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    else
+        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentDescription depthAttachment = {};
     depthAttachment.format = findDepthFormat();
@@ -775,10 +773,6 @@ void HelloVulkan::createRenderPass()
     depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    VkAttachmentReference depthAttachmentRef = {};
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
     VkAttachmentDescription colorAttachmentResolve = {};
     colorAttachmentResolve.format = swapChainImageFormat;
     colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -789,19 +783,32 @@ void HelloVulkan::createRenderPass()
     colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+	std::vector<VkAttachmentDescription> attachments = { colorAttachment, depthAttachment };
+    if (msaa)
+        attachments.push_back(colorAttachmentResolve);
+
+	VkAttachmentReference colorAttachmentRef = {};
+	colorAttachmentRef.attachment = 0; 
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference depthAttachmentRef = {};
+	depthAttachmentRef.attachment = 1;
+	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
     VkAttachmentReference colorAttachmentResolveRef = {};
     colorAttachmentResolveRef.attachment = 2;
     colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // 图像渲染的子流程
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; 
 
     subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef; // fragment shader使用 location = 0 outcolor,输出
+    subpass.pColorAttachments = &colorAttachmentRef;
     subpass.pDepthStencilAttachment = &depthAttachmentRef;
-    subpass.pResolveAttachments = &colorAttachmentResolveRef;
-
-    std::array<VkAttachmentDescription, 3> attachments = {colorAttachment, depthAttachment, colorAttachmentResolve};
+    if (msaa)
+        subpass.pResolveAttachments = &colorAttachmentResolveRef;
+    else
+        subpass.pResolveAttachments = nullptr;
 
     VkSubpassDependency dependency = {};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL; // 开始之前的pass
@@ -819,7 +826,6 @@ void HelloVulkan::createRenderPass()
     renderPassInfo.pAttachments = attachments.data();
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
-    
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
@@ -860,10 +866,10 @@ PipelineCreateInfo HelloVulkan::CreatePipelineCreateInfo()
     pipelineCreateInfo.rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
 
     pipelineCreateInfo.multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    pipelineCreateInfo.multisampling.sampleShadingEnable = VK_FALSE;
+    pipelineCreateInfo.multisampling.sampleShadingEnable = VK_TRUE;
     // pipelineCreateInfo.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
     pipelineCreateInfo.multisampling.rasterizationSamples = msaaSamples;
-    pipelineCreateInfo.multisampling.minSampleShading = 0.0f; // Optional
+    pipelineCreateInfo.multisampling.minSampleShading = 0.2f; // Optional
     pipelineCreateInfo.multisampling.pSampleMask = nullptr; // Optional
     pipelineCreateInfo.multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
     pipelineCreateInfo.multisampling.alphaToOneEnable = VK_FALSE; // Optional
@@ -957,11 +963,11 @@ void HelloVulkan::createFrameBuffer()
     swapChainFramebuffers.resize(swapChainImageViews.size());
     for (size_t i = 0; i < swapChainImageViews.size(); i++)
     {
-        std::array<VkImageView, 3> attachments = {
-            colorImageView,
-            depthImageView,
-            swapChainImageViews[i]            
-        };
+        std::vector<VkImageView> attachments;
+        if (msaa)
+            attachments = { colorImageView, depthImageView, swapChainImageViews[i] };
+        else
+            attachments = { swapChainImageViews[i], depthImageView };
 
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -972,7 +978,8 @@ void HelloVulkan::createFrameBuffer()
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
+        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS)
+        {
             throw std::runtime_error("failed to create framebuffer!");
         }
     }
@@ -1423,7 +1430,6 @@ void HelloVulkan::cleanupSwapChain()
 void HelloVulkan::createDepthResources()
 {
     VkFormat depthFormat = findDepthFormat();
-    //createImage(swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory, 1, VK_SAMPLE_COUNT_1_BIT);
 
     createImage(swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory, 1, msaaSamples);
 
