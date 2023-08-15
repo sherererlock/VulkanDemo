@@ -378,13 +378,13 @@ void SSAO::BuildSSAOCommandBuffer(VkCommandBuffer commandBuffer)
 	vkCmdEndRenderPass(commandBuffer);
 }
 
-void SSAO::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 cameraPos, float zNear, float zFar)
+void SSAO::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 cameraPos)
 {
 	UniformBufferObject ubo;
 	ubo.view = view;
 	ubo.proj = proj;
-	ubo.clipPlane.x = zNear;
-	ubo.clipPlane.y = zFar;
+	ubo.clipPlane.x = vulkanAPP->GetCamera().getNearClip();
+	ubo.clipPlane.y = vulkanAPP->GetCamera().getFarClip();
 
 	void* data;
 	vkMapMemory(device, uniformMemory, 0, sizeof(UniformBufferObject), 0, &data);

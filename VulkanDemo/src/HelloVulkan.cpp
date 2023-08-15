@@ -27,8 +27,10 @@
 #include "SSRGBufferRenderer.h"
 #include "GenHierarchicalDepth.h"
 #include "PBRTest.h"
+#include "BasePass.h"
+#include "LightingPass.h"
 
-#define IBLLIGHTING
+//#define IBLLIGHTING
 
 //#define RSMLIGHTING
 
@@ -50,6 +52,8 @@
 #define SHADOW
 #endif //  SSR
 
+
+#define DEFERRENDERING
 
 //const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/sponza/sponza.gltf";
 const std::string MODEL_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/buster_drone/busterDrone.gltf";
@@ -291,6 +295,15 @@ HelloVulkan::HelloVulkan()
 #ifdef PBRTESTING
     pbrTest = new PBRTest();
     renderers.push_back(pbrTest);
+#endif
+
+#ifdef DEFERRENDERING
+    basePass = new BasePass();
+    lightingPass = new LightingPass();
+
+    renderers.push_back(basePass);
+    renderers.push_back(lightingPass);
+
 #else
     pbrLighting = new PBRLighting();
     renderers.push_back(pbrLighting);
@@ -428,6 +441,10 @@ void HelloVulkan::InitVulkan()
 	PreProcess::genBRDFLut(this, envLight.BRDFLutMap);
 #endif
 
+#ifdef DEFERRENDERING
+    basePass->AddModel(&gltfmodel);
+#endif
+
     PreProcess::genBRDFEmuLut(this, EmuMap);
     PreProcess::genBRDFEavgLut(this, EmuMap, EavgMap);
 
@@ -555,6 +572,8 @@ void HelloVulkan::Cleanup()
     delete hierarchicalDepth;
     delete ssr;
     delete pbrTest;
+    delete basePass;
+    delete lightingPass;
 }
 
 void HelloVulkan::CreateInstance()
@@ -1061,6 +1080,12 @@ void HelloVulkan::buildCommandBuffers()
         }
 
         {
+            #ifdef DEFERRENDERING
+            basePass->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+            #endif
+        }
+
+        {
             VkRenderPassBeginInfo renderPassInfo = {};
             renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             renderPassInfo.renderPass = renderPass;
@@ -1112,6 +1137,10 @@ void HelloVulkan::buildCommandBuffers()
                 #ifdef PBRTESTING
                 pbrTest->BuildCommandBuffer(commandBuffers[i], gltfmodel);
                 #endif
+
+                #ifdef DEFERRENDERING
+                lightingPass->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+                #endif // DEFERRENDERING
             }
 
             vkCmdEndRenderPass(commandBuffers[i]);
@@ -1269,6 +1298,10 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
 
 #ifdef PBRTESTING
 	pbrTest->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, lightPos);
+#endif
+
+#ifdef DEFERRENDERING
+    lightingPass->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, proj * view, lightPos);
 #endif
 
     void* data;
@@ -1515,7 +1548,7 @@ void HelloVulkan::createDescriptorSetLayout()
 
     int binding = 0;
     int bindingcount = 4;
-    //std::array<VkDescriptorSetLayoutBinding, 4> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding, imageLayoutBinding };
+    std::array<VkDescriptorSetLayoutBinding, 4> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding, imageLayoutBinding };
 
 #ifdef RSMLIGHTING
     std::array<VkDescriptorSetLayoutBinding, 6> scenebindings = { uniformLayoutBinding, imageLayoutBinding, imageLayoutBinding , imageLayoutBinding , imageLayoutBinding, uniformLayoutBinding };

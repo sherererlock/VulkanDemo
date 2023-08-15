@@ -5,11 +5,13 @@
 #include <glm/glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
+#include "Renderer.h"
+
 class HelloVulkan;
 class gltfModel;
 struct PipelineCreateInfo;
 
-class GBufferRenderer
+class GBufferRenderer : public Renderer
 {
 protected:
 	struct FrameBufferAttachment
@@ -79,7 +81,7 @@ public:
 	virtual void CreateUniformBuffer() {};
 	virtual void CreateFrameBuffer();
 	virtual void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel);
-	virtual void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar);
+	virtual void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos);
 	virtual void Cleanup();
 
 public:

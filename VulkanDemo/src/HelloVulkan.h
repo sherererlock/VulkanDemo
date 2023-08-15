@@ -26,6 +26,8 @@ class SSRGBufferRenderer;
 class GenHierarchicalDepth;
 class SSR;
 class PBRTest;
+class BasePass;
+class LightingPass;
 
 struct QueueFamilyIndices
 {
@@ -277,6 +279,9 @@ private:
     SSRGBufferRenderer* ssrGBuffer;
     GenHierarchicalDepth* hierarchicalDepth;
     SSR* ssr;
+    BasePass* basePass;
+    LightingPass* lightingPass;
+
     std::vector<Renderer*> renderers;
 
 #ifdef NDEBUG

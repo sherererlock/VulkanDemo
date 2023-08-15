@@ -43,7 +43,7 @@ public:
 	virtual void CreatePipeline(PipelineCreateInfo& info, VkGraphicsPipelineCreateInfo& creatInfo) override;
 	void CreateGBuffer() override;
 	void CreateUniformBuffer() override;
-	void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar) override;
+	void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos) override;
 
 	void Cleanup() override;
 

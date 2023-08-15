@@ -1,5 +1,5 @@
 @REM glslangValidator.exe -V Shaders\GLSL\new\shader.vert	-o Shaders\GLSL\spv\shader.vert.spv
-glslangValidator.exe -V Shaders\GLSL\new\shader.frag -o Shaders\GLSL\spv\shader.frag.spv
+@REM glslangValidator.exe -V Shaders\GLSL\new\shader.frag -o Shaders\GLSL\spv\shader.frag.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\shader_rsm.frag -o Shaders\GLSL\spv\shader_rsm.frag.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\shader_ibl.frag -o Shaders\GLSL\spv\shader_ibl.frag.spv
 										  
@@ -22,8 +22,8 @@ glslangValidator.exe -V Shaders\GLSL\new\shader.frag -o Shaders\GLSL\spv\shader.
 										  
 @REM glslangValidator.exe -V Shaders\GLSL\new\genBRDFLut.vert -o Shaders\GLSL\spv\genBRDFLut.vert.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\genBRDFLut.frag -o Shaders\GLSL\spv\genBRDFLut.frag.spv
-glslangValidator.exe -V Shaders\GLSL\new\genBRDFEmuLut.frag -o Shaders\GLSL\spv\genBRDFEmuLut.frag.spv
-glslangValidator.exe -V Shaders\GLSL\new\genBRDFEavgLut.frag -o Shaders\GLSL\spv\genBRDFEavgLut.frag.spv
+@REM glslangValidator.exe -V Shaders\GLSL\new\genBRDFEmuLut.frag -o Shaders\GLSL\spv\genBRDFEmuLut.frag.spv
+@REM glslangValidator.exe -V Shaders\GLSL\new\genBRDFEavgLut.frag -o Shaders\GLSL\spv\genBRDFEavgLut.frag.spv
 
 @REM glslangValidator.exe -V Shaders\GLSL\new\rsmgbuffer.vert -o Shaders\GLSL\spv\rsmgbuffer.vert.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\rsmgbuffer.frag -o Shaders\GLSL\spv\rsmgbuffer.frag.spv
@@ -40,3 +40,7 @@ glslangValidator.exe -V Shaders\GLSL\new\genBRDFEavgLut.frag -o Shaders\GLSL\spv
 
 @REM glslangValidator.exe -V Shaders\GLSL\new\pbrtest.vert -o Shaders\GLSL\spv\pbrtest.vert.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\pbrtest.frag -o Shaders\GLSL\spv\pbrtest.frag.spv
+
+glslangValidator.exe -V Shaders\GLSL\new\BasePass.vert -o Shaders\GLSL\spv\BasePass.vert.spv
+glslangValidator.exe -V Shaders\GLSL\new\BasePass.frag -o Shaders\GLSL\spv\BasePass.frag.spv
+glslangValidator.exe -V Shaders\GLSL\new\LightingPass.frag -o Shaders\GLSL\spv\LightingPass.frag.spv

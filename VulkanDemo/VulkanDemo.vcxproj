@@ -194,6 +194,8 @@
     <ClCompile Include="..\include\ktx\lib\memstream.c" />
     <ClCompile Include="..\include\ktx\lib\swap.c" />
     <ClCompile Include="..\include\ktx\lib\texture.c" />
+    <ClCompile Include="src\BasePass.cpp" />
+    <ClCompile Include="src\LightingPass.cpp" />
     <ClCompile Include="src\PBRTest.cpp" />
     <ClCompile Include="src\GenHierarchicalDepth.cpp" />
     <ClCompile Include="src\PBRLighting.cpp" />
@@ -218,6 +220,8 @@
     <ClCompile Include="src\SSR.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\BasePass.h" />
+    <ClInclude Include="src\LightingPass.h" />
     <ClInclude Include="src\PBRTest.h" />
     <ClInclude Include="src\GenHierarchicalDepth.h" />
     <ClInclude Include="src\PBRLighting.h" />

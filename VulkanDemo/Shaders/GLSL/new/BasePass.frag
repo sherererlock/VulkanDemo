@@ -41,28 +41,38 @@ layout(location = 4) in float depth;
 
 layout(location = 0) out vec4 outPos;
 layout(location = 1) out vec4 outNormal;
-layout(location = 2) out vec4 outColor;
+layout(location = 2) out vec4 outRoughnessMetallic;
+layout(location = 3) out vec4 outAlbedo;
+layout(location = 4) out vec4 outEmissive;
 
 vec2 GetRoughnessAndMetallic()
 {
-    vec2 roughMetalic = texture(roughnessSampler, fragTexCoord).gb;
-	return roughMetalic;
+	ivec2 size = textureSize(roughnessSampler, 0);
+	if(size.x < 64)
+		return vec2(0.8, 0.1);
+
+	return texture(roughnessSampler, fragTexCoord).gb;
 }
 
-#include"macros.hlsl"
-#include"lighting.hlsl"
+vec3 calculateNormal()
+{
+	vec3 tangentNormal = texture(normalSampler, fragTexCoord).xyz * 2.0 - 1.0;
 
-// float linearDepth(float depth)
-// {
-// 	float z = depth * 2.0f - 1.0f; 
-// 	return (2.0f * ubo.clipPlane.x * ubo.clipPlane.y) / (ubo.clipPlane.y + ubo.clipPlane.x - z * (ubo.clipPlane.y - ubo.clipPlane.x));	
-// }
+	vec3 N = normalize(normal);
+	vec3 T = normalize(tangent);
+	vec3 B = normalize(cross(N, T));
+	mat3 TBN = mat3(T, B, N);
+	return normalize(TBN * tangentNormal);
+}
 
 void main() 
 {
 	outPos = vec4(worldPos, depth);
-
+	vec3 up = vec3(0.0, 1.0, 0.0);
 	vec3 N = calculateNormal();
-	outNormal = vec4(normal , 1.0);
-	outColor = vec4(Lighting(1.0), 1.0);
+	outNormal = vec4(N , 1.0);
+	outRoughnessMetallic = vec4(GetRoughnessAndMetallic(), 0.0, 1.0);
+	vec3 albedo = texture(colorSampler, fragTexCoord).rgb;
+	outAlbedo = vec4(albedo, 1.0);
+	outEmissive = vec4(texture(emissiveSampler, fragTexCoord).rgb * materialData.emissiveFactor, 1.0);
 }

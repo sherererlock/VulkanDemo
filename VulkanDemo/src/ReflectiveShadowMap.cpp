@@ -135,11 +135,11 @@ void ReflectiveShadowMap::CreateUniformBuffer()
 	vulkanAPP->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, runiformBuffer, runiformMemory);
 }
 
-void ReflectiveShadowMap::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar)
+void ReflectiveShadowMap::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos)
 {
 	UniformBufferObject ubo;
-	ubo.clipPlane.x = zNear;
-	ubo.clipPlane.y = zFar;
+	ubo.clipPlane.x = vulkanAPP->GetCamera().getNearClip();
+	ubo.clipPlane.y = vulkanAPP->GetCamera().getFarClip();
 	ubo.lightPos = lightPos;
 	ubo.lightColor = glm::vec4(1.0f);
 	ubo.depthVP = proj * view;

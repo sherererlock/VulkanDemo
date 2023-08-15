@@ -328,7 +328,7 @@ void GBufferRenderer::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gl
 	vkCmdEndRenderPass(commandBuffer);
 }
 
-void GBufferRenderer::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos, float zNear, float zFar)
+void GBufferRenderer::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos)
 {
 
 }

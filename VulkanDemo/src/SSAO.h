@@ -89,7 +89,7 @@ public:
 	void CreateUniformBuffer() override;
 	void CreateFrameBuffer() override;
 	void BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel) override;
-	void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 cameraPos, float zNear, float zFar) override;
+	void UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 cameraPos) override;
 	void Cleanup() override;
 
 public:
