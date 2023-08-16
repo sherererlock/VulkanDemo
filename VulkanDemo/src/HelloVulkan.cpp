@@ -31,6 +31,7 @@
 #include "LightingPass.h"
 #include "TAA.h"
 #include "PostProcess.h"
+#include "Tool.h"
 
 //#define IBLLIGHTING
 
@@ -67,6 +68,7 @@ const std::string Emu_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/GGX_E_LUT.
 const std::string Eavg_PATH = "D:/Games/VulkanDemo/VulkanDemo/textures/GGX_Eavg_LUT.png";
 
 #define SHADOWMAP_SIZE 2048
+#define TAA_SAMPLE_COUNT 32
 
 HelloVulkan* HelloVulkan::helloVulkan = nullptr;
 
@@ -337,6 +339,12 @@ HelloVulkan::HelloVulkan()
         postProcess = new PostProcess();
         renderers.push_back(postProcess);
     }
+
+    haltonSequence.reserve(TAA_SAMPLE_COUNT);
+    for(uint32_t i = 0; i < TAA_SAMPLE_COUNT; i ++)
+        haltonSequence.push_back(glm::vec2(CreateHaltonSequence(i + 1, 2), CreateHaltonSequence(i + 1, 3)));
+
+    haltonIndex = 0;
 }
 
 void HelloVulkan::Init()
@@ -1300,6 +1308,12 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     ubo.view = camera.matrices.view;
     ubo.proj = camera.matrices.perspective;
     ubo.viewPos = camera.viewPos;
+
+    ubo.proj[2][0] += (haltonSequence[haltonIndex].x * 2.0f - 1.0f) / width;
+    ubo.proj[2][1] += (haltonSequence[haltonIndex].y * 2.0f - 1.0f) / height;
+
+    haltonIndex ++;
+    haltonIndex %= (uint32_t) haltonSequence.size();
 
     glm::vec3 pos = {lightPos.x, lightPos.y, lightPos.z};
     glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));

@@ -250,6 +250,7 @@
     <ClInclude Include="src\GlobalIllumination\SSAO.h" />
     <ClInclude Include="src\GlobalIllumination\SSRGbufferRenderer.h" />
     <ClInclude Include="src\GlobalIllumination\SSR.h" />
+    <ClInclude Include="src\Tool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
