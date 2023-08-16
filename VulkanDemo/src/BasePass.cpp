@@ -248,12 +248,13 @@ void BasePass::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel
 	renderPassInfo.renderArea.extent.width = width;
 	renderPassInfo.renderArea.extent.height = height;
 
-	std::vector<VkClearValue> clearValues(5);
+	std::vector<VkClearValue> clearValues(6);
 	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 	clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 	clearValues[2].depthStencil = { 1.0f, 0 };
 	clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 	clearValues[4].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+	clearValues[5].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 
 	renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
 	renderPassInfo.pClearValues = clearValues.data();
@@ -291,6 +292,7 @@ void BasePass::Cleanup()
 {
 	roughnessMetallic.Cleanup(device);
 	albedo.Cleanup(device);
+	emissive.Cleanup(device);
 
 	__super::Cleanup();
 }

@@ -13,6 +13,8 @@ void LightingPass::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_
 	vertexShader = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/quad.vert.spv";
 	fragmentShader = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/LightingPass.frag.spv";
 	bufferSize = sizeof(UniformBufferObject);
+
+	basePass = vulkanAPP->GetBasePass();
 }
 
 void LightingPass::CreateDescriptSetLayout()
@@ -26,7 +28,7 @@ void LightingPass::CreateDescriptSetLayout()
 	uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	std::array<VkDescriptorSetLayoutBinding, 9> uniformLayoutBindings;
-	for (int i = 0; i < 8; i++)
+	for (int i = 0; i < 9; i++)
 	{
 		uniformLayoutBindings[i] = uniformLayoutBinding;
 		uniformLayoutBindings[i].binding = i;
@@ -154,28 +156,29 @@ void LightingPass::SetupDescriptSet(VkDescriptorPool pool)
 	descriptorWrite.pImageInfo = nullptr; // Optional
 	descriptorWrite.pTexelBufferView = nullptr; // Optional
 
-	std::array<VkWriteDescriptorSet, 7> descriptorWrites;
+	std::array<VkWriteDescriptorSet, 9> descriptorWrites;
 	descriptorWrites.fill(descriptorWrite);
-	std::array<VkDescriptorImageInfo, 7> imageInfos =
+	std::array<VkDescriptorImageInfo, 8> imageInfos =
 	{
 		basePass->GetPositionDescriptorImageInfo(),
 		basePass->GetNormalDescriptorImageInfo(),
-		basePass->GetDepthDescriptorImageInfo(),
 		basePass->GetRoughnessDescriptorImageInfo(),
 		basePass->GetAlbedoDescriptorImageInfo(),
 		basePass->GetEmissiveDescriptorImageInfo(),
+		vulkanAPP->GetEmu().descriptor,
+		vulkanAPP->GetEavg().descriptor,
 		vulkanAPP->GetShadow()->GetDescriptorImageInfo()
 	};
 
-	for (int i = 0; i < 7; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		descriptorWrites[i].dstBinding = i;
 		descriptorWrites[i].pImageInfo = &imageInfos[i];
 	}
 
-	descriptorWrites[7].dstBinding = 7;
-	descriptorWrites[7].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptorWrites[7].pBufferInfo = &bufferInfo;
+	descriptorWrites[8].dstBinding = 8;
+	descriptorWrites[8].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorWrites[8].pBufferInfo = &bufferInfo;
 
 	vkUpdateDescriptorSets(device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 }

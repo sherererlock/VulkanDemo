@@ -10,10 +10,11 @@
 
 layout(set = 0, binding = 0) uniform sampler2D positionSampler;
 layout(set = 0, binding = 1) uniform sampler2D normalSampler;
-layout(set = 0, binding = 2) uniform sampler2D depthSampler;
-layout(set = 0, binding = 4) uniform sampler2D roughnessSampler;
-layout(set = 0, binding = 5) uniform sampler2D albedoSampler;
-layout(set = 0, binding = 6) uniform sampler2D emissiveSampler;
+layout(set = 0, binding = 2) uniform sampler2D roughnessSampler;
+layout(set = 0, binding = 3) uniform sampler2D albedoSampler;
+layout(set = 0, binding = 4) uniform sampler2D emissiveSampler;
+layout(set = 0, binding = 5) uniform sampler2D EmuSampler;
+layout(set = 0, binding = 6) uniform sampler2D EavgSampler;
 layout(set = 0, binding = 7) uniform sampler2D shadowSampler;
 
 layout(set = 0, binding = 8)
@@ -73,6 +74,34 @@ float getShadow(vec4 worldPos)
 	return 1.0;
 }
 
+
+//https://blog.selfshadow.com/publications/s2017-shading-course/imageworks/s2017_pbs_imageworks_slides_v2.pdf
+vec3 AverageFresnel(vec3 r, vec3 g)
+{
+	return vec3(0.087237) + 0.0230685 * g - 0.0864902 * g * g + 0.0774594 * g * g * g
+		+ 0.782654 * r - 0.136432 * r * r + 0.278708 * r * r * r
+		+ 0.19744 * g * r + 0.0360605 * g * g * r - 0.2586 * g * r * r;
+}
+
+vec3 MultiScatterBRDF(vec3 N, vec3 L, vec3 V, vec3 albedo, float roughness)
+{
+	float ndotl = clamp(dot(N, L), 0.0, 1.0);
+	float ndotv = clamp(dot(N, V), 0.0, 1.0);
+
+	vec3 Eo = texture(EmuSampler, vec2(ndotv, roughness)).rgb;
+	vec3 Ei = texture(EmuSampler, vec2(ndotl, roughness)).rgb;
+
+	vec3 Eavg = texture(EavgSampler, vec2(0.0, roughness)).rgb;
+
+	vec3 edgetint = vec3(0.827, 0.792, 0.678);
+	vec3 Favg = AverageFresnel(albedo, edgetint);
+
+	vec3 fms = (vec3(1.0) - Ei) * (vec3(1.0) - Eo) / (PI * (vec3(1.0) - Eavg));
+	vec3 fadd = Favg * Eavg / (vec3(1.0) - Favg * (vec3(1.0) - Eavg));
+
+	return fms * fadd;
+}
+
 vec3 DirectLighting(vec3 albedo, vec3 position, vec3 N, float roughness, float metallic)
 {
 	vec3 Lo = vec3(0.0);
@@ -81,7 +110,7 @@ vec3 DirectLighting(vec3 albedo, vec3 position, vec3 N, float roughness, float m
 
 	vec3 V = normalize(ubo.viewPos.xyz - position);
 
-	for(int i = 0; i < 1; i ++)
+	for(int i = 0; i < 4; i ++)
 	{
 		vec3 L = normalize(ubo.lights[i].xyz - position);
 		vec3 H = normalize(V + L);
@@ -99,9 +128,11 @@ vec3 DirectLighting(vec3 albedo, vec3 position, vec3 N, float roughness, float m
 
 			vec3 nom = F * D * G;
 			float denom = max(4.0 * ndotl * ndotv, 0.001);
-			vec3 speculer = nom / denom;
+			vec3 specular = nom / denom;
 
-			Lo += vec3(1.0) * speculer * ndotl;
+			vec3 fms = MultiScatterBRDF(N, L, V, albedo, roughness);
+
+			Lo += vec3(1.0) * (specular + fms) * ndotl;
 		}
 	}
 

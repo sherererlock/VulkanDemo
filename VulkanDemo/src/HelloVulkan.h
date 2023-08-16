@@ -181,9 +181,13 @@ public:
 
     inline const Texture2D& GetEmptyTexture() const { return emptyTexture; }
     inline VkSampleCountFlagBits GetSampleCountFlag() const { return msaaSamples; }
+    inline const Texture2D& GetEmu() const {return EmuMap; }
+    inline const Texture2D& GetEavg() const {return EavgMap; }
+
     inline SSRGBufferRenderer* GetSSRGBuffer() const { return ssrGBuffer; }
     inline GenHierarchicalDepth* GetHierarchicalDepth() const { return hierarchicalDepth;  }
     inline Shadow* GetShadow() const { return shadow; }
+    inline BasePass* GetBasePass() const { return basePass; }
 
 private:
 	static HelloVulkan* helloVulkan;

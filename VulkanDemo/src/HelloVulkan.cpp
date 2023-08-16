@@ -970,7 +970,10 @@ void HelloVulkan::createGraphicsPipeline()
     debug.CreateDebugPipeline(info, pipelineInfo);
 
     for(Renderer* renderer : renderers)
+    {
         renderer->CreatePipeline(info, pipelineInfo);
+        pipelineInfo.renderPass = renderPass;
+    }
 
     #ifdef SHADOW
     shadow->CreateShadowPipeline(info, pipelineInfo);
