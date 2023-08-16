@@ -254,6 +254,12 @@ void TAA::SetupDescriptSet(VkDescriptorPool pool)
 
 void TAA::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel)
 {
+	//if (firstFrame)
+	{
+		firstFrame = false;
+		SaveHistoryBuffer(commandBuffer, vulkanAPP->GetCurrentRenderTarget()->image);
+	}
+
 	VkRenderPassBeginInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = renderPass;
@@ -290,7 +296,7 @@ void TAA::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& glt
 
 	vkCmdEndRenderPass(commandBuffer);
 
-	SaveHistoryBuffer(commandBuffer, color.image);
+	//SaveHistoryBuffer(commandBuffer, color.image);
 }
 
 void TAA::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depthVP, glm::vec4 viewPos)
@@ -299,6 +305,7 @@ void TAA::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depthVP, glm::
 	ubo.lastProj = ubo.projection;
 	ubo.view = view;
 	ubo.projection = proj;
+	ubo.alpha = 0.01f;
 
 	Trans_Data_To_GPU
 }
@@ -324,15 +331,14 @@ void TAA::SaveHistoryBuffer(VkCommandBuffer commandBuffer, VkImage image)
 
 	vulkanAPP->transitionImageLayout(commandBuffer, historyBuffer.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
 
-	VkImageCopy copyRegion = {};
+	vulkanAPP->transitionImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, subresourceRange);
 
+	VkImageCopy copyRegion = {};
 	copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	copyRegion.srcSubresource.baseArrayLayer = 0;
 	copyRegion.srcSubresource.mipLevel = 0;
 	copyRegion.srcSubresource.layerCount = 1;
 	copyRegion.srcOffset = { 0, 0, 0 };
-
-	vulkanAPP->transitionImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, subresourceRange);
 
 	copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	copyRegion.srcSubresource.baseArrayLayer = 0;
