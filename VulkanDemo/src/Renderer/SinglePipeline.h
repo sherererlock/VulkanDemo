@@ -35,6 +35,8 @@ protected:
 	VkDeviceSize bufferSize;
 public:
 
+	void CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlags usage);
+
 	virtual void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h);
 	virtual void CreatePass() {}
 	virtual void CreateDescriptSetLayout();

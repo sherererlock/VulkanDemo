@@ -13,31 +13,6 @@ struct PipelineCreateInfo;
 
 class GBufferRenderer : public Renderer
 {
-protected:
-	struct FrameBufferAttachment
-	{
-		VkImage image;
-		VkDeviceMemory mem;
-		VkImageView view;
-		VkFormat format;
-		VkSampler sampler;
-		VkDescriptorImageInfo descriptor;
-
-		void Cleanup(VkDevice device)
-		{
-			vkDestroyImage(device, image, nullptr);
-			vkDestroyImageView(device, view, nullptr);
-			vkFreeMemory(device, mem, nullptr);
-			vkDestroySampler(device, sampler, nullptr);
-		}
-
-		void UpdateDescriptor()
-		{
-			descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			descriptor.imageView = view;
-			descriptor.sampler = sampler;
-		}
-	};
 
 protected:
 	VkFramebuffer framebuffer;

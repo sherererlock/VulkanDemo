@@ -1,21 +1,21 @@
 #pragma once
 #include "SinglePipeline.h"
 
-class BasePass;
 
-class LightingPass : public SinglePipeline
+class TAA : public SinglePipeline
 {
 private:
 	struct UniformBufferObject
 	{
 		glm::mat4 view;
 		glm::mat4 projection;
-		glm::mat4 depthVP;
-		glm::vec4 viewPos;
-		glm::vec4 lightPos[4];
+		glm::mat4 lastView;
+		glm::mat4 lastProj;
+		float alpha = 0.1f;
 	};
 
-	BasePass* basePass;
+	FrameBufferAttachment historyBuffer;
+	UniformBufferObject ubo;
 
 	VkRenderPass renderPass;
 	VkFramebuffer frameBuffer;
@@ -38,6 +38,8 @@ public:
 
 	virtual void Cleanup();
 
-	inline const FrameBufferAttachment* GetAttachment() const { return &color; }
+	void SaveHistoryBuffer(VkCommandBuffer commandBuffer, VkImage image);
+
+	inline const VkDescriptorImageInfo& GetColorDescriptorImageInfo() const { return color.descriptor; }
 };
 

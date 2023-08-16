@@ -144,7 +144,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\ktx\include;$(SolutionDir)include\ktx\other_include;$(ProjectDir)src\DeferRendering;$(ProjectDir)src\GlobalIllumination;$(ProjectDir)src\PBR;$(ProjectDir)src\Preprocess;$(ProjectDir)src\Renderer;$(ProjectDir)src\Shadow;$(ProjectDir)src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\ktx\include;$(SolutionDir)include\ktx\other_include;$(ProjectDir)src\DeferRendering;$(ProjectDir)src\GlobalIllumination;$(ProjectDir)src\PBR;$(ProjectDir)src\Preprocess;$(ProjectDir)src\Renderer;$(ProjectDir)src\PostProcess;$(ProjectDir)src\AA;$(ProjectDir)src\Shadow;$(ProjectDir)src</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -194,11 +194,13 @@
     <ClCompile Include="..\include\ktx\lib\memstream.c" />
     <ClCompile Include="..\include\ktx\lib\swap.c" />
     <ClCompile Include="..\include\ktx\lib\texture.c" />
+    <ClCompile Include="src\AA\TAA.cpp" />
     <ClCompile Include="src\DeferRendering\BasePass.cpp" />
     <ClCompile Include="src\DeferRendering\LightingPass.cpp" />
     <ClCompile Include="src\PBR\PBRTest.cpp" />
     <ClCompile Include="src\GlobalIllumination\GenHierarchicalDepth.cpp" />
     <ClCompile Include="src\PBR\PBRLighting.cpp" />
+    <ClCompile Include="src\PostProcess\PostProcess.cpp" />
     <ClCompile Include="src\SkyboxRenderer.cpp" />
     <ClCompile Include="src\Renderer\SinglePipeline.cpp" />
     <ClCompile Include="src\Renderer\GBufferRenderer.cpp" />
@@ -220,11 +222,13 @@
     <ClCompile Include="src\GlobalIllumination\SSR.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\AA\TAA.h" />
     <ClInclude Include="src\DeferRendering\BasePass.h" />
     <ClInclude Include="src\DeferRendering\LightingPass.h" />
     <ClInclude Include="src\PBR\PBRTest.h" />
     <ClInclude Include="src\GlobalIllumination\GenHierarchicalDepth.h" />
     <ClInclude Include="src\PBR\PBRLighting.h" />
+    <ClInclude Include="src\PostProcess\PostProcess.h" />
     <ClInclude Include="src\Renderer\Renderer.h" />
     <ClInclude Include="src\SkyboxRenderer.h" />
     <ClInclude Include="src\Renderer\SinglePipeline.h" />

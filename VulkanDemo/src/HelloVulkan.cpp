@@ -29,6 +29,8 @@
 #include "PBRTest.h"
 #include "BasePass.h"
 #include "LightingPass.h"
+#include "TAA.h"
+#include "PostProcess.h"
 
 //#define IBLLIGHTING
 
@@ -217,6 +219,19 @@ Node* HelloVulkan::AddLight(std::vector<uint32_t>& indexBuffer, std::vector<Vert
     return node;
 }
 
+const FrameBufferAttachment* HelloVulkan::GetCurrentRenderTarget() const
+{
+    return lightingPass->GetAttachment();
+}
+
+const VkDescriptorImageInfo HelloVulkan::GetLastImageInfo() const
+{
+    if (taa)
+        return taa->GetColorDescriptorImageInfo();
+
+    return VkDescriptorImageInfo();
+}
+
 HelloVulkan::HelloVulkan()
 {
     helloVulkan = this;
@@ -311,7 +326,17 @@ HelloVulkan::HelloVulkan()
 
 #endif //  SSR
 
-    msaa = true;
+    msaa = false;
+    aa = true;
+
+    if (aa)
+    {
+        taa = new TAA();
+        renderers.push_back(taa);
+
+        postProcess = new PostProcess();
+        renderers.push_back(postProcess);
+    }
 }
 
 void HelloVulkan::Init()
@@ -366,6 +391,8 @@ void HelloVulkan::InitVulkan()
     createImageViews();
 
     createRenderPass();
+
+	createCommandPool();
     
     for (Renderer* render : renderers)
     {
@@ -394,7 +421,6 @@ void HelloVulkan::InitVulkan()
 
     createGraphicsPipeline();
 
-    createCommandPool();
     createColorResources();
     createDepthResources();
 	createEmptyTexture();
@@ -574,6 +600,8 @@ void HelloVulkan::Cleanup()
     delete pbrTest;
     delete basePass;
     delete lightingPass;
+    delete taa;
+    delete postProcess;
 }
 
 void HelloVulkan::CreateInstance()
@@ -1085,7 +1113,13 @@ void HelloVulkan::buildCommandBuffers()
         {
             #ifdef DEFERRENDERING
             basePass->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+			lightingPass->BuildCommandBuffer(commandBuffers[i], gltfmodel);
             #endif
+        }
+
+        {
+			if (aa)
+				taa->BuildCommandBuffer(commandBuffers[i], gltfmodel);
         }
 
         {
@@ -1141,9 +1175,9 @@ void HelloVulkan::buildCommandBuffers()
                 pbrTest->BuildCommandBuffer(commandBuffers[i], gltfmodel);
                 #endif
 
-                #ifdef DEFERRENDERING
-                lightingPass->BuildCommandBuffer(commandBuffers[i], gltfmodel);
-                #endif // DEFERRENDERING
+                if (postProcess != nullptr)
+                    postProcess->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+
             }
 
             vkCmdEndRenderPass(commandBuffers[i]);
@@ -1307,6 +1341,9 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     lightingPass->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, proj * view, lightPos);
 #endif
 
+    if (taa)
+        taa->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, proj * view, lightPos);
+
     void* data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(UniformBufferObject), 0, &data);
     memcpy(data, &ubo, sizeof(UniformBufferObject));
@@ -1349,7 +1386,7 @@ void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
     vkMapMemory(device, uniformBufferMemoryL, 0, sizeof(uboparams), 0, &data);
     memcpy(data, &uboparams, sizeof(uboparams));
     vkUnmapMemory(device, uniformBufferMemoryL);
-}
+}   
 
 void HelloVulkan::drawFrame()
 {

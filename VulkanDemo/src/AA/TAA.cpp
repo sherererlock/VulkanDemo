@@ -1,23 +1,17 @@
-
-
 #include <stdexcept>
 
 #include "HelloVulkan.h"
-#include "Shadow.h"
-#include "LightingPass.h"
-#include "BasePass.h"
+#include "TAA.h"
 
-void LightingPass::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
+void TAA::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
 {
 	__super::Init(app, vkdevice, w, h);
 	vertexShader = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/quad.vert.spv";
-	fragmentShader = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/LightingPass.frag.spv";
+	fragmentShader = "D:/Games/VulkanDemo/VulkanDemo/shaders/GLSL/spv/TAA.frag.spv";
 	bufferSize = sizeof(UniformBufferObject);
-
-	basePass = vulkanAPP->GetBasePass();
 }
 
-void LightingPass::CreatePass()
+void TAA::CreatePass()
 {
 	VkAttachmentDescription colorAttachment = {};
 	colorAttachment.format = vulkanAPP->GetFormat();
@@ -46,11 +40,11 @@ void LightingPass::CreatePass()
 	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 	dependencies[0].dstSubpass = 0;
 
-	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; 
-	dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT; 
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; 
-	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; 
+	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
 	dependencies[1].srcSubpass = 0;
@@ -78,7 +72,7 @@ void LightingPass::CreatePass()
 	}
 }
 
-void LightingPass::CreateFrameBuffer()
+void TAA::CreateFrameBuffer()
 {
 	VkFramebufferCreateInfo framebufferInfo = {};
 	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -95,12 +89,14 @@ void LightingPass::CreateFrameBuffer()
 	}
 }
 
-void LightingPass::CreateGBuffer()
+void TAA::CreateGBuffer()
 {
 	CreateAttachment(&color, vulkanAPP->GetFormat(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	CreateAttachment(&historyBuffer, vulkanAPP->GetFormat(), VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+	vulkanAPP->transitionImageLayout(historyBuffer.image, vulkanAPP->GetFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
 }
 
-void LightingPass::CreateDescriptSetLayout()
+void TAA::CreateDescriptSetLayout()
 {
 	VkDescriptorSetLayoutBinding uniformLayoutBinding = {};
 
@@ -110,14 +106,14 @@ void LightingPass::CreateDescriptSetLayout()
 	uniformLayoutBinding.pImmutableSamplers = nullptr;
 	uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	std::array<VkDescriptorSetLayoutBinding, 9> uniformLayoutBindings;
-	for (int i = 0; i < 9; i++)
+	std::array<VkDescriptorSetLayoutBinding, 3> uniformLayoutBindings;
+	for (int i = 0; i < 3; i++)
 	{
 		uniformLayoutBindings[i] = uniformLayoutBinding;
 		uniformLayoutBindings[i].binding = i;
 	}
 
-	uniformLayoutBindings[8].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uniformLayoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -130,38 +126,38 @@ void LightingPass::CreateDescriptSetLayout()
 	}
 }
 
-void LightingPass::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipelineCreateInfo& creatInfo)
+void TAA::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipelineCreateInfo& creatInfo)
 {
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = { };
 	vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	creatInfo.pVertexInputState = &vertexInputCreateInfo;
 
 	pipelineCreateInfo.rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	pipelineCreateInfo.rasterizer.depthClampEnable = VK_FALSE;
-	pipelineCreateInfo.rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-	pipelineCreateInfo.rasterizer.lineWidth = 1.0f;
-	pipelineCreateInfo.rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
-	pipelineCreateInfo.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	pipelineCreateInfo.rasterizer.depthBiasEnable = VK_FALSE;
-	pipelineCreateInfo.rasterizer.depthBiasConstantFactor = 0.0f; // Optional
-	pipelineCreateInfo.rasterizer.depthBiasClamp = 0.0f; // Optional
-	pipelineCreateInfo.rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
+    pipelineCreateInfo.rasterizer.depthClampEnable = VK_FALSE;
+    pipelineCreateInfo.rasterizer.polygonMode = VK_POLYGON_MODE_FILL; 
+    pipelineCreateInfo.rasterizer.lineWidth = 1.0f;
+    pipelineCreateInfo.rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
+    pipelineCreateInfo.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    pipelineCreateInfo.rasterizer.depthBiasEnable = VK_FALSE;
+    pipelineCreateInfo.rasterizer.depthBiasConstantFactor = 0.0f; // Optional
+    pipelineCreateInfo.rasterizer.depthBiasClamp = 0.0f; // Optional
+    pipelineCreateInfo.rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
 
-	pipelineCreateInfo.multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	pipelineCreateInfo.multisampling.sampleShadingEnable = VK_FALSE;
-	pipelineCreateInfo.multisampling.rasterizationSamples = vulkanAPP->GetSampleCountFlag();
-	pipelineCreateInfo.multisampling.minSampleShading = 0.0f; // Optional
-	pipelineCreateInfo.multisampling.pSampleMask = nullptr; // Optional
-	pipelineCreateInfo.multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
-	pipelineCreateInfo.multisampling.alphaToOneEnable = VK_FALSE; // Optional
+    pipelineCreateInfo.multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    pipelineCreateInfo.multisampling.sampleShadingEnable = VK_FALSE;
+    pipelineCreateInfo.multisampling.rasterizationSamples = vulkanAPP->GetSampleCountFlag();
+    pipelineCreateInfo.multisampling.minSampleShading = 0.0f; // Optional
+    pipelineCreateInfo.multisampling.pSampleMask = nullptr; // Optional
+    pipelineCreateInfo.multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
+    pipelineCreateInfo.multisampling.alphaToOneEnable = VK_FALSE; // Optional
 
-	pipelineCreateInfo.colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	pipelineCreateInfo.colorBlending.logicOpEnable = VK_FALSE;
-	pipelineCreateInfo.colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
-	pipelineCreateInfo.colorBlending.blendConstants[0] = 0.0f; // Optional
-	pipelineCreateInfo.colorBlending.blendConstants[1] = 0.0f; // Optional
-	pipelineCreateInfo.colorBlending.blendConstants[2] = 0.0f; // Optional
-	pipelineCreateInfo.colorBlending.blendConstants[3] = 0.0f; // Optional
+    pipelineCreateInfo.colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    pipelineCreateInfo.colorBlending.logicOpEnable = VK_FALSE;
+    pipelineCreateInfo.colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
+    pipelineCreateInfo.colorBlending.blendConstants[0] = 0.0f; // Optional
+    pipelineCreateInfo.colorBlending.blendConstants[1] = 0.0f; // Optional
+    pipelineCreateInfo.colorBlending.blendConstants[2] = 0.0f; // Optional
+    pipelineCreateInfo.colorBlending.blendConstants[3] = 0.0f; // Optional
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
 	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -183,10 +179,10 @@ void LightingPass::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGrap
 	pipelineCreateInfo.dynamicState.dynamicStateCount = 2;
 	pipelineCreateInfo.dynamicState.pDynamicStates = dynamicStates;
 
-	pipelineCreateInfo.depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	pipelineCreateInfo.depthStencil.depthTestEnable = VK_TRUE;
-	pipelineCreateInfo.depthStencil.depthWriteEnable = VK_TRUE;
-	pipelineCreateInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    pipelineCreateInfo.depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipelineCreateInfo.depthStencil.depthTestEnable = VK_TRUE;
+    pipelineCreateInfo.depthStencil.depthWriteEnable = VK_TRUE;
+    pipelineCreateInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
 	auto shaderStages = vulkanAPP->CreaterShader(vertexShader, fragmentShader);
 	creatInfo.stageCount = 2;
@@ -216,7 +212,7 @@ void LightingPass::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGrap
 	vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
 }
 
-void LightingPass::SetupDescriptSet(VkDescriptorPool pool)
+void TAA::SetupDescriptSet(VkDescriptorPool pool)
 {
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -240,34 +236,23 @@ void LightingPass::SetupDescriptSet(VkDescriptorPool pool)
 	descriptorWrite.pImageInfo = nullptr; // Optional
 	descriptorWrite.pTexelBufferView = nullptr; // Optional
 
-	std::array<VkWriteDescriptorSet, 9> descriptorWrites;
+	std::array<VkWriteDescriptorSet, 3> descriptorWrites;
 	descriptorWrites.fill(descriptorWrite);
-	std::array<VkDescriptorImageInfo, 8> imageInfos =
-	{
-		basePass->GetPositionDescriptorImageInfo(),
-		basePass->GetNormalDescriptorImageInfo(),
-		basePass->GetRoughnessDescriptorImageInfo(),
-		basePass->GetAlbedoDescriptorImageInfo(),
-		basePass->GetEmissiveDescriptorImageInfo(),
-		vulkanAPP->GetEmu().descriptor,
-		vulkanAPP->GetEavg().descriptor,
-		vulkanAPP->GetShadow()->GetDescriptorImageInfo()
-	};
 
-	for (int i = 0; i < 8; i++)
-	{
-		descriptorWrites[i].dstBinding = i;
-		descriptorWrites[i].pImageInfo = &imageInfos[i];
-	}
+	VkDescriptorImageInfo image = vulkanAPP->GetCurrentRenderTarget()->descriptor;
+	descriptorWrites[0].pImageInfo = &image;
 
-	descriptorWrites[8].dstBinding = 8;
-	descriptorWrites[8].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptorWrites[8].pBufferInfo = &bufferInfo;
+	descriptorWrites[1].dstBinding = 1;
+	descriptorWrites[1].pImageInfo = &historyBuffer.descriptor;
 
-	vkUpdateDescriptorSets(device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+	descriptorWrites[2].dstBinding = 2;
+	descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorWrites[2].pBufferInfo = &bufferInfo;
+
+	vkUpdateDescriptorSets(device,(uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 }
 
-void LightingPass::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel)
+void TAA::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel)
 {
 	VkRenderPassBeginInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -275,7 +260,7 @@ void LightingPass::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfM
 	renderPassInfo.framebuffer = frameBuffer;
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = {width, height};
+	renderPassInfo.renderArea.extent = { width, height };
 
 	VkClearValue clearValue = {};
 	clearValue.color = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -284,7 +269,7 @@ void LightingPass::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfM
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
 	viewport.width = (float)width;
-	viewport.height = (float) height;
+	viewport.height = (float)height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
@@ -304,41 +289,78 @@ void LightingPass::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfM
 	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
 	vkCmdEndRenderPass(commandBuffer);
+
+	SaveHistoryBuffer(commandBuffer, color.image);
 }
 
-void LightingPass::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depthVP, glm::vec4 lightpos)
+void TAA::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depthVP, glm::vec4 viewPos)
 {
-	UniformBufferObject ubo;
+	ubo.lastView = ubo.view;
+	ubo.lastProj = ubo.projection;
 	ubo.view = view;
 	ubo.projection = proj;
-	ubo.viewPos = vulkanAPP->GetCamera().viewPos;
-	ubo.depthVP = depthVP;
-
-	ubo.lightPos[0] = lightpos;
-
-	glm::mat4 rotation;
-	glm::vec3 yaxis(0.0f, 1.0f, 0.0f);
-	rotation = glm::rotate(rotation, glm::radians(45.0f), yaxis);
-	ubo.lightPos[1] = rotation * lightpos;
-
-	rotation = glm::rotate(rotation, glm::radians(90.0f), yaxis);
-	ubo.lightPos[1] = rotation * lightpos;
-
-	rotation = glm::rotate(rotation, glm::radians(135.0f), yaxis);
-	ubo.lightPos[2] = lightpos;
-
-	rotation = glm::rotate(rotation, glm::radians(180.0f), yaxis);
-	ubo.lightPos[3] = lightpos;
 
 	Trans_Data_To_GPU
 }
 
-void LightingPass::Cleanup()
+void TAA::Cleanup()
 {
+	historyBuffer.Cleanup(device);
 	color.Cleanup(device);
+
 	vkDestroyRenderPass(device, renderPass, nullptr);
 	vkDestroyFramebuffer(device, frameBuffer, nullptr);
 
 	__super::Cleanup();
+}
+
+void TAA::SaveHistoryBuffer(VkCommandBuffer commandBuffer, VkImage image)
+{
+	VkImageSubresourceRange subresourceRange = {};
+	subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	subresourceRange.baseMipLevel = 0;
+	subresourceRange.levelCount = 1;
+	subresourceRange.layerCount = 1;
+
+	vulkanAPP->transitionImageLayout(commandBuffer, historyBuffer.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
+
+	VkImageCopy copyRegion = {};
+
+	copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	copyRegion.srcSubresource.baseArrayLayer = 0;
+	copyRegion.srcSubresource.mipLevel = 0;
+	copyRegion.srcSubresource.layerCount = 1;
+	copyRegion.srcOffset = { 0, 0, 0 };
+
+	vulkanAPP->transitionImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, subresourceRange);
+
+	copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	copyRegion.srcSubresource.baseArrayLayer = 0;
+	copyRegion.srcSubresource.mipLevel = 0;
+	copyRegion.srcSubresource.layerCount = 1;
+	copyRegion.srcOffset = { 0, 0, 0 };
+
+	copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	copyRegion.dstSubresource.baseArrayLayer = 0;
+	copyRegion.dstSubresource.mipLevel = 0;
+	copyRegion.dstSubresource.layerCount = 1;
+	copyRegion.dstOffset = { 0, 0, 0 };
+
+	copyRegion.extent.width = width;
+	copyRegion.extent.height = height;
+	copyRegion.extent.depth = 1;
+
+	vkCmdCopyImage(
+		commandBuffer,
+		image,
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		historyBuffer.image,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		1,
+		&copyRegion);
+
+	vulkanAPP->transitionImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subresourceRange);
+
+	vulkanAPP->transitionImageLayout(commandBuffer, historyBuffer.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subresourceRange);
 }
 

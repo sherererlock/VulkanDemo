@@ -11,6 +11,29 @@ void SinglePipeline::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint3
 	height = h;
 }
 
+void SinglePipeline::CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlags usage)
+{
+	attachment->format = format;
+
+	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+	{
+		aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+	if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+	{
+		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		if (format >= VK_FORMAT_D16_UNORM_S8_UINT)
+			aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+
+	vulkanAPP->createImage(width, height, format, VK_IMAGE_TILING_OPTIMAL, usage | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachment->image, attachment->mem, 1, VK_SAMPLE_COUNT_1_BIT);
+	vulkanAPP->createImageView(attachment->view, attachment->image, format, aspectMask, 1);
+	vulkanAPP->createTextureSampler(attachment->sampler, VK_FILTER_NEAREST, VK_FILTER_NEAREST, 1, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+
+	attachment->UpdateDescriptor();
+}
+
 void SinglePipeline::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGraphicsPipelineCreateInfo& creatInfo)
 {
 	auto attributeDescriptoins = Vertex::getAttributeDescriptions();

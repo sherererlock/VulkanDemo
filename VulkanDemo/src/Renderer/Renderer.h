@@ -34,9 +34,36 @@ struct PipelineCreateInfo
     }
 };
 
+struct FrameBufferAttachment
+{
+	VkImage image;
+	VkDeviceMemory mem;
+	VkImageView view;
+	VkFormat format;
+	VkSampler sampler;
+	VkDescriptorImageInfo descriptor;
+
+	void Cleanup(VkDevice device)
+	{
+		vkDestroyImage(device, image, nullptr);
+		vkDestroyImageView(device, view, nullptr);
+		vkFreeMemory(device, mem, nullptr);
+		vkDestroySampler(device, sampler, nullptr);
+	}
+
+	void UpdateDescriptor()
+	{
+		descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		descriptor.imageView = view;
+		descriptor.sampler = sampler;
+	}
+};
+
+
 class Renderer
 {
 public:
+
 	virtual void Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h) = 0;
     virtual void CreatePass() = 0;
 	virtual void CreateDescriptSetLayout() = 0;

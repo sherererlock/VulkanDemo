@@ -28,6 +28,9 @@ class SSR;
 class PBRTest;
 class BasePass;
 class LightingPass;
+class TAA;
+struct FrameBufferAttachment;
+class PostProcess;
 
 struct QueueFamilyIndices
 {
@@ -178,6 +181,7 @@ public:
     inline const gltfModel& GetSkybox() const { return skyboxRenderer->GetSkybox(); }
     inline std::vector<VkDescriptorSetLayout> GetDescriptorSetLayouts() const { return { descriptorSetLayoutM, descriptorSetLayoutS }; }
     inline std::array<VkDescriptorSet, 2> GetDescriptorSets() const { return { descriptorSetM, descriptorSetS }; }
+    inline VkFormat GetFormat() const { return swapChainImageFormat; }
 
     inline const Texture2D& GetEmptyTexture() const { return emptyTexture; }
     inline VkSampleCountFlagBits GetSampleCountFlag() const { return msaaSamples; }
@@ -188,6 +192,9 @@ public:
     inline GenHierarchicalDepth* GetHierarchicalDepth() const { return hierarchicalDepth;  }
     inline Shadow* GetShadow() const { return shadow; }
     inline BasePass* GetBasePass() const { return basePass; }
+
+    const FrameBufferAttachment* GetCurrentRenderTarget() const;
+    const VkDescriptorImageInfo GetLastImageInfo() const;
 
 private:
 	static HelloVulkan* helloVulkan;
@@ -285,6 +292,11 @@ private:
     SSR* ssr;
     BasePass* basePass;
     LightingPass* lightingPass;
+
+    bool aa = false;
+    TAA* taa;
+
+    PostProcess* postProcess;
 
     std::vector<Renderer*> renderers;
 
