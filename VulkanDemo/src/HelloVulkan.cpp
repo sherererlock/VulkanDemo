@@ -1369,6 +1369,9 @@ void HelloVulkan::updateLight(float frameTimer)
     rotation = glm::rotate(rotation, speed * frameTimer, yaxis);
 
     //lightPos = rotation * lightPos;
+
+    camera.setPosition(rotation * glm::vec4(camera.position, 1.0));
+    camera.setRotation(glm::vec3(-25.5f, camera.rotation.y -35.0f * frameTimer, 0.0f));
 }
 
 void HelloVulkan::updateSceneUniformBuffer(float frameTimer)
