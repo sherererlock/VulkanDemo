@@ -7,11 +7,7 @@ class TAA : public SinglePipeline
 private:
 	struct UniformBufferObject
 	{
-		glm::mat4 view;
-		glm::mat4 projection;
-		glm::mat4 lastView;
-		glm::mat4 lastProj;
-		float alpha = 0.1f;
+		float alpha = 0.5f;
 	};
 
 	FrameBufferAttachment historyBuffer;

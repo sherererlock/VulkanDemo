@@ -342,9 +342,7 @@ HelloVulkan::HelloVulkan()
 
     haltonSequence.reserve(TAA_SAMPLE_COUNT);
     for(uint32_t i = 0; i < TAA_SAMPLE_COUNT; i ++)
-        haltonSequence.push_back(glm::vec2(CreateHaltonSequence(i + 1, 2), CreateHaltonSequence(i + 1, 3)));
-
-    haltonIndex = 0;
+        haltonSequence.push_back(glm::vec4(CreateHaltonSequence(i + 1, 2), CreateHaltonSequence(i + 1, 3), 0, 0));
 }
 
 void HelloVulkan::Init()
@@ -1309,12 +1307,6 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     ubo.proj = camera.matrices.perspective;
     ubo.viewPos = camera.viewPos;
 
-    ubo.proj[2][0] += (haltonSequence[haltonIndex].x * 2.0f - 1.0f) / width;
-    ubo.proj[2][1] += (haltonSequence[haltonIndex].y * 2.0f - 1.0f) / height;
-
-    haltonIndex ++;
-    haltonIndex %= (uint32_t) haltonSequence.size();
-
     glm::vec3 pos = {lightPos.x, lightPos.y, lightPos.z};
     glm::mat4 view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -1352,6 +1344,7 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
 #endif
 
 #ifdef DEFERRENDERING
+    basePass->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, lightPos);
     lightingPass->UpateLightMVP(camera.matrices.view, camera.matrices.perspective, proj * view, lightPos);
 #endif
 

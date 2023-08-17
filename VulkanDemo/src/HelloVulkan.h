@@ -196,6 +196,8 @@ public:
     const FrameBufferAttachment* GetCurrentRenderTarget() const;
     const VkDescriptorImageInfo GetLastImageInfo() const;
 
+    const std::vector<glm::vec4>& GetHaltonSequence() const { return haltonSequence;  }
+
 private:
 	static HelloVulkan* helloVulkan;
 
@@ -309,7 +311,7 @@ private:
 	const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 	const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-    std::vector<glm::vec2> haltonSequence;
-    uint32_t haltonIndex;
+    std::vector<glm::vec4> haltonSequence;
+
 };
 

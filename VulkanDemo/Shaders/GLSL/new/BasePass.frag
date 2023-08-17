@@ -38,12 +38,15 @@ layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 fragTexCoord;
 layout(location = 3) in vec3 tangent;
 layout(location = 4) in float depth;
+layout(location = 5) in vec4 newPos;
+layout(location = 6) in vec4 oldPos;
 
 layout(location = 0) out vec4 outPos;
 layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outRoughnessMetallic;
 layout(location = 3) out vec4 outAlbedo;
 layout(location = 4) out vec4 outEmissive;
+layout(location = 5) out vec2 outVelocity;
 
 vec2 GetRoughnessAndMetallic()
 {
@@ -75,4 +78,9 @@ void main()
 	vec3 albedo = texture(colorSampler, fragTexCoord).rgb;
 	outAlbedo = vec4(albedo, 1.0);
 	outEmissive = vec4(texture(emissiveSampler, fragTexCoord).rgb * materialData.emissiveFactor, 1.0);
+
+	vec2 newpos = vec2(newPos.xy/newPos.w) * 0.5f - 0.5f;
+	vec2 oldpos = vec2(oldPos.xy/oldPos.w) * 0.5f - 0.5f;
+
+	outVelocity = newpos - oldpos;
 }

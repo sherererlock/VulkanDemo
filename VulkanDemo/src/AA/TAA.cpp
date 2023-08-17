@@ -1,6 +1,7 @@
 #include <stdexcept>
 
 #include "HelloVulkan.h"
+#include "BasePass.h"
 #include "TAA.h"
 
 void TAA::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
@@ -106,14 +107,14 @@ void TAA::CreateDescriptSetLayout()
 	uniformLayoutBinding.pImmutableSamplers = nullptr;
 	uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	std::array<VkDescriptorSetLayoutBinding, 3> uniformLayoutBindings;
-	for (int i = 0; i < 3; i++)
+	std::array<VkDescriptorSetLayoutBinding, 4> uniformLayoutBindings;
+	for (int i = 0; i < 4; i++)
 	{
 		uniformLayoutBindings[i] = uniformLayoutBinding;
 		uniformLayoutBindings[i].binding = i;
 	}
 
-	uniformLayoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uniformLayoutBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -236,7 +237,7 @@ void TAA::SetupDescriptSet(VkDescriptorPool pool)
 	descriptorWrite.pImageInfo = nullptr; // Optional
 	descriptorWrite.pTexelBufferView = nullptr; // Optional
 
-	std::array<VkWriteDescriptorSet, 3> descriptorWrites;
+	std::array<VkWriteDescriptorSet, 4> descriptorWrites;
 	descriptorWrites.fill(descriptorWrite);
 
 	VkDescriptorImageInfo image = vulkanAPP->GetCurrentRenderTarget()->descriptor;
@@ -246,8 +247,11 @@ void TAA::SetupDescriptSet(VkDescriptorPool pool)
 	descriptorWrites[1].pImageInfo = &historyBuffer.descriptor;
 
 	descriptorWrites[2].dstBinding = 2;
-	descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptorWrites[2].pBufferInfo = &bufferInfo;
+	descriptorWrites[2].pImageInfo = &vulkanAPP->GetBasePass()->GetVelocityDescriptorImageInfo();
+
+	descriptorWrites[3].dstBinding = 3;
+	descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorWrites[3].pBufferInfo = &bufferInfo;
 
 	vkUpdateDescriptorSets(device,(uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 }
@@ -301,11 +305,7 @@ void TAA::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& glt
 
 void TAA::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depthVP, glm::vec4 viewPos)
 {
-	ubo.lastView = ubo.view;
-	ubo.lastProj = ubo.projection;
-	ubo.view = view;
-	ubo.projection = proj;
-	ubo.alpha = 0.01f;
+	ubo.alpha = 0.1f;
 
 	Trans_Data_To_GPU
 }

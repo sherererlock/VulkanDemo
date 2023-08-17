@@ -170,7 +170,7 @@ void HelloVulkan::UpdateProjectionMatrix()
 		isOrth = !isOrth;
 		debugtimer = 0.5f;
 
-		std::cout << (isOrth ? "Orth" : "Pers") << std::endl;
+		//std::cout << (isOrth ? "Orth" : "Pers") << std::endl;
 	}
 }
 

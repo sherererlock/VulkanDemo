@@ -9,5 +9,6 @@ vkMapMemory(device, uniformMemory, 0, bufferSize, 0, &data); \
 memcpy(data, &ubo, bufferSize); \
 vkUnmapMemory(device, uniformMemory); \
 
+
 #pragma warning(disable:26812)
 #pragma warning(disable:26495)

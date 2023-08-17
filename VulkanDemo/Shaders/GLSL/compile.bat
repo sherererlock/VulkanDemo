@@ -41,9 +41,9 @@
 @REM glslangValidator.exe -V Shaders\GLSL\new\pbrtest.vert -o Shaders\GLSL\spv\pbrtest.vert.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\pbrtest.frag -o Shaders\GLSL\spv\pbrtest.frag.spv
 
-@REM glslangValidator.exe -V Shaders\GLSL\new\BasePass.vert -o Shaders\GLSL\spv\BasePass.vert.spv
-@REM glslangValidator.exe -V Shaders\GLSL\new\BasePass.frag -o Shaders\GLSL\spv\BasePass.frag.spv
-@REM glslangValidator.exe -V Shaders\GLSL\new\LightingPass.frag -o Shaders\GLSL\spv\LightingPass.frag.spv
+glslangValidator.exe -V Shaders\GLSL\new\BasePass.vert -o Shaders\GLSL\spv\BasePass.vert.spv
+glslangValidator.exe -V Shaders\GLSL\new\BasePass.frag -o Shaders\GLSL\spv\BasePass.frag.spv
+glslangValidator.exe -V Shaders\GLSL\new\LightingPass.frag -o Shaders\GLSL\spv\LightingPass.frag.spv
 
 glslangValidator.exe -V Shaders\GLSL\new\postprocess.frag -o Shaders\GLSL\spv\postprocess.frag.spv
 glslangValidator.exe -V Shaders\GLSL\new\taa.frag -o Shaders\GLSL\spv\taa.frag.spv
