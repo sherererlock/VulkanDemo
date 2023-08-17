@@ -9,6 +9,7 @@ layout(set = 0, binding = 4) uniform sampler2D velocitySampler;
 layout(set = 0, binding = 5)
 uniform UniformBufferObject{
 	vec4 resolution;
+    vec2 jitter;
 } ubo;
 
 const vec2 kOffsets3x3[9] =
@@ -72,37 +73,79 @@ vec2 GetClosestUV(in sampler2D depths)
 	return closestUV;
 }
 
+vec2 MinMaxDepths(in float neighborDepths[kNeighborsCount])
+{
+	float minDepth = neighborDepths[0];
+	float maxDepth = neighborDepths[0];
+
+	for(int iter = 1; iter < kNeighborsCount; iter++)
+	{
+		minDepth = min(minDepth, neighborDepths[iter]);
+		minDepth = max(maxDepth, neighborDepths[iter]);
+	}
+
+	return vec2(minDepth, maxDepth);
+}
+
+vec4 Inside2Resolve(sampler2D currColorTex, sampler2D prevColorTex, vec2 velocity)
+{
+	vec4 color = texture(colorSampler, inUV);
+	vec4 lastColor = texture(lastColorSampler, inUV + velocity);
+
+	return mix(lastColor, color, ubo.resolution.z +  length(velocity) * 100.0);
+}
+
+vec4 Custom2Resolve(in float preNeighborDepths[kNeighborsCount], in float curNeighborDepths[kNeighborsCount], vec2 velocity)
+{
+	vec4 res = vec4(0);
+	
+	const float maxDepthFalloff = 0.1f;
+	vec2 preMinMaxDepths = MinMaxDepths(preNeighborDepths);
+	vec2 curMinMaxDepths = MinMaxDepths(curNeighborDepths);
+
+	float highestDepth = min(preMinMaxDepths.x, curMinMaxDepths.x); //get the furthest
+	float lowestDepth = max(preMinMaxDepths.x, curMinMaxDepths.x); //get the closest
+
+	float depthFalloff = abs(highestDepth - lowestDepth);
+
+	float averageDepth = 0;
+	for(uint iter = 0; iter < kNeighborsCount; iter++)
+	{
+		averageDepth += curNeighborDepths[iter];
+	}
+
+	averageDepth /= kNeighborsCount;
+
+	vec4 taa = Inside2Resolve(colorSampler, lastColorSampler, velocity);
+	if(depthFalloff < maxDepthFalloff)
+	{
+		res = taa;//vec4(1, 0, 0, 1);
+	}
+	else
+	{
+		res = texture(colorSampler, inUV);
+	}
+
+	return res;
+}
+
 void main() 
 {
-	vec3 color = texture(colorSampler, inUV).rgb;
-
 	vec2 closestUV = GetClosestUV(depthSampler);
-	vec2 offset = texture(velocitySampler, closestUV).rg;
+	vec2 offset = -texture(velocitySampler, closestUV).rg;
 
-	vec2 preUV = inUV - offset;
-	vec3 lastColor;
+	vec2 deltaRes = vec2(1.0 / ubo.resolution.x, 1.0 / ubo.resolution.y);
 
-    if(min(preUV.x, preUV.y) < 0 || max(preUV.x, preUV.y) > 1)
-        lastColor = color;
-    else
-        lastColor = texture(lastColorSampler, preUV).rgb;
+	float currentDepths[kNeighborsCount];
+	float previousDepths[kNeighborsCount];
 
-    vec3 minNeighborhood = RGBToYCoCg(color);
-    vec3 maxNeighborhood = minNeighborhood;
-    for(int y = -1; y <= 1; y++)
-    {
-        for(int x = -1; x <= 1; x++)
-        {
-            vec3 neighborhoodColor = texture(colorSampler, inUV + vec2(x, y) * ubo.resolution.xy).rgb;
-            neighborhoodColor = RGBToYCoCg(neighborhoodColor);
-            minNeighborhood = min(minNeighborhood, neighborhoodColor);
-            maxNeighborhood = max(maxNeighborhood, neighborhoodColor);
-        }
-    }
+	for(uint iter = 0; iter < kNeighborsCount; iter++)
+	{
+		vec2 newUV = inUV + (kOffsets3x3[iter] * deltaRes);
 
-    lastColor = RGBToYCoCg(lastColor);
-    lastColor = clamp(lastColor, minNeighborhood, maxNeighborhood);
-    lastColor = YCoCgToRGB(lastColor);
+		currentDepths[iter] = texture(depthSampler, newUV).x;
+		previousDepths[iter] = texture(preDepthSampler, newUV + offset).x;
+	}
 
-	outColor = vec4(mix(lastColor, color, ubo.resolution.z +  length(offset) * 100.0), 1.0);
+	outColor = Custom2Resolve(previousDepths, currentDepths, offset);
 }

@@ -1,6 +1,7 @@
 
 #include <array>
 #include <stdexcept>
+#include <iostream>
 
 #include "HelloVulkan.h"
 #include "BasePass.h"

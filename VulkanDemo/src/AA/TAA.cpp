@@ -314,6 +314,14 @@ void TAA::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& glt
 void TAA::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depthVP, glm::vec4 viewPos)
 {
 	ubo.resolution = glm::vec4((float)width, (float)height, 0.05f, 1.0f);
+	
+	auto hBuffer = vulkanAPP->GetHaltonSequence();
+	uint32_t index = vulkanAPP->GetBasePass()->GetIndex();
+
+	float x = (hBuffer[index].x * 2.0f - 1.0f) / (float) width;
+	float y = (hBuffer[index].y * 2.0f - 1.0f) / (float) height;
+
+	ubo.jitter = glm::vec2(x, y);
 
 	Trans_Data_To_GPU
 }

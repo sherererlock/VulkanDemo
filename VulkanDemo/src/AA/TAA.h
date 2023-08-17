@@ -8,6 +8,7 @@ private:
 	struct UniformBufferObject
 	{
 		glm::vec4 resolution;
+		glm::vec2 jitter;
 	};
 
 	FrameBufferAttachment historyBuffer;

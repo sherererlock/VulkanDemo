@@ -56,8 +56,8 @@ void main() {
     vec4 position = primitive.model * inPosition;
 
     mat4 jitterMat = ubo.proj;
-    jitterMat[0][2] += (haltonSequence.hbuffer[jitterInfo.hindex].x * 2.0f - 1.0f) / jitterInfo.width;
-    jitterMat[1][2] += (haltonSequence.hbuffer[jitterInfo.hindex].y * 2.0f - 1.0f) / jitterInfo.height;
+    jitterMat[2][0] += (haltonSequence.hbuffer[jitterInfo.hindex].x * 2.0f - 1.0f) / jitterInfo.width;
+    jitterMat[2][1] += (haltonSequence.hbuffer[jitterInfo.hindex].y * 2.0f - 1.0f) / jitterInfo.height;
 
     gl_Position = jitterMat * ubo.view * position;
 

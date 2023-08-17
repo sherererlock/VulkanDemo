@@ -30,6 +30,7 @@ private:
 	JitterInfo jitterInfo;
 
 public:
+	inline uint32_t GetIndex() const { return jitterInfo.hindex; }
 	inline void AddModel(gltfModel* model) { models.push_back(model); }
 
 	virtual std::vector<VkAttachmentDescription> GetAttachmentDescriptions() const override;
