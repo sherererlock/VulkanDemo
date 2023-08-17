@@ -254,7 +254,7 @@ void TAA::SetupDescriptSet(VkDescriptorPool pool)
 
 void TAA::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& gltfmodel)
 {
-	//if (firstFrame)
+	if (firstFrame)
 	{
 		firstFrame = false;
 		SaveHistoryBuffer(commandBuffer, vulkanAPP->GetCurrentRenderTarget()->image);
@@ -296,7 +296,7 @@ void TAA::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& glt
 
 	vkCmdEndRenderPass(commandBuffer);
 
-	//SaveHistoryBuffer(commandBuffer, color.image);
+	SaveHistoryBuffer(commandBuffer, color.image);
 }
 
 void TAA::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depthVP, glm::vec4 viewPos)
