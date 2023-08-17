@@ -7,10 +7,12 @@ class TAA : public SinglePipeline
 private:
 	struct UniformBufferObject
 	{
-		float alpha = 0.5f;
+		glm::vec4 resolution;
 	};
 
 	FrameBufferAttachment historyBuffer;
+	FrameBufferAttachment historyDepth;
+
 	UniformBufferObject ubo;
 
 	VkRenderPass renderPass;

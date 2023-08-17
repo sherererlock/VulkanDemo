@@ -169,7 +169,7 @@ void HelloVulkan::UpdateProjectionMatrix()
 	{
 		isOrth = !isOrth;
 		debugtimer = 0.5f;
-
+		rotateCamera = !rotateCamera;
 		//std::cout << (isOrth ? "Orth" : "Pers") << std::endl;
 	}
 }

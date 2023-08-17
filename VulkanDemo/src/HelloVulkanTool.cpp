@@ -369,8 +369,8 @@ void HelloVulkan::transitionImageLayout(VkImage image, VkFormat format, VkImageL
 	barrier.subresourceRange.baseArrayLayer = 0;
 	barrier.subresourceRange.layerCount = 1;
 
-	barrier.srcAccessMask = 0; // TODO
-	barrier.dstAccessMask = 0; // TODO
+	barrier.srcAccessMask = 0;
+	barrier.dstAccessMask = 0;
 
 	VkPipelineStageFlags sourceStage;
 	VkPipelineStageFlags destinationStage;
@@ -419,7 +419,7 @@ void HelloVulkan::transitionImageLayout(VkImage image, VkFormat format, VkImageL
 		throw std::invalid_argument("unsupported layout transition!");
 	}
 
-	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || format == findDepthFormat())
 	{
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 

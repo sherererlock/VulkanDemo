@@ -312,6 +312,6 @@ private:
 	const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
     std::vector<glm::vec4> haltonSequence;
-
+    bool rotateCamera = false;
 };
 

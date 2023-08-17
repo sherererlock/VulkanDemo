@@ -94,7 +94,9 @@ void TAA::CreateGBuffer()
 {
 	CreateAttachment(&color, vulkanAPP->GetFormat(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 	CreateAttachment(&historyBuffer, vulkanAPP->GetFormat(), VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+	CreateAttachment(&historyDepth, vulkanAPP->findDepthFormat(), VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	vulkanAPP->transitionImageLayout(historyBuffer.image, vulkanAPP->GetFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
+	vulkanAPP->transitionImageLayout(historyDepth.image, vulkanAPP->findDepthFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
 }
 
 void TAA::CreateDescriptSetLayout()
@@ -107,14 +109,14 @@ void TAA::CreateDescriptSetLayout()
 	uniformLayoutBinding.pImmutableSamplers = nullptr;
 	uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	std::array<VkDescriptorSetLayoutBinding, 4> uniformLayoutBindings;
-	for (int i = 0; i < 4; i++)
+	std::array<VkDescriptorSetLayoutBinding, 6> uniformLayoutBindings;
+	for (int i = 0; i < 6; i++)
 	{
 		uniformLayoutBindings[i] = uniformLayoutBinding;
 		uniformLayoutBindings[i].binding = i;
 	}
 
-	uniformLayoutBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uniformLayoutBindings[5].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -237,7 +239,7 @@ void TAA::SetupDescriptSet(VkDescriptorPool pool)
 	descriptorWrite.pImageInfo = nullptr; // Optional
 	descriptorWrite.pTexelBufferView = nullptr; // Optional
 
-	std::array<VkWriteDescriptorSet, 4> descriptorWrites;
+	std::array<VkWriteDescriptorSet, 6> descriptorWrites;
 	descriptorWrites.fill(descriptorWrite);
 
 	VkDescriptorImageInfo image = vulkanAPP->GetCurrentRenderTarget()->descriptor;
@@ -247,11 +249,17 @@ void TAA::SetupDescriptSet(VkDescriptorPool pool)
 	descriptorWrites[1].pImageInfo = &historyBuffer.descriptor;
 
 	descriptorWrites[2].dstBinding = 2;
-	descriptorWrites[2].pImageInfo = &vulkanAPP->GetBasePass()->GetVelocityDescriptorImageInfo();
+	descriptorWrites[2].pImageInfo = &vulkanAPP->GetBasePass()->GetDepthDescriptorImageInfo();
 
 	descriptorWrites[3].dstBinding = 3;
-	descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptorWrites[3].pBufferInfo = &bufferInfo;
+	descriptorWrites[3].pImageInfo = &historyDepth.descriptor;
+
+	descriptorWrites[4].dstBinding = 4;
+	descriptorWrites[4].pImageInfo = &vulkanAPP->GetBasePass()->GetVelocityDescriptorImageInfo();
+
+	descriptorWrites[5].dstBinding = 5;
+	descriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorWrites[5].pBufferInfo = &bufferInfo;
 
 	vkUpdateDescriptorSets(device,(uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 }
@@ -305,7 +313,7 @@ void TAA::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& glt
 
 void TAA::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depthVP, glm::vec4 viewPos)
 {
-	ubo.alpha = 0.1f;
+	ubo.resolution = glm::vec4((float)width, (float)height, 0.05f, 1.0f);
 
 	Trans_Data_To_GPU
 }
@@ -314,6 +322,7 @@ void TAA::Cleanup()
 {
 	historyBuffer.Cleanup(device);
 	color.Cleanup(device);
+	historyDepth.Cleanup(device);
 
 	vkDestroyRenderPass(device, renderPass, nullptr);
 	vkDestroyFramebuffer(device, frameBuffer, nullptr);
