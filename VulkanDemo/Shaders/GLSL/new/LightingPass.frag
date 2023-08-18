@@ -132,7 +132,13 @@ vec3 DirectLighting(vec3 albedo, vec3 position, vec3 N, float roughness, float m
 
 			vec3 fms = MultiScatterBRDF(N, L, V, albedo, roughness);
 
-			Lo += vec3(1.0) * (specular + fms) * ndotl;
+//			Lo += vec3(1.0) * (specular + fms) * ndotl;
+
+			vec3 ks = F;
+			vec3 kd = (vec3(1.0) - F);
+			kd *= (1 - metallic);
+
+			Lo += (kd * albedo / PI + specular) * ndotl;
 		}
 	}
 

@@ -39,7 +39,7 @@ protected:
 
 public:
 
-	void CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlagBits usage);
+	void CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlags usage);
 
 	virtual std::vector<VkAttachmentDescription> GetAttachmentDescriptions() const;
 	virtual std::vector<VkAttachmentReference> GetAttachmentRefs() const;

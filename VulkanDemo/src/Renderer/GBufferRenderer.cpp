@@ -243,7 +243,7 @@ void GBufferRenderer::CreateGBuffer()
 	depth.descriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 }
 
-void GBufferRenderer::CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlagBits usage)
+void GBufferRenderer::CreateAttachment(FrameBufferAttachment* attachment, VkFormat format, VkImageUsageFlags usage)
 {
 	attachment->format = format;
 

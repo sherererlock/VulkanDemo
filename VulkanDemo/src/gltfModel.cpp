@@ -279,6 +279,7 @@ void PrintMatrix(glm::mat4 mat)
 	std::cout << "----------------" << std::endl;
 }
 
+float radian = 0.0f;
 void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, Node* node, uint32_t flag, uint32_t offset) const
 {
 	if (node->mesh.primitives.size() > 0) 
@@ -298,8 +299,18 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 		//nodeMatrix =  translation * nodeMatrix;
 
 		for (Primitive& primitive : node->mesh.primitives) {
-			if (primitive.indexCount > 0) {
-			//if (primitive.indexCount == 18  ) {
+			//if (primitive.indexCount > 0) {
+			if (primitive.indexCount == 18 || primitive.indexCount == 6642) {
+
+
+				if (primitive.indexCount == 6642)
+				{
+					float distance = 1.0f;
+					radian += 0.1f;
+					nodeMatrix = glm::translate(nodeMatrix, glm::vec3(distance * glm::sin(glm::radians(radian)), 0.0, 0.0));
+
+
+				}
 
 				if (flag == 1)
 				{

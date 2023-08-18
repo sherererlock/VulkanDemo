@@ -39,6 +39,9 @@ public:
 	virtual void Cleanup();
 
 	void SaveHistoryBuffer(VkCommandBuffer commandBuffer, VkImage image);
+	void SaveDepthBuffer(VkCommandBuffer commandBuffer, VkImage image);
+
+	void SaveHistoryBuffer(VkCommandBuffer commandBuffer, VkImage srcImage, VkImage dstImage, VkImageAspectFlagBits aspect, VkImageLayout oldlayout);
 
 	inline const VkDescriptorImageInfo& GetColorDescriptorImageInfo() const { return color.descriptor; }
 };

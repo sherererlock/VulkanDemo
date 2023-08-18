@@ -50,6 +50,7 @@ public:
 	virtual void Cleanup() override;
 
 public:
+	inline const VkImage& GetDepthImage() const { return depth.image; }
 	inline const VkDescriptorImageInfo& GetRoughnessDescriptorImageInfo() const { return roughnessMetallic.descriptor; }
 	inline const VkDescriptorImageInfo& GetAlbedoDescriptorImageInfo() const { return albedo.descriptor; }
 	inline const VkDescriptorImageInfo& GetEmissiveDescriptorImageInfo() const { return emissive.descriptor; }
