@@ -1,7 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-#define TAA_SAMPLE_COUNT 32
+#define TAA_SAMPLE_COUNT 8
 
 layout(set = 0, binding = 0)
 uniform UniformBufferObject{

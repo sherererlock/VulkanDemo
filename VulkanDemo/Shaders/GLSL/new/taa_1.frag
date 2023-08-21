@@ -122,14 +122,14 @@ void main()
 	vec3 m1 = vec3(0.0);
 	vec3 m2 = vec3(0.0);
 
-	float closedDepth = 99;
-	vec2 closedUV = vec2(0.0);
+	float closedDepth = 99.0;
+	vec2 closedUV = inUV;
 
 	vec2 deltaRes = vec2( 1.0 / ubo.resolution.x, 1.0 / ubo.resolution.y);
 
-	for(int x = -1; x < 1; x ++)
+	for(int x = -1; x <= 1; x ++)
 	{
-		for(int y = -1; y < 1; y ++)
+		for(int y = -1; y <= 1; y ++)
 		{
 			vec2 uv = inUV + deltaRes * vec2(x, y);
 			uv = clamp(uv, vec2(0.0), vec2(1.0));

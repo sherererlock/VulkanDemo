@@ -318,7 +318,7 @@ void TAA::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel& glt
 
 void TAA::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depthVP, glm::vec4 viewPos)
 {
-	ubo.resolution = glm::vec4((float)width, (float)height, 0.1f, 1.0f);
+	ubo.resolution = glm::vec4((float)width, (float)height, 0.05f, 1.0f);
 	
 	auto hBuffer = vulkanAPP->GetHaltonSequence();
 	uint32_t index = vulkanAPP->GetBasePass()->GetIndex();
