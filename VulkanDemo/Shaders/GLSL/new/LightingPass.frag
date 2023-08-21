@@ -149,7 +149,7 @@ vec3 Lighting(vec3 albedo, vec3 position, vec3 normal, float roughness, float me
 {
 	vec3 Lo = vec3(0.0);
 	
-	vec3 dirLo = DirectLighting(albedo, position, normal, roughness, metallic) * shadow;
+	vec3 dirLo = DirectLighting(albedo, position, normal, roughness, metallic);
 	vec3 emissive = texture(emissiveSampler, inUV).rgb;
 	Lo = dirLo + emissive;
 
@@ -164,7 +164,7 @@ void main()
 	vec4 rm = texture(roughnessSampler, inUV);
 	float roughness = rm.x;
 	float metallic = rm.y;
-	float shadow = getShadow(vec4(position.xyz, 1.0));
+	float shadow = getShadow(vec4(position, 1.0));
 
 	vec3 color = Lighting(albedo, position, normal, roughness, metallic, shadow);
 

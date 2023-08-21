@@ -2,6 +2,7 @@
 #include <stdexcept>
 
 #include "HelloVulkan.h"
+#include "BasePass.h"
 #include "SkyboxRenderer.h"
 
 const std::string SKYBOX_PATH = "D:/Games/VulkanDemo/VulkanDemo/models/cube.gltf";
@@ -78,6 +79,7 @@ void SkyboxRenderer::CreatePipeline(PipelineCreateInfo& pipelineCreateInfo, VkGr
 	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
 	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+
 	pipelineCreateInfo.colorBlending.pAttachments = &colorBlendAttachment;
 
 	pipelineCreateInfo.depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;

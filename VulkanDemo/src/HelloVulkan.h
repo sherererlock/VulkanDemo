@@ -165,7 +165,9 @@ public:
 	float accTime = 0.0f;
     float debugtimer = 0.5f;
     bool isOrth = false;
+    bool move = false;
     void UpdateDebug();
+    void UpdateDebug(int key);
     void UpdateProjectionMatrix();
 	void UpdateShadowIndex(int indx = -1);
 	void UpdateShadowFilterSize();
@@ -192,6 +194,7 @@ public:
     inline GenHierarchicalDepth* GetHierarchicalDepth() const { return hierarchicalDepth;  }
     inline Shadow* GetShadow() const { return shadow; }
     inline BasePass* GetBasePass() const { return basePass; }
+    inline SkyboxRenderer* GetSkyboxRenderer() const { return skyboxRenderer; }
 
     const FrameBufferAttachment* GetCurrentRenderTarget() const;
     const VkDescriptorImageInfo GetLastImageInfo() const;

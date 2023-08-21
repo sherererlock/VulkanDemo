@@ -271,6 +271,33 @@ void oldmain()
 	outColor = Custom2Resolve(previousDepths, currentDepths, offset);
 }
 
+bool DepthRejection(vec2 uv, vec2 velocity)
+{
+	vec2 deltaRes = vec2(1.0 / ubo.resolution.x, 1.0 / ubo.resolution.y);
+	float currentDepths[kNeighborsCount];
+	float previousDepths[kNeighborsCount];
+
+	for(uint iter = 0; iter < kNeighborsCount; iter++)
+	{
+		vec2 newUV = inUV + (kOffsets3x3[iter] * deltaRes);
+
+		currentDepths[iter] = texture(depthSampler, newUV).x;
+		previousDepths[iter] = texture(preDepthSampler, newUV - velocity).x;
+	}	
+
+	const float maxDepthFalloff = 0.01f;
+	vec2 preMinMaxDepths = MinMaxDepths(previousDepths);
+	vec2 curMinMaxDepths = MinMaxDepths(currentDepths);
+
+	float highestDepth = min(preMinMaxDepths.x, curMinMaxDepths.x); //get the furthest
+	float lowestDepth = max(preMinMaxDepths.x, curMinMaxDepths.x); //get the closest
+
+	float depthFalloff = abs(highestDepth - lowestDepth);
+	if(depthFalloff > maxDepthFalloff)
+		return true;
+
+	return false;
+}
 
 vec3 ClampColor(vec2 uv, vec2 velocity)
 {
@@ -298,15 +325,24 @@ vec3 ClampColor(vec2 uv, vec2 velocity)
 	return mix(preColorClamped, color, ubo.resolution.z);
 }
 
+vec3 Resolve(vec2 uv, vec2 velocity)
+{
+	vec3 color = vec3(0.0);
+	if(!DepthRejection(uv, velocity))
+		color = ClampColor(uv, velocity);
+	else
+		color = texture(colorSampler, uv).rgb;
+
+	return color;
+}
+
+
+
 void main()
 {
-	vec2 velocity = texture(velocitySampler, inUV).rg;
+	vec2 closestUV = GetClosestUV(depthSampler);
+	vec2 velocity = texture(velocitySampler, closestUV).rg;
 
-//	vec3 color = texture(colorSampler, inUV).rgb;
-//	vec2 uv = inUV - velocity ;
-//	vec3 historyColor = texture(lastColorSampler, uv).rgb;
-//	outColor = vec4(mix(historyColor, color, ubo.resolution.z), 1.0);
-
-	outColor = vec4(ClampColor(inUV, velocity), 1.0);
+	outColor = vec4(Resolve(inUV, velocity), 1.0);
 
 }

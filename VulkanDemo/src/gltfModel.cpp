@@ -301,15 +301,12 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 		for (Primitive& primitive : node->mesh.primitives) {
 			//if (primitive.indexCount > 0) {
 			if (primitive.indexCount == 18 || primitive.indexCount == 6642) {
-
-
 				if (primitive.indexCount == 6642)
 				{
-					float distance = 1.0f;
-					radian += 0.1f;
-					nodeMatrix = glm::translate(nodeMatrix, glm::vec3(distance * glm::sin(glm::radians(radian)), 0.0, 0.0));
-
-
+					if (HelloVulkan::GetHelloVulkan()->move)
+						radian += 0.05f;
+					float x =  glm::sin(glm::radians(radian));
+					nodeMatrix = glm::translate(nodeMatrix, glm::vec3(x, 0.0, 0.0));
 				}
 
 				if (flag == 1)

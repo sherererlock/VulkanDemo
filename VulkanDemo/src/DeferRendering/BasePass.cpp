@@ -5,6 +5,7 @@
 
 #include "HelloVulkan.h"
 #include "BasePass.h"
+#include "SkyboxRenderer.h"
 
 std::vector<VkAttachmentDescription> BasePass::GetAttachmentDescriptions() const
 {

@@ -56,6 +56,11 @@ void Input::KeyCallback(GLFWwindow* window, int key, int scancode, int action, i
 		vulkan->UpdateProjectionMatrix();
 	}
 
+	if (key == GLFW_KEY_T)
+	{
+		vulkan->UpdateDebug(key);
+	}
+
 	if (key == GLFW_KEY_UP)
 	{
 		vulkan->UpdateShadowIndex();
@@ -159,6 +164,15 @@ void HelloVulkan::UpdateDebug()
 	if (debugtimer <= 0)
 	{
 		isDebug = !isDebug;
+		debugtimer = 0.5f;
+	}
+}
+
+void HelloVulkan::UpdateDebug(int key)
+{
+	if (key == GLFW_KEY_T && debugtimer <= 0 )
+	{
+		move = !move;
 		debugtimer = 0.5f;
 	}
 }

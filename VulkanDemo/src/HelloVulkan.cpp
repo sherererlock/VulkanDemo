@@ -41,7 +41,7 @@
 
 //#define SCREENSPACEREFLECTION
 
-//#define SKYBOX
+#define SKYBOX
 
 #define SHADOW
 
@@ -150,8 +150,8 @@ void HelloVulkan::loadgltfModel(std::string filename, gltfModel& model)
 		throw std::runtime_error("validation layers requested, but not available!");("Could not open the glTF file.\n\nThe file is part of the additional asset pack.\n\nRun \"download_assets.py\" in the repository root to download the latest version.", -1);
 	}
 
-    //lightNode = AddLight(indexBuffer, vertexBuffer);
-    //lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.01f));
+    lightNode = AddLight(indexBuffer, vertexBuffer);
+    lightNode->matrix = glm::scale(lightNode->matrix, glm::vec3(0.01f));
 
 	size_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex);
 	size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
@@ -330,6 +330,7 @@ HelloVulkan::HelloVulkan()
 
     msaa = false;
     aa = true;
+    isDebug = false;
 
     if (aa)
     {
@@ -1787,5 +1788,6 @@ void HelloVulkan::createDescriptorSet()
 	imageInfo = ssao->GetSSAODescriptorImageInfo();
 #endif // SCREENSPACEAO
 
+    imageInfo = lightingPass->GetAttachment()->descriptor;
     debug.SetupDescriptSet(descriptorPool, imageInfo);
 }
