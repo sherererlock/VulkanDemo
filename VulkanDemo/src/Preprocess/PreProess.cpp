@@ -37,10 +37,13 @@ void PreProcess::generateMap(HelloVulkan* vulkan, const TextureCubeMap& envCubeM
 
 	const uint32_t numMips = static_cast<uint32_t>(floor(log2(dim))) + 1;
 
-	vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, cubemap.image, cubemap.deviceMemory, numMips, VK_SAMPLE_COUNT_1_BIT, 6, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
-	vulkan->createImageView(cubemap.view, cubemap.image, format, VK_IMAGE_ASPECT_COLOR_BIT, numMips, VK_IMAGE_VIEW_TYPE_CUBE, 6);
-	vulkan->createTextureSampler(cubemap.sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, numMips, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+	if (cubemap.image == VK_NULL_HANDLE)
+	{
+		vulkan->createImage(dim, dim, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, cubemap.image, cubemap.deviceMemory, numMips, VK_SAMPLE_COUNT_1_BIT, 6, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
+		vulkan->createImageView(cubemap.view, cubemap.image, format, VK_IMAGE_ASPECT_COLOR_BIT, numMips, VK_IMAGE_VIEW_TYPE_CUBE, 6);
+		vulkan->createTextureSampler(cubemap.sampler, VK_FILTER_LINEAR, VK_FILTER_LINEAR, numMips, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+	}
 
 	VkAttachmentDescription colorAttachment = {};
 	colorAttachment.format = format;
@@ -254,7 +257,15 @@ void PreProcess::generateMap(HelloVulkan* vulkan, const TextureCubeMap& envCubeM
 	pipelineInfo.stageCount = (uint32_t)shaderStages.size();
 	pipelineInfo.pStages = shaderStages.data();
 
+	auto attributeDescriptoins = Vertex::getAttributeDescriptions({ Vertex::VertexComponent::Position, Vertex::VertexComponent::Normal, Vertex::VertexComponent::UV });
+	auto attributeDescriptionBindings = Vertex::getBindingDescription();
+
+	info.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
+	info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptoins.size());
+	info.vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptoins.data(); // Optional
+
 	pipelineInfo.pVertexInputState = &info.vertexInputInfo; // bindings and attribute
+
 	pipelineInfo.pInputAssemblyState = &info.inputAssembly; // topology
 	pipelineInfo.pViewportState = &info.viewportState;
 	pipelineInfo.pRasterizationState = &info.rasterizer;
