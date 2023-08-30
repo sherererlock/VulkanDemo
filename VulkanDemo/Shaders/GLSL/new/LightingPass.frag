@@ -24,10 +24,14 @@ uniform UniformBufferObject{
 	mat4 depthVP;
     vec4 viewPos;
 	vec4 lights[4];
+	vec4 shadowParams;
 } ubo;
 
 layout(location = 0) in vec2 inUV;
 layout(location = 0) out vec4 outColor;
+
+#include "Shadow.h"
+
 
 float D_GGX_TR(float ndoth, float roughness)
 {
@@ -60,20 +64,6 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 } 
-
-float getShadow(vec4 worldPos)
-{
-	vec4 screenPos = ubo.depthVP * worldPos;
-	screenPos.xyz /= screenPos.w;
-	screenPos.xy = screenPos.xy * 0.5 + 0.5;
-
-	float shadowDepth = texture(shadowSampler, screenPos.xy).r;
-	if(shadowDepth < screenPos.z)
-		return 0.0;
-
-	return 1.0;
-}
-
 
 //https://blog.selfshadow.com/publications/s2017-shading-course/imageworks/s2017_pbs_imageworks_slides_v2.pdf
 vec3 AverageFresnel(vec3 r, vec3 g)
@@ -151,7 +141,7 @@ vec3 Lighting(vec3 albedo, vec3 position, vec3 normal, float roughness, float me
 	
 	vec3 dirLo = DirectLighting(albedo, position, normal, roughness, metallic);
 	vec3 emissive = texture(emissiveSampler, inUV).rgb;
-	Lo = dirLo + emissive;
+	Lo = dirLo * shadow + emissive;
 
 	return Lo;
 }

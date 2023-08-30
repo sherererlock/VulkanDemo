@@ -13,6 +13,7 @@ private:
 		glm::mat4 depthVP;
 		glm::vec4 viewPos;
 		glm::vec4 lightPos[4];
+		glm::vec4 shadowParams = glm::vec4(1.0);
 	};
 
 	BasePass* basePass;

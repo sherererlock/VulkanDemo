@@ -18,6 +18,7 @@
 #include "macros.h"
 #include "SkyboxRenderer.h"
 #include "PBRLighting.h"
+#include "Shadow.h"
 
 class Shadow;
 class ReflectiveShadowMap;
@@ -195,11 +196,14 @@ public:
     inline Shadow* GetShadow() const { return shadow; }
     inline BasePass* GetBasePass() const { return basePass; }
     inline SkyboxRenderer* GetSkyboxRenderer() const { return skyboxRenderer; }
+    inline int GetShadowIndex() const { return shadow->shadowIndex; }
 
     const FrameBufferAttachment* GetCurrentRenderTarget() const;
     const VkDescriptorImageInfo GetLastImageInfo() const;
 
     const std::vector<glm::vec4>& GetHaltonSequence() const { return haltonSequence;  }
+
+
 
 private:
 	static HelloVulkan* helloVulkan;

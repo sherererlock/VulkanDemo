@@ -330,6 +330,8 @@ void LightingPass::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::mat4 depth
 	rotation = glm::rotate(rotation, glm::radians(180.0f), yaxis);
 	ubo.lightPos[3] = lightpos;
 
+	ubo.shadowParams = glm::vec4((float)vulkanAPP->GetShadowIndex());
+
 	Trans_Data_To_GPU
 }
 

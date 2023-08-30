@@ -12,7 +12,7 @@ void Shadow::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
     height = h;
 
 	filterSize = 1;
-	shadowIndex = 0;
+	shadowIndex = 4;
 }
 
 void Shadow::CreateShadowPipeline(PipelineCreateInfo&  pipelineCreateInfo,  VkGraphicsPipelineCreateInfo& creatInfo)

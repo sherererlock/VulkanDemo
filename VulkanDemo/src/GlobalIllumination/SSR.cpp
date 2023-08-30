@@ -5,6 +5,8 @@
 #include "Shadow.h"
 #include "SSR.h"
 #include "GenHierarchicalDepth.h"
+#include "BasePass.h"
+#include "LightingPass.h"
 
 void SSR::Init(HelloVulkan* app, VkDevice vkdevice, uint32_t w, uint32_t h)
 {
@@ -158,15 +160,28 @@ void SSR::SetupDescriptSet(VkDescriptorPool pool)
 
 	std::array<VkWriteDescriptorSet, 8> descriptorWrites;
 	descriptorWrites.fill(descriptorWrite);
+	//std::array<VkDescriptorImageInfo, 7> imageInfos =
+	//{
+	//	gbuffer->GetPositionDescriptorImageInfo(),
+	//	gbuffer->GetNormalDescriptorImageInfo(),
+	//	gbuffer->GetDepthDescriptorImageInfo(),
+	//	//hierarchicaldepth->GetHierarchicalDepth(),
+	//	gbuffer->GetColorDescriptorImageInfo(),
+	//	gbuffer->GetRoughnessDescriptorImageInfo(),
+	//	gbuffer->GetAlbedoDescriptorImageInfo(),
+	//	vulkanAPP->GetShadow()->GetDescriptorImageInfo()
+	//};
+
+	BasePass* basePass = vulkanAPP->GetBasePass();
 	std::array<VkDescriptorImageInfo, 7> imageInfos =
 	{
-		gbuffer->GetPositionDescriptorImageInfo(),
-		gbuffer->GetNormalDescriptorImageInfo(),
-		gbuffer->GetDepthDescriptorImageInfo(),
+		basePass->GetPositionDescriptorImageInfo(),
+		basePass->GetNormalDescriptorImageInfo(),
+		basePass->GetDepthDescriptorImageInfo(),
 		//hierarchicaldepth->GetHierarchicalDepth(),
-		gbuffer->GetColorDescriptorImageInfo(),
-		gbuffer->GetRoughnessDescriptorImageInfo(),
-		gbuffer->GetAlbedoDescriptorImageInfo(),
+		vulkanAPP->GetCurrentRenderTarget()->descriptor,
+		basePass->GetRoughnessDescriptorImageInfo(),
+		basePass->GetAlbedoDescriptorImageInfo(),
 		vulkanAPP->GetShadow()->GetDescriptorImageInfo()
 	};
 

@@ -39,7 +39,7 @@
 
 //#define SCREENSPACEAO
 
-//#define SCREENSPACEREFLECTION
+#define SCREENSPACEREFLECTION
 
 #define SKYBOX
 
@@ -299,13 +299,22 @@ HelloVulkan::HelloVulkan()
     renderers.push_back(ssao);
 #endif
 
+#ifdef DEFERRENDERING
+	basePass = new BasePass();
+	lightingPass = new LightingPass();
+
+	renderers.push_back(basePass);
+	renderers.push_back(lightingPass);
+
+#endif
+
 #ifdef SCREENSPACEREFLECTION
-    ssrGBuffer = new SSRGBufferRenderer();
-    hierarchicalDepth = new GenHierarchicalDepth();
+    //ssrGBuffer = new SSRGBufferRenderer();
+    //hierarchicalDepth = new GenHierarchicalDepth();
     ssr = new SSR();
 
-    renderers.push_back(ssrGBuffer);
-    renderers.push_back(hierarchicalDepth);
+    //renderers.push_back(ssrGBuffer);
+    //renderers.push_back(hierarchicalDepth);
     renderers.push_back(ssr);
 #else
 
@@ -329,7 +338,7 @@ HelloVulkan::HelloVulkan()
 #endif //  SSR
 
     msaa = false;
-    aa = true;
+    aa = false;
     isDebug = false;
 
     if (aa)
@@ -412,7 +421,7 @@ void HelloVulkan::InitVulkan()
     #endif
 
 #ifdef SCREENSPACEREFLECTION
-    hierarchicalDepth->CreateMipMap();
+    //hierarchicalDepth->CreateMipMap();
 #endif //  SSR
 
     createDescriptorSetLayout();
@@ -459,7 +468,7 @@ void HelloVulkan::InitVulkan()
     loadgltfModel(MODEL_PATH, gltfmodel);
 
 #ifdef SCREENSPACEREFLECTION
-    ssrGBuffer->AddModel(&gltfmodel);
+    //ssrGBuffer->AddModel(&gltfmodel);
 #else
     if (pbrTest)
         pbrTest->AddModel(&gltfmodel);
@@ -1112,7 +1121,7 @@ void HelloVulkan::buildCommandBuffers()
 
         {
             #ifdef SCREENSPACEREFLECTION
-            ssrGBuffer->BuildCommandBuffer(commandBuffers[i], gltfmodel);
+            //ssrGBuffer->BuildCommandBuffer(commandBuffers[i], gltfmodel);
             //hierarchicalDepth->BuildCommandBuffer(commandBuffers[i], gltfmodel);
             #endif //  SSR
         }
@@ -1306,6 +1315,12 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
 
     ubo.view = camera.matrices.view;
     ubo.proj = camera.matrices.perspective;
+
+    glm::vec4 pos1 = glm::vec4(100.0f, 100.0f, 2.0, 1.0);
+
+    glm::vec4 clipPos = ubo.proj * ubo.view * camera.viewPos;
+
+
     ubo.viewPos = camera.viewPos;
 
     glm::vec3 pos = {lightPos.x, lightPos.y, lightPos.z};

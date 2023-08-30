@@ -16,6 +16,8 @@ SSR的工作原理是将屏幕图像通过自身反射到自身。这与立方�
 
 在这里，您可以看到射线步进被用于计算每个片段的反射点。顶点法线是明亮绿色箭头，位置向量是明亮蓝色箭头，而明亮红色向量则是通过视图空间进行射线步进的反射射线。
 
+![SSR Ray Marching](https://i.imgur.com/wnAC7NI.gif)
+
 ### Vertex Positions
 
 view space

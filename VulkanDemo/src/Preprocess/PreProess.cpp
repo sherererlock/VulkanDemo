@@ -223,7 +223,7 @@ void PreProcess::generateMap(HelloVulkan* vulkan, const TextureCubeMap& envCubeM
 
 	auto shaderStages = vulkan->CreaterShader(vertexShaderPath, fragmentShaderPath);
 
-	auto attributeDescriptoins = Vertex::getAttributeDescriptions({ Vertex::VertexComponent::Position });
+	auto attributeDescriptoins = Vertex::getAttributeDescriptions({ Vertex::VertexComponent::Position, Vertex::VertexComponent::Normal, Vertex::VertexComponent::UV });
 	auto attributeDescriptionBindings = Vertex::getBindingDescription();
 
 	info.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
@@ -256,13 +256,6 @@ void PreProcess::generateMap(HelloVulkan* vulkan, const TextureCubeMap& envCubeM
 
 	pipelineInfo.stageCount = (uint32_t)shaderStages.size();
 	pipelineInfo.pStages = shaderStages.data();
-
-	auto attributeDescriptoins = Vertex::getAttributeDescriptions({ Vertex::VertexComponent::Position, Vertex::VertexComponent::Normal, Vertex::VertexComponent::UV });
-	auto attributeDescriptionBindings = Vertex::getBindingDescription();
-
-	info.vertexInputInfo.pVertexBindingDescriptions = &attributeDescriptionBindings; // Optional
-	info.vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptoins.size());
-	info.vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptoins.data(); // Optional
 
 	pipelineInfo.pVertexInputState = &info.vertexInputInfo; // bindings and attribute
 
