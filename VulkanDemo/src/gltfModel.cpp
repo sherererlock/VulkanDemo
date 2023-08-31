@@ -297,7 +297,6 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 		//translation = glm::mat4(1.0f);
 		//translation = glm::translate(translation, glm::vec3(0.0f, 0.0f, -5.0f));
 		//nodeMatrix =  translation * nodeMatrix;
-
 		for (Primitive& primitive : node->mesh.primitives) {
 			if (primitive.indexCount > 0) {
 			//if (primitive.indexCount == 18 || primitive.indexCount == 6642 || primitive.indexCount == 36) {
@@ -306,7 +305,7 @@ void gltfModel::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelin
 					if (HelloVulkan::GetHelloVulkan()->move)
 						radian += 0.05f;
 					float x =  glm::sin(glm::radians(radian));
-					nodeMatrix = glm::translate(nodeMatrix, glm::vec3(x, 0.0, 0.0));
+
 				}
 
 				if (flag == 1)
@@ -345,6 +344,7 @@ void gltfModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLay
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertices.buffer, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 	// Render all nodes at top-level
+
 	for (auto& node : nodes) {
 		drawNode(commandBuffer, pipelineLayout, node, flag, offset);
 	}

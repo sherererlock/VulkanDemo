@@ -58,17 +58,17 @@ void main()
 
 	vec3 reflectLit = vec3(0.0);
 	bool intersected = false;
-	if(isup > 0.8)
-		reflectLit = ScreenSpaceReflectionInTS(worldPos, normal, intersected);
 
 	vec3 color = dirLit;
-	if (intersected)
-		color = reflectLit;
-//	else
+	if(isup > 0.8)
 	{
-		color = pow(color, vec3(1.0 / 2.2));
+		bool inter;
+		reflectLit = ScreenSpaceReflectionInTS(worldPos, normal, inter);
+		if(inter)
+			color += reflectLit;
 	}
 
+	color = pow(color, vec3(1.0 / 2.2));
 
 	outColor = vec4(color, 1.0);
 

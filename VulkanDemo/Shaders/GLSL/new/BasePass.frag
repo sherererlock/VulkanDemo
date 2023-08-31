@@ -73,8 +73,10 @@ void main()
 	outPos = vec4(worldPos, depth);
 	vec3 up = vec3(0.0, 1.0, 0.0);
 	vec3 N = calculateNormal();
-	outNormal = vec4(N , 1.0);
-	outRoughnessMetallic = vec4(GetRoughnessAndMetallic(), 0.0, 1.0);
+	float isup = dot(up, normal);
+
+	outNormal = vec4(normal, 1.0);
+	outRoughnessMetallic = vec4(GetRoughnessAndMetallic(), isup, 1.0);
 	vec3 albedo = texture(colorSampler, fragTexCoord).rgb;
 	outAlbedo = vec4(albedo, 1.0);
 	outEmissive = vec4(texture(emissiveSampler, fragTexCoord).rgb * materialData.emissiveFactor, 1.0);

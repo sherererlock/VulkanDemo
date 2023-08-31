@@ -36,7 +36,7 @@
 @REM glslangValidator.exe -V Shaders\GLSL\new\ssrgbuffer.vert -o Shaders\GLSL\spv\ssrgbuffer.vert.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\ssrgbuffer.frag -o Shaders\GLSL\spv\ssrgbuffer.frag.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\genDepthMinMip.frag -o Shaders\GLSL\spv\genDepthMinMip.frag.spv
-@REM glslangValidator.exe -V Shaders\GLSL\new\ssr.frag -o Shaders\GLSL\spv\ssr.frag.spv
+glslangValidator.exe -V Shaders\GLSL\new\ssr.frag -o Shaders\GLSL\spv\ssr.frag.spv
 
 @REM glslangValidator.exe -V Shaders\GLSL\new\pbrtest.vert -o Shaders\GLSL\spv\pbrtest.vert.spv
 @REM glslangValidator.exe -V Shaders\GLSL\new\pbrtest.frag -o Shaders\GLSL\spv\pbrtest.frag.spv

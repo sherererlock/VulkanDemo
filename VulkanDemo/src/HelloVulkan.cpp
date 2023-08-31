@@ -259,11 +259,9 @@ HelloVulkan::HelloVulkan()
 	camera.setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
 #endif
 
-	camera.setPosition(glm::vec3(0.0f, 1.0f, 0.0f));
-	camera.setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
-
-	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
-	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
+	camera.setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+	//camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
+    camera.setRotation(glm::vec3(0.0, 0.0f, 0.0f));
 
 	//camera.setPosition(glm::vec3(10.0f, 13.0f, 1.8f));
 	//camera.setRotation(glm::vec3(-62.5f, 90.0f, 0.0f));
@@ -466,6 +464,9 @@ void HelloVulkan::InitVulkan()
 #endif //  SKYBOX
 
     loadgltfModel(MODEL_PATH, gltfmodel);
+
+	static glm::mat4 mat = gltfmodel.nodes[1]->matrix;
+    gltfmodel.nodes[1]->matrix = glm::translate(gltfmodel.nodes[1]->matrix, glm::vec3(0.0f, 0.0f, 2.1f));
 
 #ifdef SCREENSPACEREFLECTION
     //ssrGBuffer->AddModel(&gltfmodel);
@@ -1316,10 +1317,11 @@ void HelloVulkan::updateUniformBuffer(float frameTimer)
     ubo.view = camera.matrices.view;
     ubo.proj = camera.matrices.perspective;
 
-    glm::vec4 pos1 = glm::vec4(100.0f, 100.0f, 2.0, 1.0);
-
-    glm::vec4 clipPos = ubo.proj * ubo.view * camera.viewPos;
-
+    glm::mat4 cameraview = glm::transpose(ubo.view);
+    glm::vec4 p1 = cameraview * camera.viewPos;
+    glm::vec4 p2 = cameraview * glm::vec4(camera.position, 1.0);
+	glm::vec4 p3 = camera.viewPos * ubo.view;
+	glm::vec4 p4 = ubo.view * glm::vec4(camera.position, 1.0);
 
     ubo.viewPos = camera.viewPos;
 

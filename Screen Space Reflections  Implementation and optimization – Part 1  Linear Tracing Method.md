@@ -499,7 +499,14 @@ int var = x ? (a+b) : (a-b);
 
 这是因为执行条件分支本身的成本非常高。执行条件分支涉及到根据评估结果激活/停用SIMD组中的GPU线程。对于x被评估为true的线程，它运行代码块'var = a+b'，但然后它会被停用，直到其他x被评估为false的线程完成运行'var = a-b'。这是一种昂贵的操作。
 
-![image-20230802210402296](C:\Users\dc\AppData\Roaming\Typora\typora-user-images\image-20230802210402296.png)
+| Steps | Threads with x = true | Threads with x = false |
+| ----- | --------------------- | ---------------------- |
+| 1     | evaluate x -> true    | evaluate x -> false    |
+| 2     |                       | deactivate thread      |
+| 3     | var = a+b             | de-activated           |
+| 4     | deactivate thread     | activate thread        |
+| 5     | de-activated          | var = a-b              |
+| 6     | activate tread        |                        |
 
 ![image-20230802210412500](C:\Users\dc\AppData\Roaming\Typora\typora-user-images\image-20230802210412500.png)
 
