@@ -508,7 +508,11 @@ int var = x ? (a+b) : (a-b);
 | 5     | de-activated          | var = a-b              |
 | 6     | activate tread        |                        |
 
-![image-20230802210412500](C:\Users\dc\AppData\Roaming\Typora\typora-user-images\image-20230802210412500.png)
+| Steps | Threads with x = true     | Threads with x = false    |
+| ----- | ------------------------- | ------------------------- |
+| 1     | a+b                       | a+b                       |
+| 2     | a-b                       | a-b                       |
+| 3     | assign var depending on x | assign var depending on x |
 
 
 因此，这就是为什么条件赋值比条件分支更高效。然而，当代码块内部的工作较为繁重时，条件分支可能比条件赋值更高效。

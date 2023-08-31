@@ -308,11 +308,11 @@ HelloVulkan::HelloVulkan()
 
 #ifdef SCREENSPACEREFLECTION
     //ssrGBuffer = new SSRGBufferRenderer();
-    //hierarchicalDepth = new GenHierarchicalDepth();
+    hierarchicalDepth = new GenHierarchicalDepth();
     ssr = new SSR();
 
     //renderers.push_back(ssrGBuffer);
-    //renderers.push_back(hierarchicalDepth);
+    renderers.push_back(hierarchicalDepth);
     renderers.push_back(ssr);
 #else
 
