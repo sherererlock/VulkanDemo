@@ -158,7 +158,7 @@ void main()
 
 	vec3 color = Lighting(albedo, position, normal, roughness, metallic, shadow);
 
-//	color = pow(color, vec3(1.0 / 2.2));
+	color = pow(color, vec3(1.0 / 2.2));
 
 	outColor = vec4(color, 1.0);
 }

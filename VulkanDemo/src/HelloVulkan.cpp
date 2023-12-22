@@ -39,9 +39,9 @@
 
 //#define SCREENSPACEAO
 
-#define SCREENSPACEREFLECTION
+//#define SCREENSPACEREFLECTION
 
-#define SKYBOX
+//#define SKYBOX
 
 #define SHADOW
 
@@ -259,9 +259,9 @@ HelloVulkan::HelloVulkan()
 	camera.setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
 #endif
 
-	camera.setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-	//camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
-    camera.setRotation(glm::vec3(0.0, 0.0f, 0.0f));
+	camera.setPosition(glm::vec3(0.0f, 0.0f, -2.1f));
+	camera.setRotation(glm::vec3(-25.5f, 363.0f, 0.0f));
+    //camera.setRotation(glm::vec3(0.0, 0.0f, 0.0f));
 
 	//camera.setPosition(glm::vec3(10.0f, 13.0f, 1.8f));
 	//camera.setRotation(glm::vec3(-62.5f, 90.0f, 0.0f));
@@ -308,12 +308,12 @@ HelloVulkan::HelloVulkan()
 
 #ifdef SCREENSPACEREFLECTION
     //ssrGBuffer = new SSRGBufferRenderer();
-    hierarchicalDepth = new GenHierarchicalDepth();
-    ssr = new SSR();
+    //hierarchicalDepth = new GenHierarchicalDepth();
+    //ssr = new SSR();
 
     //renderers.push_back(ssrGBuffer);
-    renderers.push_back(hierarchicalDepth);
-    renderers.push_back(ssr);
+    //renderers.push_back(hierarchicalDepth);
+    //renderers.push_back(ssr);
 #else
 
 #ifdef PBRTESTING
@@ -336,7 +336,7 @@ HelloVulkan::HelloVulkan()
 #endif //  SSR
 
     msaa = false;
-    aa = false;
+    aa = true;
     isDebug = false;
 
     if (aa)
@@ -465,8 +465,8 @@ void HelloVulkan::InitVulkan()
 
     loadgltfModel(MODEL_PATH, gltfmodel);
 
-	static glm::mat4 mat = gltfmodel.nodes[1]->matrix;
-    gltfmodel.nodes[1]->matrix = glm::translate(gltfmodel.nodes[1]->matrix, glm::vec3(0.0f, 0.0f, 2.1f));
+	//static glm::mat4 mat = gltfmodel.nodes[1]->matrix;
+ //   gltfmodel.nodes[1]->matrix = glm::translate(gltfmodel.nodes[1]->matrix, glm::vec3(0.0f, 0.0f, 2.1f));
 
 #ifdef SCREENSPACEREFLECTION
     //ssrGBuffer->AddModel(&gltfmodel);

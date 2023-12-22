@@ -403,8 +403,8 @@ void BasePass::BuildCommandBuffer(VkCommandBuffer commandBuffer, const gltfModel
 void BasePass::UpateLightMVP(glm::mat4 view, glm::mat4 proj, glm::vec4 lightPos)
 {
 	const std::vector<glm::vec4>& haltonSequence = vulkanAPP->GetHaltonSequence();
-	//jitterInfo.hindex++;
-	//jitterInfo.hindex %= (uint32_t)haltonSequence.size();
+	jitterInfo.hindex++;
+	jitterInfo.hindex %= (uint32_t)haltonSequence.size();
 
 	void* data;
 	vkMapMemory(device, jitterMemory, 0, sizeof(jitterInfo), 0, &data);

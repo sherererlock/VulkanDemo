@@ -27,7 +27,7 @@ void main(){
 	if(shadowCoord.w > 0.0)
 	{
 		coord = coord / shadowCoord.w;
-		coord.xy = coord.xy * 0.5 + 0.5;
+		coord = coord * 0.5 + 0.5;
 	}
 
 	float shadow = getShadow(coord);
