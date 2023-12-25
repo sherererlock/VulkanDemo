@@ -263,6 +263,13 @@ VkPipelineColorBlendStateCreateInfo o-- VkPipelineColorBlendAttachmentState
 
 #### VkPipelineDynamicStateCreateInfo
 
+```mermaid
+classDiagram
+VkGraphicsPipelineCreateInfo o-- VkPipelineDynamicStateCreateInfo
+```
+
+
+
 ## PipelineLayout
 
 与shader中的Uniform变量Sampler变量和pushContant变量有关，可以看作是一个通用的模板
@@ -336,3 +343,51 @@ VkPipelineLayoutCreateInfo o-- VkPushConstantRange
 
 ```
 
+## 更新Uniform或Sampler到Shader中
+
+#### VkDescriptorPool
+
+描述符集不能被 直接创建，需要通过描述符池来分配和管理
+
+#### VkDescriptorPoolSize
+
+- type	类型
+- descriptorCount 池子最多能分配多少个该类型的描述符
+
+#### VkDescriptorPoolCreateInfo
+
+- maxSets 池子分配的set的最大数量
+- poolSizeCount、pPoolSizes 池子的配置
+
+#### vkCreateDescriptorPool
+
+函数，用来创建DescriptorPool，
+
+#### VkDescriptorSetAllocateInfo
+
+- descriptorPool 描述符池对象
+- descriptorSetCount 分配set的数量
+- pSetLayouts 模板
+
+#### vkAllocateDescriptorSets
+
+分配描述符set的函数
+
+#### VkWriteDescriptorSet
+
+- dstSet 需要更新到shader的set
+- dstBinding 在set的第几个位置
+- descriptorCount 数量
+- descriptorType 类型
+- pImageInfo   sampler
+- pBufferInfo    uniformbuffer
+
+#### VkDescriptorBufferInfo
+
+#### VkDescriptorImageInfo
+
+#### vkUpdateDescriptorSets
+
+函数，更新数据到管线
+
+vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
