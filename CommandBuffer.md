@@ -4,6 +4,10 @@ Vulkan通过Command Buffer完成Record Command的操作。这些Commnad之后会
 
 命令包括将Pipeline和DescriptorSet绑定到Command Buffer的命令，修改Dynamic State、以及DrawCall相关的Command(用于图形渲染),Dispatch的命令(用于计算)， 复制Buffer和Image的Command以及其他VkCmdXXXX所有的调用
 
+**在Command Buffer中所有的Command是无序执行并且整批提交到Queue中的Command Buffer也是无序执行。不同的Queue提交的Command同样也是无序执行。这也体现了GPU的工作方式都是异步并且并行执行**
+
+**在渲染流程内的关于Framebuffer操作是按顺序完成的**
+
 ## Command Pool
 
 Command Buffer是通过Command Pool来分配的，由它来分配Command Buffer从而来实现在多个Command Buffer中摊平资源创建的成本，Command Pool是外部同步的这意味着一个Command Pool不能在多个线程中同时使用。这包括从Pool中分配的任何Command Buffer的使用以及分配、释放和重置Command Pool/Buffer本身的操作
@@ -74,3 +78,41 @@ Queue通常代表一个GPU线程，GPU执行的就是提交到Queues中的工作
 ##### vkQueueSubmit
 
 ## Secondary Command Buffer
+
+------
+
+## 渲染指令的记录和提交
+
+```c
+for (size_t i = 0; i < commandBuffers.size(); i++) {
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+    beginInfo.pInheritanceInfo = nullptr; // Optional
+
+    if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin recording command buffer!");
+    }
+    
+    VkRenderPassBeginInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = swapChainFramebuffers[i];
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = swapChainExtent;
+    
+    VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+    
+    vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+    vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);    
+    vkCmdEndRenderPass(commandBuffers[i]);
+    
+    if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer!");
+    }
+}
+```
+
